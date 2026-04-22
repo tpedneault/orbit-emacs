@@ -10,6 +10,8 @@
   (expand-file-name "backups/" mod-core-var-directory))
 (defconst mod-core-auto-save-directory
   (expand-file-name "auto-save/" mod-core-var-directory))
+(defconst mod-core-savehist-file
+  (expand-file-name "history" mod-core-var-directory))
 
 (defun mod-core--require-elpaca (repo)
   (let ((load-path (cons repo load-path)))
@@ -22,7 +24,8 @@
 
 (setq backup-directory-alist `(("." . ,mod-core-backup-directory))
       auto-save-file-name-transforms `((".*" ,(file-name-as-directory mod-core-auto-save-directory) t))
-      auto-save-list-file-prefix (expand-file-name ".saves-" mod-core-auto-save-directory))
+      auto-save-list-file-prefix (expand-file-name ".saves-" mod-core-auto-save-directory)
+      savehist-file mod-core-savehist-file)
 
 (defvar elpaca-installer-version 0.12)
 (defvar elpaca-directory (expand-file-name "elpaca/" mod-core-config-directory))
