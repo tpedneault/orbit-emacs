@@ -1,5 +1,6 @@
-.elpaca/
+elpaca/
 var/
 eln-cache/
 *.elc
 auto-save-list/
+history
