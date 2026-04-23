@@ -1,3 +1,10 @@
 ;;; -*- coding: utf-8; mode: lisp-data -*-
-(("/Users/thomas/.config/emacs/modules/mod-ui.el" . 5474)
- ("/Users/thomas/.config/emacs/modules/mod-core.el" . 4175))
+(("/Users/thomas/.app-store/"
+  (dired-filename . "/Users/thomas/.app-store/.."))
+ ("/Users/thomas/.android/"
+  (dired-filename . "/Users/thomas/.android/adbkey.pub"))
+ ("/Users/thomas/" (dired-filename . "/Users/thomas/Downloads"))
+ ("/Users/thomas/Downloads/"
+  (dired-filename . "/Users/thomas/Downloads/Battle.net-Setup.app"))
+ ("/Users/thomas/.config/emacs/modules/mod-core.el" . 1169)
+ ("/Users/thomas/.config/emacs/modules/mod-ui.el" . 5474))

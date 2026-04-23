@@ -31,6 +31,18 @@
 (add-hook 'dired-mode-hook #'hl-line-mode)
 (add-hook 'dired-mode-hook #'auto-revert-mode)
 
+(with-eval-after-load 'evil
+  (evil-define-key 'normal dired-mode-map
+    "h" #'dired-up-directory
+    "l" #'dired-find-file
+    "m" #'dired-mark
+    "u" #'dired-unmark
+    "U" #'dired-unmark-all-marks
+    "R" #'dired-do-rename
+    "D" #'dired-do-delete
+    "C" #'dired-do-copy
+    "+" #'dired-create-directory))
+
 (provide 'mod-dired)
 
 ;;; mod-dired.el ends here
