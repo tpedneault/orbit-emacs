@@ -11,6 +11,7 @@
 (let ((gls (executable-find "gls"))
       (ls (executable-find "ls")))
   (setq insert-directory-program (or gls ls))
+  (setq dired-use-ls-dired (and gls t))
   (setq dired-listing-switches
         (if gls
             "-alh --group-directories-first"
@@ -35,6 +36,7 @@
   (evil-define-key 'normal dired-mode-map
     "h" #'dired-up-directory
     "l" #'dired-find-file
+    (kbd "RET") #'dired-find-file
     "m" #'dired-mark
     "u" #'dired-unmark
     "U" #'dired-unmark-all-marks

@@ -46,9 +46,9 @@ Key: `SPC x g`
 Use it for repository review, staging, and commit flow.
 
 - Requires a project or Git repo.
-- Switches to or creates `git/<project-name>`.
-- Opens Magit status.
-- Collapses to a single-purpose window.
+- On first use, creates `git/<project-name>`, opens Magit, and starts in a single-purpose window.
+- On later use, if that context already exists, it only switches back to it.
+- It does not keep reinitializing Magit every time you call `SPC x g`.
 
 ### `files/<project-or-dir>`
 
@@ -59,6 +59,16 @@ Use it for deliberate file management.
 - In a project: `files/<project-name>`
 - Outside a project: `files/<directory-name>`
 - Opens built-in Dired at the relevant root.
+- Dired itself stays in the `files/...` context.
+- Opening a file from that Dired buffer hands the file off to the matching `edit/...` context.
+- Opening a directory still stays inside the `files/...` context.
+
+Example:
+
+1. `SPC x f`
+2. move to a file in Dired
+3. open it with `l` or `RET`
+4. the file opens in `edit/<project-or-dir>` while the Dired buffer remains in `files/<project-or-dir>`
 
 ### `notes`
 

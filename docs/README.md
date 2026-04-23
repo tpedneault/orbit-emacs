@@ -44,6 +44,7 @@ Modules:
 - `SPC x` manages contexts.
 - `SPC n` drives notes, capture, and agenda.
 - `SPC o` opens a reusable bottom utility window.
+- `SPC f c` gives quick access to the config itself.
 
 For practical lookup, start here:
 

@@ -18,6 +18,11 @@
   (interactive)
   (consult-ripgrep (mod-project-root)))
 
+(defun mod-project-forget ()
+  "Forget a known project from the built-in project list."
+  (interactive)
+  (call-interactively #'project-forget-project))
+
 (setq project-switch-commands
       '((project-find-file "Find file")
         (mod-project-search "Search")

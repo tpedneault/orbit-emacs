@@ -22,13 +22,18 @@ Typical loop:
 
 1. Jump into a project editing context with `SPC x e`.
 2. Find the next file with `SPC .` or `SPC p f`.
-3. Search the project with `SPC /` or `SPC p s`.
-4. Open Git status with `SPC x g` or `SPC g g` when needed.
-5. Use the utility bay for temporary support buffers:
+3. Use `SPC x f` when you want a dedicated file-management workspace.
+   - Dired stays in `files/...`
+   - opening a file from there moves you into the matching `edit/...` context
+4. Search the project with `SPC /` or `SPC p s`.
+5. Open Git status with `SPC x g` or `SPC g g` when needed.
+   - first `SPC x g` initializes the git context
+   - later `SPC x g` calls just return to the existing `git/...` context
+6. Use the utility bay for temporary support buffers:
    - `SPC o s` shell
    - `SPC o m` messages
    - `SPC o c` compilation
-6. Capture interruptions quickly:
+7. Capture interruptions quickly:
    - `SPC n t` inbox task
    - `SPC n N` quick note
    - `SPC n j` journal entry
@@ -51,6 +56,8 @@ Typical loop:
 
 ## Small Habits That Help
 
+- Use `SPC p d` to prune stale projects from the built-in project list.
+- Use `SPC f c` for quick config access instead of hunting through the repo.
 - Use contexts for separation, not just for convenience.
 - Keep the agenda as the dashboard, not the editing surface.
 - Use inbox capture for speed, then refile later.

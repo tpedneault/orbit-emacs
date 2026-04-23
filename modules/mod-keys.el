@@ -2,6 +2,43 @@
 
 (require 'project)
 
+(defconst mod-keys-config-directory
+  (file-name-directory
+   (directory-file-name
+    (file-name-directory (or load-file-name buffer-file-name))))
+  "Root directory for this Emacs configuration.")
+
+(defun mod-keys-open-init-file ()
+  "Open init.el for this configuration."
+  (interactive)
+  (find-file (expand-file-name "init.el" mod-keys-config-directory)))
+
+(defun mod-keys-open-early-init-file ()
+  "Open early-init.el for this configuration."
+  (interactive)
+  (find-file (expand-file-name "early-init.el" mod-keys-config-directory)))
+
+(defun mod-keys-open-modules-directory ()
+  "Open the modules directory for this configuration."
+  (interactive)
+  (dired (expand-file-name "modules/" mod-keys-config-directory)))
+
+(defun mod-keys-open-agents-file ()
+  "Open AGENTS.md for this configuration."
+  (interactive)
+  (find-file (expand-file-name "AGENTS.md" mod-keys-config-directory)))
+
+(defun mod-keys-open-docs-directory ()
+  "Open the docs directory for this configuration."
+  (interactive)
+  (dired (expand-file-name "docs/" mod-keys-config-directory)))
+
+(defun mod-keys-reload-config ()
+  "Reload the Orbit Emacs configuration."
+  (interactive)
+  (load-file (expand-file-name "init.el" mod-keys-config-directory))
+  (message "Reloaded orbit-emacs config"))
+
 (use-package which-key
   :ensure t
   :demand t
@@ -31,6 +68,13 @@
     ":" '(execute-extended-command :which-key "M-x")
     "," '(mod-keys-local-leader-map :which-key "local")
     "f" '(:ignore t :which-key "files")
+    "f c" '(:ignore t :which-key "config")
+    "f c i" '(mod-keys-open-init-file :which-key "init.el")
+    "f c e" '(mod-keys-open-early-init-file :which-key "early-init.el")
+    "f c m" '(mod-keys-open-modules-directory :which-key "modules/")
+    "f c a" '(mod-keys-open-agents-file :which-key "AGENTS.md")
+    "f c d" '(mod-keys-open-docs-directory :which-key "docs/")
+    "f c r" '(mod-keys-reload-config :which-key "reload")
     "f f" '(find-file :which-key "find file")
     "f r" '(recentf-open-files :which-key "recent")
     "f s" '(save-buffer :which-key "save")
@@ -41,8 +85,10 @@
     "h" '(:ignore t :which-key "help")
     "h k" '(describe-key :which-key "describe key")
     "h f" '(describe-function :which-key "describe function")
+    "h m" '(describe-mode :which-key "describe mode")
     "h v" '(describe-variable :which-key "describe variable")
     "p" '(:ignore t :which-key "projects")
+    "p d" '(mod-project-forget :which-key "forget")
     "p p" '(project-switch-project :which-key "switch project")
     "p f" '(project-find-file :which-key "find file")
     "p s" '(mod-project-search :which-key "search")

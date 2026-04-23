@@ -14,6 +14,12 @@
 
 | Key | Action | Notes |
 | --- | --- | --- |
+| `SPC f c` | config subgroup | config access shortcuts |
+| `SPC f c i` | open `init.el` | main entry point |
+| `SPC f c e` | open `early-init.el` | early startup config |
+| `SPC f c m` | open `modules/` | module directory |
+| `SPC f c a` | open `AGENTS.md` | agent instructions |
+| `SPC f c d` | open `docs/` | documentation directory |
 | `SPC f f` | `find-file` | open file |
 | `SPC f s` | `save-buffer` | save current buffer |
 
@@ -28,6 +34,7 @@
 
 | Key | Action | Notes |
 | --- | --- | --- |
+| `SPC p d` | `mod-project-forget` | forget known project |
 | `SPC p p` | `project-switch-project` | switch project |
 | `SPC p f` | `project-find-file` | find project file |
 | `SPC p s` | `mod-project-search` | project ripgrep |
@@ -86,8 +93,8 @@
 | `SPC x [` | `mod-context-previous` | previous context |
 | `SPC x ]` | `mod-context-next` | next context |
 | `SPC x e` | `mod-context-editor` | `edit/<project>` |
-| `SPC x g` | `mod-context-git` | `git/<project>` |
-| `SPC x f` | `mod-context-files` | `files/<project-or-dir>` |
+| `SPC x g` | `mod-context-git` | init once, later switch only |
+| `SPC x f` | `mod-context-files` | Dired stays here, files open in `edit/...` |
 | `SPC x o` | `mod-context-notes` | `notes` context |
 | `SPC x a` | `mod-context-agenda` | `agenda` context |
 | `SPC x s` | `mod-context-scratch` | `scratch` context |
