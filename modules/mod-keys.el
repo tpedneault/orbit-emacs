@@ -25,6 +25,11 @@
 
   (mod-keys-leader-def
     "" '(:ignore t :which-key "leader")
+    "SPC" '(consult-buffer :which-key "buffer")
+    "." '(project-find-file :which-key "project file")
+    "/" '(mod-project-search :which-key "project search")
+    ":" '(execute-extended-command :which-key "M-x")
+    "," '(mod-keys-local-leader-map :which-key "local")
     "f" '(:ignore t :which-key "files")
     "f f" '(find-file :which-key "find file")
     "f s" '(save-buffer :which-key "save")
@@ -37,6 +42,10 @@
     "p s" '(mod-project-search :which-key "search")
     "w" '(:ignore t :which-key "windows")
     "w w" '(other-window :which-key "other window")
+    "w h" '(windmove-left :which-key "left")
+    "w j" '(windmove-down :which-key "down")
+    "w k" '(windmove-up :which-key "up")
+    "w l" '(windmove-right :which-key "right")
     "w d" '(delete-window :which-key "delete window")
     "w o" '(delete-other-windows :which-key "only window")
     "w s" '(split-window-below :which-key "split below")
