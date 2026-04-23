@@ -4,6 +4,7 @@
   (add-to-list 'load-path (expand-file-name "modules" config-dir)))
 
 (require 'mod-core)
+(require 'mod-home)
 (require 'mod-ui)
 (require 'mod-dired)
 (require 'mod-evil)
