@@ -10,6 +10,7 @@
 (require 'mod-git)
 (require 'mod-keys)
 (require 'mod-completion)
+(require 'mod-org)
 (require 'mod-project)
 (require 'mod-context)
 (require 'mod-session)

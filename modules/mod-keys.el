@@ -48,6 +48,8 @@
     "m" '(mod-keys-local-leader-map :which-key "local")
     "o" '(:ignore t :which-key "utility")
     "n" '(:ignore t :which-key "notes")
+    "n n" '(mod-org-open-notes :which-key "notes")
+    "n a" '(mod-org-open-agenda :which-key "agenda")
     "x" '(:ignore t :which-key "contexts")
     "x x" '(mod-context-switch :which-key "switch")
     "x n" '(mod-context-new :which-key "new")
