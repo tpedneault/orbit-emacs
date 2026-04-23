@@ -10,5 +10,6 @@
 (require 'mod-completion)
 (require 'mod-project)
 (require 'mod-context)
+(require 'mod-session)
 
 ;;; init.el ends here

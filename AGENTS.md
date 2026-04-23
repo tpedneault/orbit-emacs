@@ -16,34 +16,39 @@ Do not redesign the architecture unless explicitly asked.
 
 ---
 
-## Phase 1 Scope
+## Phase 2 Scope
 
 Only implement:
 
-- package manager bootstrap (elpaca)
-- module/file structure
-- Evil + evil-collection
-- leader key system (general.el)
-- which-key
-- completion/navigation (vertico, orderless, consult, corfu)
-- project.el integration
-- perspective (context skeleton only)
-- minimal UI cleanup
-- backup and auto-save redirection
+- session restore foundation (manual, perspective-based)
+- Magit foundation
+- Dired/file management refinement
+- Org/agenda basics
+
+Keep all implementations minimal and consistent with the existing architecture. Do not expand scope beyond what is listed.
 
 ---
 
 ## Do NOT add yet
 
-- magit
-- dirvish
-- org configuration
 - LSP / DAP
 - utility multiplexer implementation
-- context templates (only skeleton)
-- session restore system
-- extra Vim plugins
-- visual customization beyond basics
+- advanced Vim plugins (surround, commentary, etc.)
+- Dirvish (use Dired only for now)
+- large UI customizations or theme packs
+- dashboard/startup UI packages
+- context templates beyond minimal stubs
+- multiple session profiles or automatic session restore
+
+---
+
+## Session constraints
+
+- session restore must be manual (no auto-save or auto-load yet)
+- use persp-mode persistence as the foundation
+- store session data in the config-local var/ directory
+- do not use desktop-save-mode
+- do not use external session packages
 
 ---
 
@@ -59,6 +64,10 @@ Only implement:
   - mod-completion.el
   - mod-project.el
   - mod-context.el
+  - mod-session.el
+  - mod-git.el
+  - mod-dired.el
+  - mod-org.el
 
 Keep code modular and consistent.
 

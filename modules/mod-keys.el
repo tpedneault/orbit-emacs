@@ -60,6 +60,8 @@
     "x s" '(mod-context-scratch :which-key "scratch")
     "t" '(:ignore t :which-key "toggles")
     "q" '(:ignore t :which-key "quit")
+    "q s" '(mod-session-save :which-key "save session")
+    "q l" '(mod-session-load :which-key "load session")
     "q q" '(save-buffers-kill-terminal :which-key "quit"))
 
   (mod-keys-local-leader-def
