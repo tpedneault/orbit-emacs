@@ -25,8 +25,9 @@
  '(org-agenda-files
    '("/Users/thomas/org/roam/school/20260415142708-econ201.org"
      "/Users/thomas/org/school/school.org"
-     "/Users/thomas/org/inbox.org" "/Users/thomas/org/notes.org"
-     "/Users/thomas/org/todo.org")))
+     "/Users/thomas/org/inbox.org" "/Users/thomas/org/journal.org"
+     "/Users/thomas/org/notes.org" "/Users/thomas/org/projects.org"
+     "/Users/thomas/org/tasks.org" "/Users/thomas/org/todo.org")))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

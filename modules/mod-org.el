@@ -23,13 +23,34 @@
 (defconst mod-org-agenda-work-view-key "w"
   "Custom agenda command key for the main work view.")
 
+(defconst mod-org-capture-inbox-key "i"
+  "Capture template key for inbox tasks.")
+
+(defconst mod-org-capture-note-key "n"
+  "Capture template key for quick notes.")
+
+(defconst mod-org-capture-journal-key "j"
+  "Capture template key for journal entries.")
+
 (defun mod-org-main-file ()
   "Return the full path to the primary Org notes file."
   (expand-file-name mod-org-main-file-name mod-org-directory))
 
+(defun mod-org-file (name)
+  "Return the full path to Org file NAME within `mod-org-directory'."
+  (expand-file-name name mod-org-directory))
+
 (defun mod-org--ensure-directory ()
   "Ensure the Org directory exists."
   (make-directory mod-org-directory t))
+
+(defun mod-org--ensure-default-files ()
+  "Ensure the default Org files exist."
+  (mod-org--ensure-directory)
+  (dolist (name mod-org-default-files)
+    (let ((file (mod-org-file name)))
+      (unless (file-exists-p file)
+        (write-region "" nil file nil 'silent)))))
 
 (defun mod-org-refresh-agenda-files ()
   "Refresh `org-agenda-files' from `mod-org-directory'."
@@ -49,6 +70,19 @@
       org-default-notes-file (mod-org-main-file)
       org-log-into-drawer "LOGBOOK"
       org-log-done 'time
+      org-capture-templates
+      `((,mod-org-capture-inbox-key "Inbox task" entry
+         (file ,(mod-org-file "inbox.org"))
+         "* TODO %?\n%U\n")
+        (,mod-org-capture-note-key "Quick note" entry
+         (file ,(mod-org-file "notes.org"))
+         "* %?\n%U\n")
+        (,mod-org-capture-journal-key "Journal entry" entry
+         (file+olp+datetree ,(mod-org-file "journal.org"))
+         "* %?\n%U\n"))
+      org-refile-targets '((org-agenda-files :maxlevel . 3))
+      org-refile-use-outline-path 'file
+      org-outline-path-complete-in-steps nil
       org-todo-keywords
       '((sequence
          "TODO(t!)"
@@ -74,12 +108,37 @@
 (defun mod-org-open-notes ()
   "Open the primary Org notes file."
   (interactive)
-  (mod-org--ensure-directory)
+  (mod-org--ensure-default-files)
   (find-file (mod-org-main-file)))
+
+(defun mod-org-capture ()
+  "Run the general Org capture dispatcher."
+  (interactive)
+  (mod-org--ensure-default-files)
+  (org-capture))
+
+(defun mod-org-capture-inbox-task ()
+  "Capture a new inbox task."
+  (interactive)
+  (mod-org--ensure-default-files)
+  (org-capture nil mod-org-capture-inbox-key))
+
+(defun mod-org-capture-note ()
+  "Capture a quick note."
+  (interactive)
+  (mod-org--ensure-default-files)
+  (org-capture nil mod-org-capture-note-key))
+
+(defun mod-org-capture-journal ()
+  "Capture a journal entry."
+  (interactive)
+  (mod-org--ensure-default-files)
+  (org-capture nil mod-org-capture-journal-key))
 
 (defun mod-org-open-agenda ()
   "Open the Org agenda."
   (interactive)
+  (mod-org--ensure-default-files)
   (mod-org-refresh-agenda-files)
   (org-agenda nil mod-org-agenda-work-view-key))
 
