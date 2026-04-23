@@ -119,10 +119,25 @@
   (interactive)
   (mod-context--activate-template "notes" #'mod-org-open-notes))
 
+(defun mod-context-notes-visit-marker (marker)
+  "Switch to the notes context and visit MARKER there."
+  (mod-context--activate-template
+   "notes"
+   (lambda ()
+     (switch-to-buffer (marker-buffer marker))
+     (goto-char marker)
+     (when (derived-mode-p 'org-mode)
+       (org-fold-show-context 'agenda)
+       (org-show-entry)))))
+
 (defun mod-context-agenda ()
   "Switch to the agenda context."
   (interactive)
-  (mod-context--activate-template "agenda" #'mod-org-open-agenda))
+  (mod-context--activate-template
+   "agenda"
+   (lambda ()
+     (mod-org-open-agenda)
+     (delete-other-windows))))
 
 (defun mod-context-scratch ()
   "Switch to the scratch context."

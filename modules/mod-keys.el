@@ -84,7 +84,39 @@
     "q q" '(save-buffers-kill-terminal :which-key "quit"))
 
   (mod-keys-local-leader-def
-    "" '(:ignore t :which-key "local")))
+    "" '(:ignore t :which-key "local"))
+
+  (with-eval-after-load 'org
+    (general-define-key
+     :states '(normal visual motion emacs)
+     :keymaps 'org-mode-map
+     :prefix "SPC m"
+     "t" '(org-todo :which-key "todo")
+     "s" '(org-schedule :which-key "schedule")
+     "d" '(org-deadline :which-key "deadline")
+     "r" '(org-refile :which-key "refile")
+     "a" '(org-archive-subtree :which-key "archive")
+     "p" '(org-priority :which-key "priority")))
+
+  (with-eval-after-load 'org-agenda
+    (define-key org-agenda-mode-map (kbd "j") #'org-agenda-next-line)
+    (define-key org-agenda-mode-map (kbd "k") #'org-agenda-previous-line)
+    (define-key org-agenda-mode-map (kbd "RET") #'mod-org-agenda-visit)
+    (when (fboundp 'evil-define-key)
+      (evil-define-key '(normal motion emacs) org-agenda-mode-map
+        (kbd "j") #'org-agenda-next-line
+        (kbd "k") #'org-agenda-previous-line
+        (kbd "RET") #'mod-org-agenda-visit))
+    (general-define-key
+     :states '(normal motion emacs)
+     :keymaps 'org-agenda-mode-map
+     :prefix "SPC m"
+     "t" '(org-agenda-todo :which-key "todo")
+     "s" '(org-agenda-schedule :which-key "schedule")
+     "d" '(org-agenda-deadline :which-key "deadline")
+     "r" '(org-agenda-refile :which-key "refile")
+     "a" '(org-agenda-archive :which-key "archive")
+     "v" '(mod-org-agenda-visit :which-key "visit"))))
 
 (provide 'mod-keys)
 

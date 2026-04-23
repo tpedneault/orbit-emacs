@@ -38,7 +38,7 @@
   (define-key evil-outer-text-objects-map "a" #'evil-outer-arg))
 
 (use-package evil-mc
-  :ensure t
+  :ensure (:build (:not elpaca-build-compile))
   :after evil
   :config
   (global-evil-mc-mode 1))
