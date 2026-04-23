@@ -14,6 +14,7 @@
 (require 'mod-completion)
 (require 'mod-org)
 (require 'mod-project)
+(require 'mod-tcl)
 (require 'mod-context)
 (require 'mod-session)
 

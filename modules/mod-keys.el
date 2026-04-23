@@ -102,6 +102,17 @@
      "a" '(org-archive-subtree :which-key "archive")
      "p" '(org-priority :which-key "priority")))
 
+  (with-eval-after-load 'tcl
+    (general-define-key
+     :states '(normal visual motion emacs)
+     :keymaps 'tcl-mode-map
+     :prefix "SPC m"
+     "l" '(mod-tcl-lint-file :which-key "lint")
+     "f" '(mod-tcl-format-file :which-key "format")
+     "g" '(mod-tcl-find-tag :which-key "goto tag")
+     "r" '(mod-tcl-rebuild-tags :which-key "rebuild TAGS")
+     "e" '(mod-tcl-show-output :which-key "tool output")))
+
   (with-eval-after-load 'org-agenda
     (define-key org-agenda-mode-map (kbd "j") #'org-agenda-next-line)
     (define-key org-agenda-mode-map (kbd "k") #'org-agenda-previous-line)
