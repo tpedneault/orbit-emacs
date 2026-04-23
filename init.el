@@ -5,7 +5,9 @@
 
 (require 'mod-core)
 (require 'mod-ui)
+(require 'mod-dired)
 (require 'mod-evil)
+(require 'mod-git)
 (require 'mod-keys)
 (require 'mod-completion)
 (require 'mod-project)
