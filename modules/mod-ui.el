@@ -42,8 +42,8 @@
 (defun mod-ui-buffer-status-modeline ()
   "Return a compact buffer status indicator."
   (cond
-   (buffer-read-only " RO")
-   ((buffer-modified-p) " *")
+   (buffer-read-only "RO")
+   ((buffer-modified-p) "*")
    (t "")))
 
 (defun mod-ui--segment-string (segment)
@@ -55,7 +55,7 @@
 
 (defun mod-ui-buffer-name-modeline ()
   "Return the current buffer name for the modeline."
-  (buffer-name))
+  (propertize (buffer-name) 'face 'mode-line-buffer-id))
 
 (defun mod-ui-major-mode-modeline ()
   "Return the current major mode name for the modeline."
@@ -63,29 +63,39 @@
       (and mode-name (format "%s" mode-name))))
 
 (defun mod-ui-vc-branch-modeline ()
-  "Return a compact VC branch display when available."
-  (when (and vc-mode (stringp vc-mode))
-    (let* ((backend (if (boundp 'vc-backend) vc-backend (vc-backend buffer-file-name)))
-           (branch (string-trim (substring-no-properties vc-mode))))
-      (when (and backend (string-prefix-p " " branch))
-        (setq branch (string-trim branch)))
-      (when backend
-        (format "%s:%s" backend branch)))))
+  "Return the current Git branch when available."
+  (when-let* ((file buffer-file-name)
+              (backend (vc-backend file))
+              ((eq backend 'Git))
+              (raw vc-mode))
+    (let ((branch (string-trim (substring-no-properties raw))))
+      (setq branch (replace-regexp-in-string "\\`Git[:-]?" "" branch))
+      (setq branch (replace-regexp-in-string "\\`[-:[:space:]]+" "" branch))
+      (unless (string-empty-p branch)
+        branch))))
 
 (defun mod-ui-battery-modeline ()
-  "Return a compact battery string when available."
+  "Return a compact battery percentage when available."
   (when (and (boundp 'battery-status-function) battery-status-function)
     (let ((data (ignore-errors (funcall battery-status-function))))
       (when (and data (not (equal "N/A" (battery-format "%B" data))))
-        (string-trim (battery-format "%b%p%%" data))))))
+        (string-trim (battery-format "%p%%" data))))))
+
+(defun mod-ui-window-width ()
+  "Return the width of the selected window."
+  (window-total-width (selected-window)))
+
+(defun mod-ui-wide-enough-p (width)
+  "Return non-nil when the selected window is at least WIDTH columns wide."
+  (>= (mod-ui-window-width) width))
 
 (defun mod-ui-right-segment ()
   "Return the compact right side of the modeline."
   (string-join
    (delq nil
-         (list (mod-ui-vc-branch-modeline)
+         (list (and (mod-ui-wide-enough-p 100) (mod-ui-vc-branch-modeline))
                (mod-ui--segment-string "%l:%c")
-               (mod-ui-battery-modeline)
+               (and (mod-ui-wide-enough-p 85) (mod-ui-battery-modeline))
                (and (bound-and-true-p display-time-mode) (format-time-string "%H:%M"))))
    "  "))
 
@@ -97,7 +107,7 @@
                (mod-ui-context-modeline)
                (mod-ui-buffer-name-modeline)
                (mod-ui-buffer-status-modeline)
-               (mod-ui-major-mode-modeline)))
+               (and (mod-ui-wide-enough-p 70) (mod-ui-major-mode-modeline))))
    " "))
 
 (defun mod-ui-apply-frame-defaults (&optional frame)
