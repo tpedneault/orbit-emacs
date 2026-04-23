@@ -8,6 +8,7 @@
 (require 'mod-dired)
 (require 'mod-evil)
 (require 'mod-git)
+(require 'mod-utility)
 (require 'mod-keys)
 (require 'mod-completion)
 (require 'mod-org)
