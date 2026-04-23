@@ -66,6 +66,25 @@
     (or (outline-next-heading)
         (point-max))))
 
+(defun mod-org--agenda-skip-unless-inbox ()
+  "Skip entries that are not from `inbox.org'."
+  (unless (equal (buffer-file-name (buffer-base-buffer))
+                 (mod-org-file "inbox.org"))
+    (or (outline-next-heading)
+        (point-max))))
+
+(defun mod-org--agenda-skip-if-inbox ()
+  "Skip entries that are from `inbox.org'."
+  (when (equal (buffer-file-name (buffer-base-buffer))
+               (mod-org-file "inbox.org"))
+    (or (outline-next-heading)
+        (point-max))))
+
+(defun mod-org--agenda-skip-triage ()
+  "Skip entries that should not appear in the triage section."
+  (or (mod-org--agenda-skip-scheduled-or-deadline)
+      (mod-org--agenda-skip-if-inbox)))
+
 (setq org-directory mod-org-directory
       org-default-notes-file (mod-org-main-file)
       org-log-into-drawer "LOGBOOK"
@@ -96,12 +115,20 @@
       `((,mod-org-agenda-work-view-key "Work"
          ((agenda ""
                   ((org-agenda-span 1)
+                   (org-deadline-warning-days 0)
                    (org-agenda-overriding-header "Schedule")))
-          (todo "NEXT|IN-PROGRESS"
-                ((org-agenda-overriding-header "Active")))
+          (todo "IN-PROGRESS"
+                ((org-agenda-overriding-header "In Progress")))
+          (todo "NEXT"
+                ((org-agenda-overriding-header "Next")))
+          (todo "WAIT"
+                ((org-agenda-overriding-header "Waiting")))
           (todo "TODO"
-                ((org-agenda-overriding-header "Unscheduled TODOs")
-                 (org-agenda-skip-function #'mod-org--agenda-skip-scheduled-or-deadline)))))))
+                ((org-agenda-overriding-header "Inbox")
+                 (org-agenda-skip-function #'mod-org--agenda-skip-unless-inbox)))
+          (todo "TODO"
+                ((org-agenda-overriding-header "Triage")
+                 (org-agenda-skip-function #'mod-org--agenda-skip-triage)))))))
 
 (mod-org-refresh-agenda-files)
 

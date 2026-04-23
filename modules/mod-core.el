@@ -10,6 +10,17 @@
   (expand-file-name "backups/" mod-core-var-directory))
 (defconst mod-core-auto-save-directory
   (expand-file-name "auto-save/" mod-core-var-directory))
+(defconst mod-core-lockfile-directory
+  (expand-file-name "lockfiles/" mod-core-var-directory))
+(defconst mod-core-lockfile-transforms
+  `(( "\\`.+\\'"
+      ,(file-name-as-directory mod-core-lockfile-directory)
+      sha256))
+  "Redirect lockfiles into `mod-core-lockfile-directory'.
+
+The `sha256' uniquifier makes the lockfile name depend on the full source
+file path rather than only its basename, which avoids simple collisions
+between same-named files in different directories.")
 (defconst mod-core-savehist-file
   (expand-file-name "history" mod-core-var-directory))
 
@@ -19,12 +30,14 @@
 
 (dolist (dir (list mod-core-var-directory
                    mod-core-backup-directory
-                   mod-core-auto-save-directory))
+                   mod-core-auto-save-directory
+                   mod-core-lockfile-directory))
   (make-directory dir t))
 
 (setq backup-directory-alist `(("." . ,mod-core-backup-directory))
       auto-save-file-name-transforms `((".*" ,(file-name-as-directory mod-core-auto-save-directory) t))
       auto-save-list-file-prefix (expand-file-name ".saves-" mod-core-auto-save-directory)
+      lock-file-name-transforms mod-core-lockfile-transforms
       savehist-file mod-core-savehist-file)
 
 (defvar elpaca-installer-version 0.12)
