@@ -3,6 +3,8 @@
 (require 'org)
 (require 'org-agenda)
 
+(declare-function xref-push-marker-stack "xref")
+
 (defgroup mod-org nil
   "Minimal Org foundation."
   :group 'applications)
@@ -31,6 +33,9 @@
 
 (defconst mod-org-capture-journal-key "j"
   "Capture template key for journal entries.")
+
+(defvar mod-org-return-fallback-command #'ignore
+  "Fallback command used when `RET' is pressed away from an Org link.")
 
 (defun mod-org-main-file ()
   "Return the full path to the primary Org notes file."
@@ -85,10 +90,33 @@
   (or (mod-org--agenda-skip-scheduled-or-deadline)
       (mod-org--agenda-skip-if-inbox)))
 
+(defun mod-org-link-at-point-p ()
+  "Return non-nil when point is on an Org link."
+  (eq (org-element-type (org-element-context)) 'link))
+
+(defun mod-org-push-link-location ()
+  "Record the current location before following an Org link."
+  (xref-push-marker-stack (point-marker)))
+
+(defun mod-org-open-at-point-dwim ()
+  "Follow an Org link at point, otherwise use the normal fallback."
+  (interactive)
+  (if (mod-org-link-at-point-p)
+      (progn
+        (mod-org-push-link-location)
+        (org-open-at-point))
+    (call-interactively mod-org-return-fallback-command)))
+
 (setq org-directory mod-org-directory
       org-default-notes-file (mod-org-main-file)
       org-log-into-drawer "LOGBOOK"
       org-log-done 'time
+      org-return-follows-link t
+      org-link-frame-setup '((file . find-file)
+                             (vm . vm-visit-folder)
+                             (vm-imap . vm-visit-imap-folder)
+                             (gnus . org-gnus-no-new-news)
+                             (file+emacs . find-file))
       org-capture-templates
       `((,mod-org-capture-inbox-key "Inbox task" entry
          (file ,(mod-org-file "inbox.org"))

@@ -1,0 +1,85 @@
+#+title: troubleshooting
+
+* Troubleshooting
+
+* Startup
+
+** Emacs opens =*scratch*= instead of the home screen
+
+- Start Emacs without opening a file directly.
+- The home screen only appears for an otherwise empty startup.
+- Reopen it manually with =M-x mod-home-open=.
+
+** A package shows native-compiler warnings
+
+- Many warnings from third-party packages are upstream compile-time noise.
+- If the feature still works, the config may be fine.
+- Restart Emacs once after package installation to rule out first-build noise.
+
+* Contexts
+
+** =SPC x e= says there are no known projects
+
+- The edit context command uses the built-in project list when you are not already inside a project.
+- Visit a project once through =project.el= so it becomes known.
+
+** =SPC x g= opens the wrong thing repeatedly
+
+- First call creates the Git context and initializes Magit.
+- Later calls should only switch back to the existing =git/<project>= context.
+- If the context was deleted, a new one will be initialized again.
+
+** Files opened from =files/...= stay in the wrong context
+
+- The intended behavior is:
+  - Dired stays in =files/...=
+  - opened files move to the matching =edit/...= context
+- If that stops happening, verify you opened the file from Dired rather than switching buffers manually.
+
+* Org
+
+** Agenda item visit replaces the dashboard
+
+- Intended behavior is:
+  - agenda stays in the =agenda= context
+  - source entry opens in =notes=
+- Use =RET= or =SPC m v= from the agenda buffer.
+
+** Plain TODO items do not show in the dashboard
+
+- The dashboard includes an =Inbox= and =Triage= section for unscheduled TODOs.
+- Make sure the file lives under =~/org/= so it is part of =org-agenda-files=.
+
+** WAIT did not prompt for a note
+
+- The prompt only happens when transitioning into =WAIT=.
+- Cycling past =WAIT= or editing the headline text will not trigger it.
+
+* Dired
+
+** macOS/BSD =ls= warning
+
+- The config avoids GNU-only =--dired= behavior when =gls= is unavailable.
+- If you still see an =ls= warning, verify Emacs is loading this config and not another one.
+
+* Snippets
+
+** TAB did not expand a snippet
+
+- In Evil insert state, =TAB= tries =yas-expand= first.
+- If no snippet matches, it falls back to normal TAB behavior.
+- Use =SPC f c s r= after changing snippet files.
+
+** How do I delete a snippet?
+
+- Visit the snippet file with =SPC f c s e= or manually open the file under =snippets/<mode>/=.
+- Delete the file.
+- Run =SPC f c s r=.
+
+* Sessions
+
+** My contexts did not restore automatically
+
+- Session restore is manual in this config.
+- Use =SPC q s= to save.
+- Use =SPC q l= to load.

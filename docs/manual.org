@@ -1,0 +1,44 @@
+#+title: orbit-emacs manual
+
+* orbit-emacs
+
+Handcrafted Emacs config for modal, keyboard-first work.
+
+This manual is the in-Emacs documentation hub. Use it as the first stop for lookup and daily workflow reference.
+
+* Quick Start
+
+- =SPC SPC=: switch buffers
+- =SPC .=: find a file in the current project
+- =SPC /=: search the current project
+- =SPC x e=: jump into an editing context
+- =SPC x a=: open the agenda dashboard context
+- =SPC n t=: capture an inbox task
+- =SPC h d=: reopen this manual
+- =RET=: follow an Org doc link in normal state
+- =SPC h b= / =SPC h B=: move back and forward through doc links
+
+* Docs
+
+- [[file:keybindings.org][keybindings]]
+- [[file:workflow.org][workflow]]
+- [[file:contexts.org][contexts]]
+- [[file:org.org][org workflow]]
+- [[file:vim.org][vim quick reference]]
+- [[file:vim-training.org][vim training]]
+- [[file:tcl.org][tcl workflow]]
+- [[file:troubleshooting.org][troubleshooting]]
+
+* System
+
+- Modal: Evil-first editing is the default.
+- Context-based: work lives in named workspaces like =edit/<project>=, =git/<project>=, =notes=, and =agenda=.
+- Minimal UI: built-in theme, built-in modeline, no dashboard package, no sidebar.
+- Keyboard-driven: small command language under =SPC= and =SPC m=.
+
+* Main Areas
+
+- Contexts/workspaces: Perspective-backed task separation.
+- Org workflow: inbox capture, refile, notes, journal, and a custom work dashboard.
+- Vim layer: Evil, surround, commentary, argument text objects, and multiple cursors.
+- Utility bay: one reusable bottom window for shell, messages, help, and compilation.

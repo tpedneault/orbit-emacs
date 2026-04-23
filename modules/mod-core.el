@@ -24,6 +24,12 @@ between same-named files in different directories.")
 (defconst mod-core-savehist-file
   (expand-file-name "history" mod-core-var-directory))
 
+(defun mod-core-gui-shell-environment-p ()
+  "Return non-nil when shell environment import should run."
+  (and (memq system-type '(darwin gnu/linux))
+       (or (display-graphic-p)
+           (daemonp))))
+
 (defun mod-core--require-elpaca (repo)
   (let ((load-path (cons repo load-path)))
     (require 'elpaca)))
@@ -96,6 +102,10 @@ between same-named files in different directories.")
   (when bootstrap-ok
     (add-hook 'after-init-hook #'elpaca-process-queues)
     (eval `(elpaca ,elpaca-order))
+    (elpaca exec-path-from-shell
+      (when (mod-core-gui-shell-environment-p)
+        (setq exec-path-from-shell-arguments '("-l"))
+        (exec-path-from-shell-copy-envs '("PATH" "MANPATH"))))
     (elpaca elpaca-use-package
       (elpaca-use-package-mode))
     (setq elpaca-use-package-by-default t)))

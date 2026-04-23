@@ -1,0 +1,49 @@
+#+title: tcl workflow
+
+* Tcl Workflow
+
+This config keeps Tcl support pragmatic and toolchain-based.
+
+Tools assumed:
+- =tclint=
+- =tclfmt=
+- Universal Ctags
+
+There is no LSP layer here.
+
+* Local Leader
+
+In =tcl-mode=:
+
+| Key       | Action                 | Notes           |
+|-----------+------------------------+-----------------|
+| =SPC m l= | lint current file      | runs =tclint=   |
+| =SPC m f= | format current file    | runs =tclfmt=   |
+| =SPC m g= | visit tag / definition | Emacs tags      |
+| =SPC m r= | rebuild TAGS           | project-local   |
+| =SPC m e= | show tool output       | =*tcl-tools*=   |
+
+* Typical Loop
+
+1. Open a Tcl project with =SPC x e=.
+2. Find files with =SPC .= or =SPC p f=.
+3. Rebuild tags with =SPC m r= when needed.
+4. Jump to definitions with =SPC m g=.
+5. Run =SPC m l= before commit-worthy changes.
+6. Run =SPC m f= when you want formatting applied.
+7. Use =SPC m e= to revisit tool output.
+
+* Practical Notes
+
+- TAGS live at the project root.
+- Navigation uses built-in Emacs tags support.
+- Tool output is shared so lint/format messages are easy to revisit.
+- Snippets are available in =tcl-mode= through the local =snippets/tcl-mode/= directory.
+
+* Example
+
+1. Open a Tcl file.
+2. Press =SPC m r= to build =TAGS=.
+3. Put point on a symbol and press =SPC m g=.
+4. Press =SPC m l= to lint the current file.
+5. Press =SPC m f= to format it.

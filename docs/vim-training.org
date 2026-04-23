@@ -1,0 +1,239 @@
+#+title: vim training
+
+* Mental Model
+
+The goal is not to memorize random keys. The goal is to think in edits.
+
+Most useful edits are:
+- operator + motion
+- operator + text object
+- count + operator + motion
+
+Examples:
+| Keys  | Read it as               |
+|-------+--------------------------|
+| =dw=  | delete to next word      |
+| =ciw= | change inner word        |
+| =da(= | delete around parens     |
+| =yap= | yank a paragraph         |
+| =2dd= | delete 2 lines           |
+
+Counts matter:
+| Keys  | Meaning      |
+|-------+--------------|
+| =3w=  | move 3 words |
+| =4j=  | move 4 lines |
+| =2dd= | delete 2 lines |
+| =3gcc= | comment 3 lines |
+
+Repeat matters:
+- Use =.= when you just made one good change and want it again.
+
+* Before / After Examples
+
+** Change one word
+
+Before:
+#+begin_example
+set mode slow
+#+end_example
+
+On =slow=:
+- =ciwfast=
+
+After:
+#+begin_example
+set mode fast
+#+end_example
+
+** Delete to next word
+
+Before:
+#+begin_example
+alpha beta gamma
+#+end_example
+
+On =alpha=:
+- =dw=
+
+After:
+#+begin_example
+beta gamma
+#+end_example
+
+** Change inside quotes
+
+Before:
+#+begin_example
+puts "old value"
+#+end_example
+
+Inside quotes:
+- =ci"new value=
+
+After:
+#+begin_example
+puts "new value"
+#+end_example
+
+** Change one argument
+
+Before:
+#+begin_example
+foo(arg1, arg2, arg3)
+#+end_example
+
+On =arg2=:
+- =ciareplacement=
+
+After:
+#+begin_example
+foo(arg1, replacement, arg3)
+#+end_example
+
+* Editing Patterns
+
+** Word editing
+
+- =ciw= replace one word
+- =cw= change from point to word end
+- =dw= delete to next word
+- =ye= yank to word end
+
+** Line editing
+
+- =dd= delete line
+- =cc= change line
+- =D= delete to line end
+- =C= change to line end
+- =J= join lines
+
+** Delimiter editing
+
+- =ci"= change inside quotes
+- =ci)= change inside parens
+- =da}= delete around braces
+- =vi]= select inside brackets
+
+** Argument editing
+
+This is especially useful for Tcl and function-call-heavy code.
+
+- =cia= change current argument
+- =daa= delete current argument
+- =via= select inner argument
+- =vaa= select outer argument
+
+** Commenting
+
+- =gcc= comment current line
+- =gcj= comment current line and next line
+- visual =gc= comment a selected block
+
+** Surround
+
+- =ysiw"= wrap word in quotes
+- =ysiw}= wrap word in braces
+- =cs"'= change quote type
+- =ds"= remove quotes
+
+* Macros, Registers, Marks
+
+** Macros
+
+Record:
+- =qa= start recording in register =a=
+- do the edit
+- =q= stop
+
+Replay:
+- =@a= replay once
+- =3@a= replay 3 times
+
+Use macros when:
+- the edit is repeated
+- the shape is similar
+- multiple cursors would be awkward
+
+** Registers
+
+- =\"ayiw= yank inner word into register =a=
+- =\"ap= paste from register =a=
+
+** Marks
+
+- =ma= set mark =a=
+- ='a= jump to line of mark =a=
+- =`a= jump to exact mark position
+
+* Decision Guide
+
+Use:
+- =.= when the same change repeats nearby
+- macros when the edit is repeated but not easily described as one motion
+- multiple cursors when many locations need the same simultaneous change
+- text objects when editing structured units
+- surround when the change is about delimiters
+
+* Tcl-Oriented Examples
+
+** Replace one Tcl argument
+
+Before:
+#+begin_example
+set_property MODE OLD target_obj
+#+end_example
+
+On =OLD=:
+- =ciaNEW=
+
+After:
+#+begin_example
+set_property MODE NEW target_obj
+#+end_example
+
+** Wrap a symbol in brackets
+
+Before:
+#+begin_example
+signal_name
+#+end_example
+
+- =ysiw]=
+
+After:
+#+begin_example
+[signal_name]
+#+end_example
+
+** Change inside braces
+
+Before:
+#+begin_example
+if {$state eq "idle"} {
+    puts "ready"
+}
+#+end_example
+
+Inside the condition:
+- =ci{...=
+
+** Edit nested command arguments
+
+Before:
+#+begin_example
+set result [format "%s:%s" $host $port]
+#+end_example
+
+On =$host= or =$port=:
+- =cia...=
+
+* Practice Drills
+
+1. Replace the third argument in five similar Tcl commands using =cia= and =.=
+2. Wrap ten bare symbols with brackets using =ysiw]= and =.=
+3. Comment and uncomment a three-line block with =Vjgc=
+4. Record a macro that changes =TODO= to =NEXT= on several lines
+5. Use multiple cursors to rename the same variable in a short repeated block
+
+The target is smooth grammar-based editing, not speed for its own sake.

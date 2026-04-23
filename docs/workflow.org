@@ -1,0 +1,63 @@
+#+title: workflow
+
+* Morning Planning
+
+1. Open the dashboard with =SPC n a= or =SPC x a=.
+2. Review:
+   - =Schedule=
+   - =In Progress=
+   - =Next=
+   - =Waiting=
+   - =Inbox=
+   - =Triage=
+3. Visit an item with =RET=.
+   - The agenda context stays stable.
+   - The source entry opens in the =notes= context.
+4. Refile inbox items with =SPC m r=.
+5. Adjust state with =SPC m t=, schedule with =SPC m s=, deadline with =SPC m d=.
+
+* Working Loop
+
+1. Jump into a project editing context with =SPC x e=.
+2. Find files with =SPC .= or =SPC p f=.
+3. Search with =SPC /= or =SPC p s=.
+4. Use =SPC x f= when you want a dedicated file-management workspace.
+   - Dired stays in =files/...=
+   - opening a file there moves you into the matching =edit/...= context
+5. Use =SPC x g= or =SPC g g= for Git work.
+   - first =SPC x g= initializes the Git context
+   - later calls just switch back to it
+6. Use the utility bay for transient support:
+   - =SPC o s= shell
+   - =SPC o m= messages
+   - =SPC o c= compilation
+7. Capture interruptions quickly:
+   - =SPC n t= inbox task
+   - =SPC n N= quick note
+   - =SPC n j= journal entry
+
+* Suggested Context Pattern
+
+- =agenda=: planning and review
+- =notes=: note-taking and Org item inspection
+- =edit/<project>=: coding
+- =git/<project>=: repo review and commits
+- =files/<project>=: deliberate file operations
+- =scratch=: temporary experiments
+
+* End of Day
+
+1. Return to =SPC x a=.
+2. Review remaining =IN-PROGRESS=, =NEXT=, and =WAIT= items.
+3. Refile loose capture items with =SPC m r=.
+4. Add a journal note with =SPC n j= if useful.
+5. Save workspace state with =SPC q s=.
+
+* Small Habits That Help
+
+- Use =SPC p d= to prune stale projects.
+- Use =SPC f c= for config access instead of hunting through the repo.
+- Use contexts for separation, not just convenience.
+- Keep the agenda as the dashboard, not the editing surface.
+- Capture quickly, then refile later.
+- Use the utility bay for transient buffers instead of splitting the main workspace.

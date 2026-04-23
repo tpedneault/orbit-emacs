@@ -1,0 +1,132 @@
+#+title: vim quick reference
+
+* Installed Vim Layer
+
+- Evil
+- evil-surround
+- evil-commentary
+- evil-args
+- evil-mc
+
+* Core Grammar
+
+Think in:
+- operator + motion
+- operator + text object
+- count + operator + motion
+
+| Keys  | Meaning              |
+|-------+----------------------|
+| =dw=  | delete to next word  |
+| =ciw= | change inner word    |
+| =2dd= | delete 2 lines       |
+| =y$=  | yank to end of line  |
+| =dap= | delete a paragraph   |
+| =.=   | repeat last change   |
+
+* Operators
+
+| Key         | Meaning    |
+|-------------+------------|
+| =d=         | delete     |
+| =c=         | change     |
+| =y=         | yank       |
+| =v= / =V=   | visual     |
+| =>= / =<=   | indent     |
+
+* Motions
+
+| Key           | Meaning                           |
+|---------------+-----------------------------------|
+| =w= =e= =b=   | next word, word end, previous word |
+| =0= =^= =$=   | start, first non-blank, end       |
+| =f<char>=     | to character                      |
+| =t<char>=     | before character                  |
+| =;= / =,=     | repeat / reverse find             |
+| =%=           | matching delimiter                |
+| ={= / =}=     | paragraph backward / forward      |
+| =gg= / =G=    | top / bottom                      |
+
+* Text Objects
+
+| Key             | Meaning                    |
+|-----------------+----------------------------|
+| =iw= / =aw=     | inner / a word             |
+| =i"= / =a"=     | inside / around quotes     |
+| =i'= / =a'=     | inside / around single quotes |
+| =i(= / =a(=     | inside / around parens     |
+| =i[= / =a[=     | inside / around brackets   |
+| =i{= / =a{=     | inside / around braces     |
+| =ip= / =ap=     | inner / a paragraph        |
+
+Examples:
+| Keys  | Result                         |
+|-------+--------------------------------|
+| =ci"= | replace text inside quotes     |
+| =da(= | delete a parenthesized form    |
+| =vi{= | select inside braces           |
+| =yap= | yank a whole paragraph         |
+
+* Surround
+
+Provided by =evil-surround=.
+
+| Keys    | Meaning                          |
+|---------+----------------------------------|
+| =ysiw"= | surround inner word with quotes  |
+| =ysiw]= | surround inner word with brackets |
+| =yss)=  | surround line with parens        |
+| =S"=    | surround visual selection        |
+| =cs"'=  | change =\"= to ='=              |
+| =ds"=   | delete quote surround            |
+
+* Commentary
+
+Provided by =evil-commentary=.
+
+| Keys    | Meaning                |
+|---------+------------------------|
+| =gcc=   | comment current line   |
+| =3gcc=  | comment 3 lines        |
+| =gcj=   | comment current + next |
+| =gcap=  | comment paragraph      |
+| visual =gc= | comment selection  |
+
+* Argument Text Objects
+
+Provided by =evil-args=.
+
+- =ia=: inner argument
+- =aa=: outer argument
+
+| Keys  | Meaning                |
+|-------+------------------------|
+| =cia= | change current argument |
+| =daa= | delete current argument |
+| =yia= | yank current argument   |
+| =via= | select inner argument   |
+| =vaa= | select outer argument   |
+
+Example:
+
+#+begin_example
+foo(arg1, arg2, arg3)
+#+end_example
+
+On =arg2=:
+- =cia= changes only =arg2=
+- =daa= removes the whole argument region
+
+* Multiple Cursors
+
+Provided by =evil-mc=.
+
+| Keys            | Use                |
+|-----------------+--------------------|
+| =C-n=           | add next match     |
+| =C-p=           | add previous match |
+| =M-n= / =M-p=   | move across cursors |
+| =grn= or =C-t=  | skip next match    |
+| =grp=           | skip previous match |
+| =gru=           | undo last cursor   |
+| =grq=           | clear all cursors  |

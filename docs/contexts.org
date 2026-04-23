@@ -1,0 +1,86 @@
+#+title: contexts
+
+* Contexts
+
+This config uses Perspective as a workspace layer.
+
+Rules:
+- one task, one context
+- stable names
+- minimal setup
+- no tab-based workflow
+
+* Manual Context Commands
+
+| Key       | Purpose                              |
+|-----------+--------------------------------------|
+| =SPC x x= | switch to an existing context        |
+| =SPC x n= | create a blank context               |
+| =SPC x d= | delete a context                     |
+| =SPC x r= | rename current context               |
+| =SPC x [= / =SPC x ]= | move between contexts |
+
+* Template Contexts
+
+** =edit/<project>=
+
+Key: =SPC x e=
+
+- If current buffer is in a project, that project is used.
+- Otherwise you are prompted for a known project.
+- Switches to or creates =edit/<project-name>=.
+- Does not force =project-find-file=.
+
+** =git/<project>=
+
+Key: =SPC x g=
+
+- Requires a project or Git repo.
+- On first use, creates =git/<project-name>=, opens Magit, and starts in a single-purpose window.
+- Later calls only switch back to the existing context.
+
+** =files/<project-or-dir>=
+
+Key: =SPC x f=
+
+- In a project: =files/<project-name>=
+- Outside a project: =files/<directory-name>=
+- Opens built-in Dired at the relevant root.
+- Dired stays in the =files/...= context.
+- Opening a file there hands the file off to the matching =edit/...= context.
+- Opening a directory stays inside =files/...=.
+
+Example:
+1. =SPC x f=
+2. move to a file in Dired
+3. open it with =l= or =RET=
+4. the file opens in =edit/<project-or-dir>= while Dired remains in =files/<project-or-dir>=
+
+** =notes=
+
+Key: =SPC x o=
+
+- Opens the main notes file.
+- Agenda item visits are routed here.
+
+** =agenda=
+
+Key: =SPC x a=
+
+- Opens the custom Org dashboard.
+- Starts in a clean single-window state.
+- Visiting an item keeps this context intact and opens the item in =notes=.
+
+** =scratch=
+
+Key: =SPC x s=
+
+- Temporary work that should not pollute a project context.
+
+* Sessions
+
+Manual session support:
+- =SPC q s= save session
+- =SPC q l= load session
+
+There is no automatic save on exit or restore on startup.

@@ -1,5 +1,8 @@
 ;;; -*- coding: utf-8; mode: lisp-data -*-
-(("/Users/thomas/Repos/testtcl/ait.tcl" . 393)
+(("/Users/thomas/.config/emacs/docs/manual.org" . 506)
+ ("/Users/thomas/.config/emacs/docs/org.org" . 155)
+ ("/Users/thomas/.config/emacs/docs/vim.org" . 1318)
+ ("/Users/thomas/.config/emacs/docs/vim-training.org" . 1348)
  ("/Users/thomas/.config/emacs/snippets/tcl-mode/puts" . 55)
  ("/Users/thomas/" (dired-filename . "/Users/thomas/Repos"))
  ("/Users/thomas/Repos/"

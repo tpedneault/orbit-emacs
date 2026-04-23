@@ -1,0 +1,189 @@
+#+title: keybindings
+
+* Global Shortcuts
+
+| Key       | Action                     | Notes                  |
+|-----------+----------------------------+------------------------|
+| =SPC SPC= | =consult-buffer=           | fast buffer switch     |
+| =SPC .=   | =project-find-file=        | current project        |
+| =SPC /=   | =mod-project-search=       | ripgrep in project     |
+| =SPC :=   | =execute-extended-command= | =M-x=                  |
+| =SPC ,=   | local leader               | same target as =SPC m= |
+
+* =SPC f= Files
+
+| Key         | Action                      | Notes             |
+|-------------+-----------------------------+-------------------|
+| =SPC f c=   | config subgroup             | config access     |
+| =SPC f c i= | open =init.el=              | main entry point  |
+| =SPC f c e= | open =early-init.el=        | early startup     |
+| =SPC f c m= | open =modules/=             | module directory  |
+| =SPC f c a= | open =AGENTS.md=            | agent instructions |
+| =SPC f c d= | open =docs/=                | docs directory    |
+| =SPC f c r= | reload config               | reload =init.el=  |
+| =SPC f c s= | snippet maintenance group   | snippet upkeep    |
+| =SPC f c s e= | =yas-visit-snippet-file=  | edit snippet file |
+| =SPC f c s n= | =yas-new-snippet=         | new snippet       |
+| =SPC f c s r= | =yas-reload-all=          | reload snippets   |
+| =SPC f f=   | =find-file=                 | open file         |
+| =SPC f r=   | =recentf-open-files=        | recent files      |
+| =SPC f s=   | =save-buffer=               | save current file |
+
+* =SPC b= Buffers
+
+| Key       | Action                | Notes                         |
+|-----------+-----------------------+-------------------------------|
+| =SPC b b= | =consult-buffer=      | =switch-to-buffer= is remapped |
+| =SPC b d= | =kill-current-buffer= | kill buffer                   |
+| =SPC b r= | =revert-buffer=       | revert from disk              |
+
+* =SPC p= Projects
+
+| Key       | Action                   | Notes                |
+|-----------+--------------------------+----------------------|
+| =SPC p d= | =mod-project-forget=     | forget known project |
+| =SPC p p= | =project-switch-project= | switch project       |
+| =SPC p f= | =project-find-file=      | find project file    |
+| =SPC p s= | =mod-project-search=     | project ripgrep      |
+
+* =SPC w= Windows
+
+| Key       | Action                  | Notes          |
+|-----------+-------------------------+----------------|
+| =SPC w w= | =other-window=          | cycle windows  |
+| =SPC w h= | =windmove-left=         | move left      |
+| =SPC w j= | =windmove-down=         | move down      |
+| =SPC w k= | =windmove-up=           | move up        |
+| =SPC w l= | =windmove-right=        | move right     |
+| =SPC w d= | =delete-window=         | close window   |
+| =SPC w o= | =delete-other-windows=  | single window  |
+| =SPC w s= | =split-window-below=    | split below    |
+| =SPC w v= | =split-window-right=    | split right    |
+| =SPC w u= | =winner-undo=           | undo layout    |
+| =SPC w U= | =winner-redo=           | redo layout    |
+
+* =SPC g= Git
+
+| Key       | Action            | Notes          |
+|-----------+-------------------+----------------|
+| =SPC g g= | =mod-git-status=  | Magit status   |
+| =SPC g l= | =mod-git-log=     | repo log       |
+| =SPC g b= | =mod-git-blame=   | file blame     |
+
+* =SPC o= Utility Bay
+
+| Key       | Action                    | Notes            |
+|-----------+---------------------------+------------------|
+| =SPC o o= | =mod-utility-toggle=      | close or reopen  |
+| =SPC o s= | =mod-utility-shell=       | built-in shell   |
+| =SPC o m= | =mod-utility-messages=    | =*Messages*=     |
+| =SPC o h= | =mod-utility-help=        | =*Help*=         |
+| =SPC o c= | =mod-utility-compilation= | =*compilation*=  |
+
+* =SPC n= Notes / Org
+
+| Key       | Action                     | Notes              |
+|-----------+----------------------------+--------------------|
+| =SPC n n= | =mod-org-open-notes=       | open =notes.org=   |
+| =SPC n a= | =mod-org-open-agenda=      | work dashboard     |
+| =SPC n c= | =mod-org-capture=          | capture menu       |
+| =SPC n t= | =mod-org-capture-inbox-task= | inbox task       |
+| =SPC n j= | =mod-org-capture-journal=  | journal entry      |
+| =SPC n N= | =mod-org-capture-note=     | quick note         |
+
+* =SPC x= Contexts
+
+| Key       | Action                | Notes                                  |
+|-----------+-----------------------+----------------------------------------|
+| =SPC x x= | =mod-context-switch=  | switch or create by name               |
+| =SPC x n= | =mod-context-new=     | new blank context                      |
+| =SPC x d= | =mod-context-delete=  | delete context                         |
+| =SPC x r= | =mod-context-rename=  | rename context                         |
+| =SPC x [= | =mod-context-previous= | previous context                      |
+| =SPC x ]= | =mod-context-next=    | next context                           |
+| =SPC x e= | =mod-context-editor=  | =edit/<project>=                       |
+| =SPC x g= | =mod-context-git=     | init once, later switch only           |
+| =SPC x f= | =mod-context-files=   | Dired stays here, files open in =edit= |
+| =SPC x o= | =mod-context-notes=   | =notes= context                        |
+| =SPC x a= | =mod-context-agenda=  | =agenda= dashboard context             |
+| =SPC x s= | =mod-context-scratch= | =scratch= context                      |
+
+* =SPC h= Help
+
+| Key       | Action                  | Notes              |
+|-----------+-------------------------+--------------------|
+| =SPC h b= | =xref-go-back=          | docs/code jump back |
+| =SPC h B= | =xref-go-forward=       | docs/code jump forward |
+| =SPC h k= | =describe-key=          | describe key       |
+| =SPC h f= | =describe-function=     | describe function  |
+| =SPC h d= | open docs manual        | =docs/manual.org=  |
+| =SPC h D= | open docs directory     | =docs/=            |
+| =SPC h m= | =describe-mode=         | describe mode      |
+| =SPC h v= | =describe-variable=     | describe variable  |
+
+* =SPC i= Insert
+
+| Key       | Action               | Notes             |
+|-----------+----------------------+-------------------|
+| =SPC i s= | =yas-insert-snippet= | insert snippet    |
+
+* =SPC q= Quit / Session
+
+| Key       | Action                  | Notes                |
+|-----------+-------------------------+----------------------|
+| =SPC q s= | =mod-session-save=      | save session         |
+| =SPC q l= | =mod-session-load=      | load session         |
+| =SPC q q= | =save-buffers-kill-terminal= | quit Emacs     |
+
+* =SPC m= Local Leader
+
+** Org Buffer
+
+| Key         | Action                      | Notes               |
+|-------------+-----------------------------+---------------------|
+| =RET=       | follow Org link             | normal state        |
+| =SPC m o=   | =consult-outline=           | outline jump        |
+| =SPC m n=   | =org-next-visible-heading=  | next heading        |
+| =SPC m p=   | =org-previous-visible-heading= | previous heading |
+| =SPC m u=   | =outline-up-heading=        | up heading          |
+| =SPC m TAB= | =org-cycle=                 | cycle subtree       |
+| =SPC m t=   | =org-todo=                  | TODO state          |
+| =SPC m s=   | =org-schedule=              | schedule            |
+| =SPC m d=   | =org-deadline=              | deadline            |
+| =SPC m r=   | =org-refile=                | refile heading      |
+| =SPC m a=   | =org-archive-subtree=       | archive subtree     |
+| =SPC m P=   | =org-priority=              | priority            |
+| =SPC m J=   | =org-metadown=              | move subtree down   |
+| =SPC m K=   | =org-metaup=                | move subtree up     |
+| =SPC m H=   | =org-metaleft=              | promote heading     |
+| =SPC m L=   | =org-metaright=             | demote heading      |
+| =SPC m i h= | =org-insert-heading=        | insert heading      |
+| =SPC m i t= | =org-insert-todo-heading=   | insert TODO heading |
+| =SPC m i s= | =org-insert-subheading=     | insert subheading   |
+| =SPC m c=   | =org-toggle-checkbox=       | toggle checkbox     |
+| =SPC m z=   | =org-narrow-to-subtree=     | narrow subtree      |
+| =SPC m Z=   | =widen=                     | widen               |
+
+** Agenda Buffer
+
+| Key       | Action               | Notes                       |
+|-----------+----------------------+-----------------------------|
+| =j=       | =org-agenda-next-line= | Vim-style movement        |
+| =k=       | =org-agenda-previous-line= | Vim-style movement   |
+| =RET=     | =mod-org-agenda-visit= | open item in notes context |
+| =SPC m t= | =org-agenda-todo=    | change state                |
+| =SPC m s= | =org-agenda-schedule= | schedule                   |
+| =SPC m d= | =org-agenda-deadline= | deadline                   |
+| =SPC m r= | =org-agenda-refile=  | refile                      |
+| =SPC m a= | =org-agenda-archive= | archive                     |
+| =SPC m v= | =mod-org-agenda-visit= | visit selected item      |
+
+** Tcl Buffer
+
+| Key       | Action                 | Notes         |
+|-----------+------------------------+---------------|
+| =SPC m l= | =mod-tcl-lint-file=    | lint file     |
+| =SPC m f= | =mod-tcl-format-file=  | format file   |
+| =SPC m g= | =mod-tcl-find-tag=     | jump to tag   |
+| =SPC m r= | =mod-tcl-rebuild-tags= | rebuild TAGS  |
+| =SPC m e= | =mod-tcl-show-output=  | tool output   |

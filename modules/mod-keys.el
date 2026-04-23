@@ -33,6 +33,11 @@
   (interactive)
   (dired (expand-file-name "docs/" mod-keys-config-directory)))
 
+(defun mod-keys-open-docs-manual ()
+  "Open the Org documentation manual for this configuration."
+  (interactive)
+  (find-file (expand-file-name "docs/manual.org" mod-keys-config-directory)))
+
 (defun mod-keys-reload-config ()
   "Reload the Orbit Emacs configuration."
   (interactive)
@@ -87,8 +92,12 @@
     "b d" '(kill-current-buffer :which-key "kill buffer")
     "b r" '(revert-buffer :which-key "revert")
     "h" '(:ignore t :which-key "help")
+    "h b" '(xref-go-back :which-key "back")
+    "h B" '(xref-go-forward :which-key "forward")
     "h k" '(describe-key :which-key "describe key")
     "h f" '(describe-function :which-key "describe function")
+    "h d" '(mod-keys-open-docs-manual :which-key "docs manual")
+    "h D" '(mod-keys-open-docs-directory :which-key "docs dir")
     "h m" '(describe-mode :which-key "describe mode")
     "h v" '(describe-variable :which-key "describe variable")
     "p" '(:ignore t :which-key "projects")
@@ -96,6 +105,9 @@
     "p p" '(project-switch-project :which-key "switch project")
     "p f" '(project-find-file :which-key "find file")
     "p s" '(mod-project-search :which-key "search")
+    "s" '(:ignore t :which-key "search")
+    "s s" '(consult-ripgrep :which-key "ripgrep")
+    "s b" '(consult-line :which-key "buffer line")
     "w" '(:ignore t :which-key "windows")
     "w w" '(other-window :which-key "other window")
     "w h" '(windmove-left :which-key "left")
@@ -151,16 +163,38 @@
     "" '(:ignore t :which-key "local"))
 
   (with-eval-after-load 'org
+    (when (fboundp 'evil-ret)
+      (setq mod-org-return-fallback-command #'evil-ret))
+    (general-define-key
+     :states '(normal)
+     :keymaps 'org-mode-map
+     (kbd "RET") #'mod-org-open-at-point-dwim)
     (general-define-key
      :states '(normal visual motion emacs)
      :keymaps 'org-mode-map
      :prefix "SPC m"
+     "J" '(org-metadown :which-key "move down")
+     "K" '(org-metaup :which-key "move up")
+     "H" '(org-metaleft :which-key "promote")
+     "L" '(org-metaright :which-key "demote")
+     "i" '(:ignore t :which-key "insert")
+     "i h" '(org-insert-heading :which-key "heading")
+     "i t" '(org-insert-todo-heading :which-key "todo heading")
+     "i s" '(org-insert-subheading :which-key "subheading")
+     "c" '(org-toggle-checkbox :which-key "checkbox")
+     "o" '(consult-outline :which-key "outline")
+     "n" '(org-next-visible-heading :which-key "next heading")
+     "p" '(org-previous-visible-heading :which-key "previous heading")
+     "u" '(outline-up-heading :which-key "up heading")
+     "z" '(org-narrow-to-subtree :which-key "narrow subtree")
+     "Z" '(widen :which-key "widen")
+     "TAB" '(org-cycle :which-key "cycle")
      "t" '(org-todo :which-key "todo")
      "s" '(org-schedule :which-key "schedule")
      "d" '(org-deadline :which-key "deadline")
      "r" '(org-refile :which-key "refile")
      "a" '(org-archive-subtree :which-key "archive")
-     "p" '(org-priority :which-key "priority")))
+     "P" '(org-priority :which-key "priority")))
 
   (with-eval-after-load 'tcl
     (general-define-key
