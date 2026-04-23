@@ -12,6 +12,7 @@
 (require 'mod-utility)
 (require 'mod-keys)
 (require 'mod-completion)
+(require 'mod-snippets)
 (require 'mod-org)
 (require 'mod-project)
 (require 'mod-tcl)

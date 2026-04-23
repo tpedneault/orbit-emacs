@@ -38,6 +38,10 @@
         corfu-preselect 'prompt)
   (global-corfu-mode 1))
 
+(use-package cape
+  :ensure t
+  :after corfu)
+
 (savehist-mode 1)
 
 (provide 'mod-completion)

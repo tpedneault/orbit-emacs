@@ -1,10 +1,17 @@
 ;;; -*- coding: utf-8; mode: lisp-data -*-
-(("/Users/thomas/.app-store/"
-  (dired-filename . "/Users/thomas/.app-store/.."))
+(("/Users/thomas/Repos/testtcl/ait.tcl" . 433)
+ ("/Users/thomas/" (dired-filename . "/Users/thomas/Repos"))
+ ("/Users/thomas/Repos/"
+  (dired-filename . "/Users/thomas/Repos/testtcl"))
+ ("/Users/thomas/Repos/testtcl/"
+  (dired-filename . "/Users/thomas/Repos/testtcl/titled_test.tcl"))
+ ("/Users/thomas/Repos/testtcl/titled_test.tcl" . 469)
+ ("/Users/thomas/.config/emacs/modules/mod-core.el" . 810)
+ ("/Users/thomas/.config/emacs/"
+  (dired-filename . "/Users/thomas/.config/emacs/.DS_Store"))
+ ("/Users/thomas/.app-store/" (dired-filename . "/Users/thomas"))
  ("/Users/thomas/.android/"
   (dired-filename . "/Users/thomas/.android/adbkey.pub"))
- ("/Users/thomas/" (dired-filename . "/Users/thomas/Downloads"))
  ("/Users/thomas/Downloads/"
   (dired-filename . "/Users/thomas/Downloads/Battle.net-Setup.app"))
- ("/Users/thomas/.config/emacs/modules/mod-core.el" . 1169)
  ("/Users/thomas/.config/emacs/modules/mod-ui.el" . 5474))
