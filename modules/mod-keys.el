@@ -66,6 +66,7 @@
     "x r" '(mod-context-rename :which-key "rename")
     "x [" '(mod-context-previous :which-key "previous")
     "x ]" '(mod-context-next :which-key "next")
+    "x e" '(mod-context-editor :which-key "edit")
     "x g" '(mod-context-git :which-key "git")
     "x f" '(mod-context-files :which-key "files")
     "x o" '(mod-context-notes :which-key "notes")

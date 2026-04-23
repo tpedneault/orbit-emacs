@@ -1,5 +1,7 @@
 ;;; mod-context.el --- Context foundation -*- lexical-binding: t; -*-
 
+(require 'project)
+
 (use-package perspective
   :ensure t
   :demand t
@@ -12,10 +14,35 @@
   :config
   (persp-mode 1))
 
-(defun mod-context--deferred-placeholder (action)
-  "Report that context ACTION is reserved for a later phase."
-  (interactive)
-  (user-error "Context %s is not implemented yet" action))
+(defun mod-context--switch-or-create (name)
+  "Switch to context NAME, creating it if needed."
+  (persp-switch name))
+
+(defun mod-context--activate-template (name opener)
+  "Switch to context NAME and run OPENER there."
+  (mod-context--switch-or-create name)
+  (funcall opener))
+
+(defun mod-context--project-root ()
+  "Return the current project root, or nil if not in a project."
+  (when-let ((project (project-current nil)))
+    (project-root project)))
+
+(defun mod-context--read-known-project-root ()
+  "Prompt for one of the known project roots."
+  (let ((projects (project-known-project-roots)))
+    (unless projects
+      (user-error "No known projects available"))
+    (completing-read "Project: " projects nil t)))
+
+(defun mod-context--directory-name (dir)
+  "Return the final directory name component of DIR."
+  (file-name-nondirectory (directory-file-name dir)))
+
+(defun mod-context--git-root ()
+  "Return the current Git root, or nil if none can be determined."
+  (or (mod-context--project-root)
+      (vc-root-dir)))
 
 (defun mod-context-switch ()
   "Switch to an existing context or create one by name."
@@ -55,29 +82,52 @@
   (persp-next))
 
 (defun mod-context-git ()
-  "Deferred placeholder for context git action."
+  "Switch to a Git context for the current project or repository."
   (interactive)
-  (mod-context--deferred-placeholder "git"))
+  (let ((root (mod-context--git-root)))
+    (unless root
+      (user-error "Not in a project or Git repository"))
+    (mod-context--activate-template
+     (format "git/%s" (mod-context--directory-name root))
+     (lambda ()
+       (let ((default-directory root))
+         (mod-git-status)
+         (delete-other-windows))))))
+
+(defun mod-context-editor ()
+  "Switch to an editing context for a project."
+  (interactive)
+  (let* ((root (or (mod-context--project-root)
+                   (mod-context--read-known-project-root)))
+         (name (format "edit/%s" (mod-context--directory-name root))))
+    (let ((default-directory root))
+      (mod-context--switch-or-create name))))
 
 (defun mod-context-files ()
-  "Deferred placeholder for context files action."
+  "Switch to a file-management context for the current project or directory."
   (interactive)
-  (mod-context--deferred-placeholder "files"))
+  (let* ((root (or (mod-context--project-root) default-directory))
+         (name (format "files/%s" (mod-context--directory-name root))))
+    (mod-context--activate-template
+     name
+     (lambda ()
+       (let ((default-directory root))
+         (mod-dired-here))))))
 
 (defun mod-context-notes ()
-  "Deferred placeholder for context notes action."
+  "Switch to the notes context."
   (interactive)
-  (mod-context--deferred-placeholder "notes"))
+  (mod-context--activate-template "notes" #'mod-org-open-notes))
 
 (defun mod-context-agenda ()
-  "Deferred placeholder for context agenda action."
+  "Switch to the agenda context."
   (interactive)
-  (mod-context--deferred-placeholder "agenda"))
+  (mod-context--activate-template "agenda" #'mod-org-open-agenda))
 
 (defun mod-context-scratch ()
-  "Deferred placeholder for context scratch action."
+  "Switch to the scratch context."
   (interactive)
-  (mod-context--deferred-placeholder "scratch"))
+  (mod-context--activate-template "scratch" #'persp-switch-to-scratch-buffer))
 
 (provide 'mod-context)
 
