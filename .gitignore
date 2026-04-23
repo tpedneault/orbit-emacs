@@ -4,3 +4,6 @@ eln-cache/
 *.elc
 auto-save-list/
 history
+.DS_Store
+bookmarks
+projects
