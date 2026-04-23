@@ -10,7 +10,8 @@
   :group 'applications)
 
 (defcustom mod-org-directory
-  (expand-file-name "org/" (getenv "HOME"))
+  (or orbit-user-org-directory
+      (expand-file-name "org/" (getenv "HOME")))
   "Base directory for Org notes and agenda files."
   :type 'directory)
 

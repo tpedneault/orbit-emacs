@@ -14,15 +14,18 @@
   "Shared output buffer name for Tcl tool commands."
   :type 'string)
 
-(defcustom mod-tcl-tclint-command "tclint"
+(defcustom mod-tcl-tclint-command
+  (or orbit-user-tclint-program "tclint")
   "Executable used to lint Tcl files."
   :type 'string)
 
-(defcustom mod-tcl-tclfmt-command "tclfmt"
+(defcustom mod-tcl-tclfmt-command
+  (or orbit-user-tclfmt-program "tclfmt")
   "Executable used to format Tcl files."
   :type 'string)
 
-(defcustom mod-tcl-ctags-command "ctags"
+(defcustom mod-tcl-ctags-command
+  (or orbit-user-ctags-program "ctags")
   "Executable used to rebuild the project TAGS file."
   :type 'string)
 

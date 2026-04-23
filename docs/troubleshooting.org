@@ -70,6 +70,19 @@
 - If no snippet matches, it falls back to normal TAB behavior.
 - Use =SPC f c s r= after changing snippet files.
 
+** Where should personal snippets go?
+
+- Repo snippets and user snippets are both loaded.
+- Put personal snippets in the user-local =.orbit-emacs.d/snippets/= directory.
+- Open it quickly with =SPC f c S=.
+- Reload snippets with =SPC f c s r=.
+
+** Where should machine-specific overrides go?
+
+- Keep core orbit-emacs behavior in the repo config.
+- Put personal or machine-specific overrides in the user-local =config.el=.
+- Open it with =SPC f c u=.
+
 ** How do I delete a snippet?
 
 - Visit the snippet file with =SPC f c s e= or manually open the file under =snippets/<mode>/=.

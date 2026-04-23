@@ -12,7 +12,13 @@
      (file-name-directory (or load-file-name buffer-file-name)))))
   "Project-local snippet directory.")
 
+(defun mod-snippets-user-directory ()
+  "Return the configured user snippet directory."
+  (or orbit-user-snippets-directory
+      mod-core-user-snippets-directory))
+
 (make-directory mod-snippets-directory t)
+(make-directory (mod-snippets-user-directory) t)
 
 (defvar mod-snippets--evil-insert-tab-fallback #'indent-for-tab-command
   "Fallback command for `TAB' in Evil insert state.")
@@ -84,6 +90,7 @@
   :ensure t
   :demand t
   :config
+  (add-to-list 'yas-snippet-dirs (mod-snippets-user-directory))
   (add-to-list 'yas-snippet-dirs mod-snippets-directory)
   (yas-global-mode 0)
   (yas-reload-all)

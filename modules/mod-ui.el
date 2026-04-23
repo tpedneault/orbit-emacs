@@ -16,6 +16,14 @@
   (expand-file-name "recentf" mod-core-var-directory)
   "Path used to persist recentf data.")
 
+(defun mod-ui-font-family ()
+  "Return the preferred UI font family."
+  (or orbit-user-font-family mod-ui-default-font))
+
+(defun mod-ui-font-height ()
+  "Return the preferred UI font height, or nil."
+  orbit-user-font-height)
+
 (defun mod-ui-context-name ()
   "Return the current Perspective context name, or nil."
   (when (bound-and-true-p persp-mode)
@@ -120,7 +128,9 @@
     (when (fboundp 'scroll-bar-mode)
       (scroll-bar-mode -1))
     (when (display-graphic-p)
-      (set-face-attribute 'default frame :family mod-ui-default-font))))
+      (set-face-attribute 'default frame
+                          :family (mod-ui-font-family)
+                          :height (or (mod-ui-font-height) 'unspecified)))))
 
 ;; Keep new GUI frames aligned with the text-first startup defaults.
 (add-to-list 'default-frame-alist '(menu-bar-lines . 0))

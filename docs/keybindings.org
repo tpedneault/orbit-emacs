@@ -21,6 +21,9 @@
 | =SPC f c a= | open =AGENTS.md=            | agent instructions |
 | =SPC f c d= | open =docs/=                | docs directory    |
 | =SPC f c r= | reload config               | reload =init.el=  |
+| =SPC f c u= | open user =config.el=       | user overrides    |
+| =SPC f c U= | open user dir               | user-local layer  |
+| =SPC f c S= | open user snippets          | user snippets dir |
 | =SPC f c s= | snippet maintenance group   | snippet upkeep    |
 | =SPC f c s e= | =yas-visit-snippet-file=  | edit snippet file |
 | =SPC f c s n= | =yas-new-snippet=         | new snippet       |

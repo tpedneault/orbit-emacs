@@ -57,6 +57,8 @@
 
 - Use =SPC p d= to prune stale projects.
 - Use =SPC f c= for config access instead of hunting through the repo.
+- Put machine-specific overrides in the user-local =.orbit-emacs.d/= layer, not in the repo config.
+- Keep personal snippets in the user-local =snippets/= directory and reload with =SPC f c s r=.
 - Use contexts for separation, not just convenience.
 - Keep the agenda as the dashboard, not the editing surface.
 - Capture quickly, then refile later.

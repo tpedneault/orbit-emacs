@@ -42,3 +42,24 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 - Org workflow: inbox capture, refile, notes, journal, and a custom work dashboard.
 - Vim layer: Evil, surround, commentary, argument text objects, and multiple cursors.
 - Utility bay: one reusable bottom window for shell, messages, help, and compilation.
+
+* User-Local Layer
+
+orbit-emacs creates a user-local directory parallel to the active Emacs config directory:
+- =.orbit-emacs.d/=
+
+It contains:
+- =config.el=
+- =snippets/=
+
+Use it for machine-specific or personal overrides, for example:
+- font family / font height
+- Org directory
+- shell or tool paths
+- personal snippets
+
+Useful keys:
+- =SPC f c u=: open user config
+- =SPC f c U=: open user dir
+- =SPC f c S=: open user snippets
+- =SPC f c s r=: reload snippets

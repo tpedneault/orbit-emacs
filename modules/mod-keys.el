@@ -33,6 +33,21 @@
   (interactive)
   (dired (expand-file-name "docs/" mod-keys-config-directory)))
 
+(defun mod-keys-open-user-config-file ()
+  "Open the user-local orbit-emacs config.el."
+  (interactive)
+  (find-file mod-core-user-config-file))
+
+(defun mod-keys-open-user-directory ()
+  "Open the user-local orbit-emacs directory."
+  (interactive)
+  (dired mod-core-user-directory))
+
+(defun mod-keys-open-user-snippets-directory ()
+  "Open the user-local orbit-emacs snippets directory."
+  (interactive)
+  (dired mod-core-user-snippets-directory))
+
 (defun mod-keys-open-docs-manual ()
   "Open the Org documentation manual for this configuration."
   (interactive)
@@ -81,6 +96,9 @@
     "f c a" '(mod-keys-open-agents-file :which-key "AGENTS.md")
     "f c d" '(mod-keys-open-docs-directory :which-key "docs/")
     "f c r" '(mod-keys-reload-config :which-key "reload")
+    "f c u" '(mod-keys-open-user-config-file :which-key "user config")
+    "f c U" '(mod-keys-open-user-directory :which-key "user dir")
+    "f c S" '(mod-keys-open-user-snippets-directory :which-key "user snippets")
     "f c s e" '(yas-visit-snippet-file :which-key "edit snippet")
     "f c s n" '(yas-new-snippet :which-key "new snippet")
     "f c s r" '(yas-reload-all :which-key "reload snippets")

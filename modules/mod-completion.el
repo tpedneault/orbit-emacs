@@ -27,7 +27,13 @@
   :config
   ;; Keep the existing leader tree and upgrade the underlying buffer switcher.
   (global-set-key [remap switch-to-buffer] #'consult-buffer)
-  (setq consult-preview-key nil))
+  (setq consult-preview-key nil)
+  (when orbit-user-rg-program
+    (setq consult-ripgrep-args
+          (concat
+           (shell-quote-argument orbit-user-rg-program)
+           " --null --line-buffered --color=never --max-columns=1000"
+           " --path-separator / --smart-case --no-heading --line-number ."))))
 
 (use-package corfu
   :ensure t
