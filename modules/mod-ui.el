@@ -141,7 +141,8 @@
               cursor-in-non-selected-windows nil)
 
 (setq recentf-save-file mod-ui-recentf-save-file
-      recentf-max-saved-items 200)
+      recentf-max-saved-items 200
+      auto-revert-verbose nil)
 
 (global-display-line-numbers-mode 1)
 (column-number-mode 1)
@@ -149,6 +150,7 @@
 (winner-mode 1)
 (save-place-mode 1)
 (recentf-mode 1)
+(global-auto-revert-mode 1)
 (when (and (boundp 'battery-status-function) battery-status-function)
   (display-battery-mode 1))
 
