@@ -36,6 +36,15 @@
    - =SPC n N= quick note
    - =SPC n j= journal entry
 
+* Tcl Loop
+
+1. Open the project in an editing context with =SPC x e=.
+2. Rebuild Tcl =TAGS= with =SPC m r= after symbol changes.
+3. Jump with =SPC m g= or search with =SPC m s=.
+4. Lint with =SPC m l= and format with =SPC m f=.
+5. Revisit command output with =SPC m e=.
+6. Use =SPC m d d= or =SPC m d s= when you need project docs.
+
 * Suggested Context Pattern
 
 - =agenda=: planning and review

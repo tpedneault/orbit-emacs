@@ -2,68 +2,110 @@
 
 * Tcl Workflow
 
-This config keeps Tcl support pragmatic and toolchain-based.
+Orbit Emacs keeps Tcl support pragmatic and toolchain-based.
 
-Tools assumed:
+Tools used:
 - =tclint=
 - =tclfmt=
 - Universal Ctags
+- Doxygen 1.8.17 for Tcl docs
 
 There is no LSP layer here.
-
-Optional user symbols:
-- set =orbit-user-tcl-known-symbols-file= to a plain text file with one symbol per line
-- blank lines are ignored
-- lines starting with =#= are ignored
-- these symbols are merged with project =TAGS= symbols for highlighting
 
 * Local Leader
 
 In =tcl-mode=:
 
-| Key         | Action                 | Notes              |
-|-------------+------------------------+--------------------|
-| =SPC m l=   | lint current file      | runs =tclint=      |
-| =SPC m f=   | format current file    | runs =tclfmt=      |
-| =SPC m g=   | visit tag / definition | Emacs tags         |
-| =SPC m s=   | search Tcl symbols     | TAGS + known list  |
-| =SPC m r=   | rebuild TAGS           | project-local      |
-| =SPC m e=   | show tool output       | =*tcl-tools*=      |
-| =SPC m d d= | project manual         | =docs/<project>=   |
-| =SPC m d s= | search docs            | Doxygen XML search |
-| =SPC m d p= | docs at point          | symbol docs        |
-| =SPC m d r= | regenerate Doxygen XML | runs Doxygen       |
+| Key         | Action                 | Notes                      |
+|-------------+------------------------+----------------------------|
+| =SPC m l=   | lint current file      | runs =tclint=              |
+| =SPC m f=   | format current file    | runs =tclfmt=              |
+| =SPC m r=   | rebuild TAGS           | project-local =TAGS=       |
+| =SPC m g=   | jump to definition     | uses project =TAGS=        |
+| =SPC m s=   | search Tcl symbols     | project symbols            |
+| =SPC m e=   | show tool output       | =*tcl-tools*=              |
+| =SPC m d d= | project docs manual    | opens =docs/<project>=     |
+| =SPC m d s= | search docs            | Doxygen XML                |
+| =SPC m d p= | docs at point          | current symbol             |
+| =SPC m d r= | regenerate Doxygen XML | runs Doxygen               |
+| =q=         | go back                | Tcl docs buffers only      |
+
+* TAGS Workflow
+
+- Universal Ctags is used for Tcl navigation and proc highlighting.
+- The =TAGS= file lives at the project root.
+- =SPC m r= rebuilds the project-local =TAGS= file.
+- =SPC m g= visits the project =TAGS= file automatically and jumps to the definition at point.
+- =SPC m s= searches known Tcl symbols gathered from project =TAGS= and optional user-known symbols.
+- Rebuild =TAGS= when navigation or highlighting looks stale.
+
+* Namespace Behavior
+
+Orbit Emacs synthesizes fully qualified names from =namespace eval= blocks when
+the TAGS data is clear enough to do so.
+
+Example source:
+
+#+begin_src tcl
+namespace eval ait::session {
+    proc current_step {} { ... }
+}
+#+end_src
+
+This becomes searchable and highlightable as:
+
+#+begin_example
+ait::session::current_step
+#+end_example
+
+Practical behavior:
+- fully qualified names are preferred in symbol search
+- duplicate short-name entries are hidden from symbol search when a qualified form exists
+- top-level procs such as =assert= or =titled= still appear normally
+
+* Symbol Highlighting
+
+- project proc highlighting comes from =TAGS=
+- qualified proc names such as =ait::log::value= highlight correctly
+- synthesized namespace-qualified names can also highlight when the TAGS section is clear enough
+- ambiguous short names may intentionally not highlight
+- rebuild =TAGS= with =SPC m r= to refresh project proc highlighting
+
+Optional extra symbols:
+- set =orbit-user-tcl-known-symbols-file= to a plain text file with one symbol per line
+- blank lines are ignored
+- lines starting with =#= are ignored
+- these symbols are merged into highlighting and symbol search
 
 * Tcl Docs
 
-Tcl docs use Doxygen XML as the backend and render into temporary read-only
-Org buffers.
+Tcl docs use Doxygen XML and open in temporary read-only Org buffers.
 
-Practical behavior:
-- =SPC m d d= opens a project manual in =docs/<project>=.
-- =SPC m d s= searches all indexed Tcl symbols.
-- =SPC m d p= opens docs for the symbol at point.
-- =SPC m d r= regenerates the XML using Doxygen.
-- =q= goes back inside Tcl docs buffers.
-- source links from docs open in =edit/<project>= so the docs context stays a
-  reading context.
+Commands:
+- =SPC m d d= opens the project docs manual
+- =SPC m d s= searches indexed docs symbols
+- =SPC m d p= opens docs for the symbol at point
+- =SPC m d r= regenerates the XML with Doxygen
+
+Behavior:
+- docs open in =docs/<project>=
+- source links open in =edit/<project>=
+- =q= goes back inside Tcl docs buffers
 
 Defaults:
-- if no override is set, orbit-emacs expects:
-  - =<project-root>/Doxyfile=
-  - =<project-root>/docs/xml/=
-- user config can override these with:
-  - =orbit-user-tcl-known-symbols-file=
-  - =orbit-user-doxygen-config-file=
-  - =orbit-user-tcl-doxygen-xml-directory=
-  - =orbit-user-doxygen-program=
+- =<project-root>/Doxyfile=
+- =<project-root>/docs/xml/=
 
-If the XML directory or =index.xml= is missing, Tcl docs commands fail clearly
-and tell you to run =SPC m d r=.
+User config can override:
+- =orbit-user-doxygen-program=
+- =orbit-user-doxygen-config-file=
+- =orbit-user-tcl-doxygen-xml-directory=
+
+If the XML directory or =index.xml= is missing, regenerate docs with =SPC m d r=.
 
 * Doxyfile Requirements
 
-Minimum settings for the Tcl docs browser:
+Minimum settings:
 - =GENERATE_XML = YES=
 - =XML_OUTPUT = xml=
 - =OUTPUT_DIRECTORY = docs=
@@ -76,34 +118,38 @@ Minimum settings for the Tcl docs browser:
   - =*.xdc=
   - =*.upf=
 
-Do not force Tcl through the C parser with =EXTENSION_MAPPING = tcl=C=. Doxygen
-1.8.17 has native Tcl support, and forcing C parsing caused missing symbols in
-the XML index.
+Do not force Tcl through the C parser with =EXTENSION_MAPPING = tcl=C=.
+Doxygen 1.8.17 has native Tcl support, and Tcl-to-C extension mapping causes
+missing symbols in the XML output.
+
+* Troubleshooting
+
+- =SPC m g= cannot find a symbol:
+  rebuild =TAGS= with =SPC m r=
+- symbol search is missing entries:
+  check the project root and confirm the right =TAGS= file was rebuilt
+- docs search is empty:
+  regenerate Doxygen XML with =SPC m d r=
+- Doxygen misses Tcl symbols:
+  verify the =Doxyfile= and avoid =EXTENSION_MAPPING = tcl=C=
+- wrong ctags is used on macOS:
+  set =orbit-user-ctags-program= to the Homebrew Universal Ctags path
 
 * Typical Loop
 
 1. Open a Tcl project with =SPC x e=.
-2. Find files with =SPC .= or =SPC p f=.
-3. Rebuild tags with =SPC m r= when needed.
-4. Jump to definitions with =SPC m g= or search symbols with =SPC m s=.
-5. Run =SPC m l= before commit-worthy changes.
-6. Run =SPC m f= when you want formatting applied.
-7. Use =SPC m e= to revisit tool output.
-8. Use =SPC m d d= when you want a browsable docs manual.
+2. Rebuild =TAGS= with =SPC m r=.
+3. Jump with =SPC m g= or search with =SPC m s=.
+4. Lint with =SPC m l=.
+5. Format with =SPC m f= when needed.
+6. Revisit command output with =SPC m e=.
+7. Open the docs manual with =SPC m d d= when you want project docs.
 
-* Practical Notes
+* Test Steps
 
-- TAGS live at the project root.
-- Optional extra Tcl symbols can come from =orbit-user-tcl-known-symbols-file=.
-- Navigation uses built-in Emacs tags support.
-- Tool output is shared so lint/format messages are easy to revisit.
-- Snippets are available in =tcl-mode= through the local =snippets/tcl-mode/= directory.
-- Tcl docs stay in =docs/<project>=; source links open in =edit/<project>=.
-
-* Example
-
-1. Open a Tcl file.
-2. Press =SPC m r= to build =TAGS=.
-3. Put point on a symbol and press =SPC m g=.
-4. Press =SPC m l= to lint the current file.
-5. Press =SPC m f= to format it.
+1. Open a Tcl project and run =SPC m r=.
+2. Put point on a known proc and use =SPC m g=.
+3. Run =SPC m s= and confirm qualified names such as =ait::session::current_step= appear once.
+4. Confirm top-level names such as =assert= still appear in symbol search.
+5. Run =SPC m l= and =SPC m f= on the current file.
+6. Run =SPC m d r=, then use =SPC m d s= or =SPC m d p=.
