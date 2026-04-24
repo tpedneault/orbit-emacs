@@ -8,6 +8,9 @@
 (require 'xref)
 
 (declare-function mod-tcl-docs-doxygen-config-file "mod-tcl-docs")
+(declare-function evil-vimish-fold-mode "evil-vimish-fold")
+(declare-function vimish-fold-mode "vimish-fold")
+(declare-function vimish-fold-toggle "vimish-fold")
 
 (defgroup mod-tcl nil
   "Minimal Tcl workflow helpers."
@@ -97,6 +100,21 @@
     (whitespace-mode (if (mod-tcl-enable-whitespace-p) 1 -1)))
   (when (fboundp 'hl-line-mode)
     (hl-line-mode (if (mod-tcl-enable-hl-line-p) 1 -1))))
+
+(defun mod-tcl-enable-manual-folding ()
+  "Enable stable manual folding for Tcl buffers."
+  (when (fboundp 'vimish-fold-mode)
+    (vimish-fold-mode 1))
+  (when (fboundp 'evil-vimish-fold-mode)
+    (evil-vimish-fold-mode 1)))
+
+(defun mod-tcl-toggle-fold ()
+  "Toggle a manual fold at point."
+  (interactive)
+  (condition-case nil
+      (vimish-fold-toggle)
+    (error
+     (message "No manual fold at point"))))
 
 (defun mod-tcl--program-path (override fallback-name)
   "Return OVERRIDE or a resolved FALLBACK-NAME path, or nil."
@@ -647,6 +665,7 @@ Return non-nil when a project definition was found."
 
 (with-eval-after-load 'tcl
   (add-hook 'tcl-mode-hook #'mod-tcl--configure-editing-defaults)
+  (add-hook 'tcl-mode-hook #'mod-tcl-enable-manual-folding)
   (add-hook 'tcl-mode-hook #'mod-tcl--enable-symbol-highlighting))
 
 (provide 'mod-tcl)

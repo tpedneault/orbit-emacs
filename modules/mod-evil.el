@@ -43,6 +43,22 @@
   :config
   (global-evil-mc-mode 1))
 
+(use-package vimish-fold
+  :ensure t
+  :commands (vimish-fold-mode
+             vimish-fold-toggle
+             vimish-fold
+             vimish-fold-unfold
+             vimish-fold-refold
+             vimish-fold-delete))
+
+(use-package evil-vimish-fold
+  :ensure t
+  :after (evil vimish-fold)
+  :commands (evil-vimish-fold-mode
+             evil-vimish-fold/create
+             evil-vimish-fold/delete))
+
 (provide 'mod-evil)
 
 ;;; mod-evil.el ends here

@@ -29,6 +29,7 @@ In =tcl-mode=:
 |-------------+------------------------+----------------------------|
 | =SPC m l=   | lint current file      | runs =tclint=              |
 | =SPC m f=   | format current file    | runs =tclfmt=              |
+| =SPC m TAB= | toggle fold            | manual fold at point       |
 | =SPC m r=   | rebuild TAGS           | project-local =TAGS=       |
 | =SPC m g=   | jump to definition     | uses project =TAGS=        |
 | =SPC m s=   | search Tcl symbols     | project symbols            |
@@ -132,6 +133,19 @@ User config can override:
 - =orbit-user-tcl-doxygen-xml-directory=
 
 If the XML directory or =index.xml= is missing, regenerate docs with =SPC m d r=.
+
+* Folding
+
+- folding is manual and powered by =vimish-fold=
+- use visual selection plus =zf= to create a fold around a verbose Doxygen block
+- =SPC m TAB= or =za= toggles a fold at point
+- =zo= opens a fold
+- =zc= closes a fold
+- =zd= deletes a fold
+
+Why manual only:
+- the earlier comment-scanning fold experiment was intentionally removed
+- no fold-all comment scanner is used now because stability matters more than automation
 
 * Doxyfile Requirements
 
