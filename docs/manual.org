@@ -25,6 +25,7 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 - [[file:workflow.org][workflow]]
 - [[file:contexts.org][contexts]]
 - [[file:org.org][org workflow]]
+- [[file:jira.org][jira sync]]
 - [[file:vim.org][vim quick reference]]
 - [[file:vim-training.org][vim training]]
 - [[file:tcl.org][tcl workflow]]

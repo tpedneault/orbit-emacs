@@ -69,7 +69,15 @@ between same-named files in different directories.")
 ;; (setq orbit-user-tcl-known-symbols-file \"/path/to/tcl-known-symbols.txt\")\n\
 ;; (setq orbit-user-tcl-doxygen-xml-directory nil)\n\
 ;; (setq orbit-user-doxygen-program \"doxygen\")\n\
-;; (setq orbit-user-doxygen-config-file nil)\n")
+;; (setq orbit-user-doxygen-config-file nil)\n\
+;; (setq orbit-user-jira-base-url \"https://jira.example.com\")\n\
+;; (setq orbit-user-jira-api-prefix \"/rest/api/2\")\n\
+;; (setq orbit-user-jira-project-key \"PROJ\")\n\
+;; (setq orbit-user-jira-username \"thomas\")\n\
+;; (setq orbit-user-jira-jql nil)\n\
+;; (setq orbit-user-jira-org-file (expand-file-name \"jira.org\" (expand-file-name \"org/\" (getenv \"HOME\"))))\n\
+;; (setq orbit-user-jira-token-command \"security find-generic-password -a jira -s orbit-jira-pat -w\")\n\
+;; (setq orbit-user-jira-pat-env \"JIRA_PAT\")\n")
 
 (defvar orbit-user-shell nil)
 (defvar orbit-user-font-family nil)
@@ -95,6 +103,14 @@ between same-named files in different directories.")
 (defvar orbit-user-tcl-doxygen-xml-directory nil)
 (defvar orbit-user-doxygen-program nil)
 (defvar orbit-user-doxygen-config-file nil)
+(defvar orbit-user-jira-base-url nil)
+(defvar orbit-user-jira-api-prefix "/rest/api/2")
+(defvar orbit-user-jira-project-key nil)
+(defvar orbit-user-jira-username nil)
+(defvar orbit-user-jira-jql nil)
+(defvar orbit-user-jira-org-file nil)
+(defvar orbit-user-jira-token-command nil)
+(defvar orbit-user-jira-pat-env nil)
 
 (defvar mod-core-recentf-history nil
   "Minibuffer history for recent file selection.")

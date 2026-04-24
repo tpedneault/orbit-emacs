@@ -11,6 +11,8 @@
 (declare-function mod-core-move-line-or-region-up "mod-core")
 (declare-function mod-core-open-at-point "mod-core")
 (declare-function mod-core-recentf-open "mod-core")
+(declare-function mod-jira-open-issue "mod-jira")
+(declare-function mod-jira-sync "mod-jira")
 (declare-function er/expand-region "expand-region")
 
 (defconst mod-keys-config-directory
@@ -187,7 +189,10 @@
     "n a" '(mod-org-open-agenda :which-key "agenda")
     "n c" '(mod-org-capture :which-key "capture")
     "n t" '(mod-org-capture-inbox-task :which-key "inbox task")
-    "n j" '(mod-org-capture-journal :which-key "journal")
+    "n j" '(:ignore t :which-key "jira")
+    "n j j" '(mod-org-capture-journal :which-key "journal")
+    "n j s" '(mod-jira-sync :which-key "sync")
+    "n j o" '(mod-jira-open-issue :which-key "open issue")
     "n N" '(mod-org-capture-note :which-key "note")
     "x" '(:ignore t :which-key "contexts")
     "x x" '(mod-context-switch :which-key "switch")

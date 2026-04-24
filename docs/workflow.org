@@ -41,7 +41,16 @@
 8. Capture interruptions quickly:
    - =SPC n t= inbox task
    - =SPC n N= quick note
-   - =SPC n j= journal entry
+   - =SPC n j j= journal entry
+
+* Jira Loop
+
+1. Configure your Jira base URL, auth token source, project key, and username in the user-local config.
+2. Run =SPC n j s= to sync assigned Jira issues into =jira.org=.
+3. Add your own notes under an issue heading.
+4. Refresh again with =SPC n j s= when Jira changes.
+   - notes already written under a synced issue heading are preserved
+5. Use =SPC n j o= from a Jira heading to reopen the browser issue.
 
 * Tcl Loop
 

@@ -37,7 +37,11 @@ Notes:
 | =SPC n c= | capture menu | choose any template |
 | =SPC n t= | =inbox.org=  | quick task  |
 | =SPC n N= | =notes.org=  | quick note  |
-| =SPC n j= | =journal.org= | journal entry |
+| =SPC n j j= | =journal.org= | journal entry |
+
+Jira sync:
+- =SPC n j s=: fetch Jira issues into =jira.org=
+- =SPC n j o=: open the Jira issue at point in the browser
 
 Templates:
 - inbox task
@@ -187,3 +191,15 @@ In a normal Org buffer:
 1. Open =docs/manual.org=.
 2. Press =RET= on a file link.
 3. Return with =SPC h b=.
+
+* Jira
+
+The Jira integration is read-only in this first pass.
+
+Use it to:
+- pull assigned issues from one configured Jira project into =jira.org=
+- keep private notes under issue headings
+- reopen the browser issue from Org
+
+Setup and details:
+- [[file:jira.org][jira sync]]

@@ -102,7 +102,9 @@
 | =SPC n a= | =mod-org-open-agenda=      | work dashboard     |
 | =SPC n c= | =mod-org-capture=          | capture menu       |
 | =SPC n t= | =mod-org-capture-inbox-task= | inbox task       |
-| =SPC n j= | =mod-org-capture-journal=  | journal entry      |
+| =SPC n j j= | =mod-org-capture-journal= | journal entry    |
+| =SPC n j s= | =mod-jira-sync=          | sync Jira issues   |
+| =SPC n j o= | =mod-jira-open-issue=    | open issue at point |
 | =SPC n N= | =mod-org-capture-note=     | quick note         |
 
 * =SPC x= Contexts

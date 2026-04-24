@@ -1,0 +1,91 @@
+#+title: jira sync
+
+* Scope
+
+This first Jira pass is read-only:
+- fetch issues from Jira Server/Data Center
+- sync them into =jira.org=
+- open the browser issue from Org
+
+Not included yet:
+- comments
+- transitions
+- worklogs
+- write-back from Org to Jira
+
+* Setup
+
+Set these in your user-local =config.el=:
+
+- =orbit-user-jira-base-url=
+- =orbit-user-jira-api-prefix=
+- =orbit-user-jira-project-key=
+- =orbit-user-jira-username=
+- =orbit-user-jira-jql=
+- =orbit-user-jira-org-file=
+- =orbit-user-jira-token-command= or =orbit-user-jira-pat-env=
+
+Defaults:
+- API prefix: =/rest/api/2=
+- Org file: =jira.org= under your Org directory
+
+Authentication:
+- keep the PAT out of the repo
+- either fetch it with =orbit-user-jira-token-command=
+- or point =orbit-user-jira-pat-env= at an environment variable name
+
+Example:
+
+#+begin_src emacs-lisp
+(setq orbit-user-jira-base-url "https://jira.example.com")
+(setq orbit-user-jira-project-key "PROJ")
+(setq orbit-user-jira-username "thomas")
+(setq orbit-user-jira-pat-env "JIRA_PAT")
+#+end_src
+
+* JQL
+
+If =orbit-user-jira-jql= is set, orbit-emacs uses it directly.
+
+Otherwise it builds:
+
+#+begin_example
+project = <project-key> AND assignee = <username> AND resolution = Unresolved ORDER BY updated DESC
+#+end_example
+
+That means v1 sync is intentionally scoped to:
+- one configured project
+- issues assigned to the configured user
+
+* Commands
+
+| Key         | Action                | Notes                     |
+|-------------+-----------------------+---------------------------|
+| =SPC n j s= | =mod-jira-sync=       | fetch and refresh =jira.org= |
+| =SPC n j o= | =mod-jira-open-issue= | open issue at point in browser |
+| =SPC n j j= | =mod-org-capture-journal= | journal capture moved here |
+
+* Org Sync Shape
+
+Each issue becomes one heading in =jira.org=.
+
+Stored properties include:
+- =JIRA_KEY=
+- =JIRA_STATUS=
+- =JIRA_ASSIGNEE=
+- =JIRA_PRIORITY=
+- =JIRA_UPDATED=
+- =JIRA_URL=
+
+Refreshing keeps note text already written under an existing issue heading.
+
+* Troubleshooting
+
+- Missing config:
+  - set the Jira base URL and token source
+- Missing default JQL inputs:
+  - set =orbit-user-jira-jql=
+  - or set both =orbit-user-jira-project-key= and =orbit-user-jira-username=
+- HTTP error on sync:
+  - confirm the base URL, API prefix, PAT, and Jira Server/Data Center endpoint
+
