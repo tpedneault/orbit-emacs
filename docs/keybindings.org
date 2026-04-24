@@ -130,6 +130,13 @@
 |-----------+----------------------+-------------------|
 | =SPC i s= | =yas-insert-snippet= | insert snippet    |
 
+* =SPC t= Toggles
+
+| Key       | Action                | Notes                    |
+|-----------+-----------------------+--------------------------|
+| =SPC t c= | =mod-ui-toggle-fill-column-indicator= | toggle fill-column indicator |
+| =SPC t w= | =mod-ui-toggle-wrap=  | toggle wrap / truncation |
+
 * =SPC q= Quit / Session
 
 | Key       | Action                  | Notes                |
@@ -189,6 +196,7 @@
 | =SPC m f=   | =mod-tcl-format-file=    | format current file |
 | =SPC m g=   | =mod-tcl-find-tag=       | jump to definition  |
 | =SPC m s=   | =mod-tcl-search-symbols= | search Tcl symbols  |
+| =SPC m v=   | =mod-tcl-validate-tooling= | validate tools    |
 | =SPC m r=   | =mod-tcl-rebuild-tags=   | rebuild project TAGS |
 | =SPC m e=   | =mod-tcl-show-output=    | Tcl tool output     |
 | =SPC m d d= | =mod-tcl-docs-manual=    | project docs manual |

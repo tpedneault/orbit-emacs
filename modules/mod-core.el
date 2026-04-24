@@ -44,6 +44,16 @@ between same-named files in different directories.")
 ;; (setq orbit-user-ctags-program \"ctags\")\n\
 ;; (setq orbit-user-tclint-program \"tclint\")\n\
 ;; (setq orbit-user-tclfmt-program \"tclfmt\")\n\
+;; (setq orbit-user-enable-fill-column-indicator t)\n\
+;; (setq orbit-user-fill-column 120)\n\
+;; (setq orbit-user-tcl-indent-width 3)\n\
+;; (setq orbit-user-tcl-fill-column 120)\n\
+;; (setq orbit-user-tcl-use-tabs nil)\n\
+;; (setq orbit-user-enable-whitespace t)\n\
+;; (setq orbit-user-enable-hl-line t)\n\
+;; (setq orbit-user-tcl-enable-fill-column-indicator 'inherit)\n\
+;; (setq orbit-user-tcl-enable-whitespace 'inherit)\n\
+;; (setq orbit-user-tcl-enable-hl-line 'inherit)\n\
 ;; (setq orbit-user-tcl-known-symbols-file nil)\n\
 ;; (setq orbit-user-tcl-doxygen-xml-directory nil)\n\
 ;; (setq orbit-user-doxygen-program \"doxygen\")\n\
@@ -58,6 +68,16 @@ between same-named files in different directories.")
 (defvar orbit-user-ctags-program nil)
 (defvar orbit-user-tclint-program nil)
 (defvar orbit-user-tclfmt-program nil)
+(defvar orbit-user-enable-fill-column-indicator t)
+(defvar orbit-user-fill-column 120)
+(defvar orbit-user-tcl-indent-width 3)
+(defvar orbit-user-tcl-fill-column 120)
+(defvar orbit-user-tcl-use-tabs nil)
+(defvar orbit-user-enable-whitespace t)
+(defvar orbit-user-enable-hl-line t)
+(defvar orbit-user-tcl-enable-fill-column-indicator 'inherit)
+(defvar orbit-user-tcl-enable-whitespace 'inherit)
+(defvar orbit-user-tcl-enable-hl-line 'inherit)
 (defvar orbit-user-tcl-known-symbols-file nil)
 (defvar orbit-user-tcl-doxygen-xml-directory nil)
 (defvar orbit-user-doxygen-program nil)

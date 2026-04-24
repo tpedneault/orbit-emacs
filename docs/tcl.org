@@ -12,6 +12,15 @@ Tools used:
 
 There is no LSP layer here.
 
+Editing defaults:
+- indentation width defaults to =3=
+- fill column defaults to =120=
+- fill-column indicator defaults to the global setting
+- tabs default to disabled
+- whitespace visibility defaults to the global setting
+- current-line highlight defaults to the global setting
+- all of these can be overridden in user config
+
 * Local Leader
 
 In =tcl-mode=:
@@ -23,6 +32,7 @@ In =tcl-mode=:
 | =SPC m r=   | rebuild TAGS           | project-local =TAGS=       |
 | =SPC m g=   | jump to definition     | uses project =TAGS=        |
 | =SPC m s=   | search Tcl symbols     | project symbols            |
+| =SPC m v=   | validate Tcl tooling   | diagnostics report         |
 | =SPC m e=   | show tool output       | =*tcl-tools*=              |
 | =SPC m d d= | project docs manual    | opens =docs/<project>=     |
 | =SPC m d s= | search docs            | Doxygen XML                |
@@ -76,6 +86,26 @@ Optional extra symbols:
 - blank lines are ignored
 - lines starting with =#= are ignored
 - these symbols are merged into highlighting and symbol search
+
+User config can also override Tcl editing defaults with:
+- =orbit-user-enable-fill-column-indicator=
+- =orbit-user-fill-column=
+- =orbit-user-tcl-indent-width=
+- =orbit-user-tcl-fill-column=
+- =orbit-user-tcl-use-tabs=
+- =orbit-user-tcl-enable-fill-column-indicator= where ='inherit= falls back to the global setting
+- =orbit-user-enable-whitespace=
+- =orbit-user-enable-hl-line=
+- =orbit-user-tcl-enable-whitespace= where ='inherit= falls back to the global setting
+- =orbit-user-tcl-enable-hl-line= where ='inherit= falls back to the global setting
+
+The Tcl tooling diagnostic command =SPC m v= reports:
+- =tclint=
+- =tclfmt=
+- resolved =ctags= path, including an Apple ctags warning when detected
+- Doxygen program
+- Doxygen config file
+- Doxygen XML directory and =index.xml=
 
 * Tcl Docs
 

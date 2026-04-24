@@ -7,6 +7,8 @@
 (require 'subr-x)
 (require 'xref)
 
+(declare-function mod-tcl-docs-doxygen-config-file "mod-tcl-docs")
+
 (defgroup mod-tcl nil
   "Minimal Tcl workflow helpers."
   :group 'tools)
@@ -26,6 +28,12 @@
   "Arguments passed to the ctags program when rebuilding TAGS."
   :type '(repeat string))
 
+(defconst mod-tcl-default-indent-width 3
+  "Default indentation width for Tcl buffers.")
+
+(defconst mod-tcl-default-fill-column 120
+  "Default fill column for Tcl buffers.")
+
 (defvar-local mod-tcl--symbol-highlight-regexp nil
   "Buffer-local regexp used for Tcl project symbol highlighting.")
 
@@ -33,6 +41,156 @@
   '((mod-tcl--symbol-highlight-matcher
      (1 'font-lock-function-name-face keep)))
   "Font-lock keywords used for Tcl project symbol highlighting.")
+
+(defun mod-tcl-indent-width ()
+  "Return the preferred Tcl indentation width."
+  (or orbit-user-tcl-indent-width mod-tcl-default-indent-width))
+
+(defun mod-tcl-fill-column ()
+  "Return the preferred Tcl fill column."
+  (or orbit-user-tcl-fill-column
+      orbit-user-fill-column
+      mod-tcl-default-fill-column))
+
+(defun mod-tcl-use-tabs-p ()
+  "Return non-nil when Tcl buffers should indent with tabs."
+  orbit-user-tcl-use-tabs)
+
+(defun mod-tcl--resolve-override (override global-default)
+  "Return OVERRIDE unless it is `inherit', otherwise GLOBAL-DEFAULT."
+  (if (eq override 'inherit)
+      global-default
+    override))
+
+(defun mod-tcl-enable-whitespace-p ()
+  "Return non-nil when Tcl buffers should enable whitespace visibility."
+  (mod-tcl--resolve-override
+   orbit-user-tcl-enable-whitespace
+   orbit-user-enable-whitespace))
+
+(defun mod-tcl-enable-hl-line-p ()
+  "Return non-nil when Tcl buffers should enable current-line highlighting."
+  (mod-tcl--resolve-override
+   orbit-user-tcl-enable-hl-line
+   orbit-user-enable-hl-line))
+
+(defun mod-tcl-enable-fill-column-indicator-p ()
+  "Return non-nil when Tcl buffers should enable the fill-column indicator."
+  (mod-tcl--resolve-override
+   orbit-user-tcl-enable-fill-column-indicator
+   orbit-user-enable-fill-column-indicator))
+
+(defun mod-tcl--configure-editing-defaults ()
+  "Apply Tcl editing defaults to the current buffer."
+  (setq-local indent-tabs-mode (mod-tcl-use-tabs-p)
+              tab-width (mod-tcl-indent-width)
+              fill-column (mod-tcl-fill-column))
+  (when (boundp 'tcl-indent-level)
+    (setq-local tcl-indent-level (mod-tcl-indent-width)))
+  (setq-local display-fill-column-indicator-column fill-column)
+  (when (fboundp 'display-fill-column-indicator-mode)
+    (display-fill-column-indicator-mode
+     (if (mod-tcl-enable-fill-column-indicator-p) 1 -1)))
+  (setq-local whitespace-style '(face tabs trailing))
+  (when (fboundp 'whitespace-mode)
+    (setq-local mod-ui--whitespace-visible (mod-tcl-enable-whitespace-p))
+    (whitespace-mode (if (mod-tcl-enable-whitespace-p) 1 -1)))
+  (when (fboundp 'hl-line-mode)
+    (hl-line-mode (if (mod-tcl-enable-hl-line-p) 1 -1))))
+
+(defun mod-tcl--program-path (override fallback-name)
+  "Return OVERRIDE or a resolved FALLBACK-NAME path, or nil."
+  (or override
+      (executable-find fallback-name)))
+
+(defun mod-tcl--program-version-output (program)
+  "Return PROGRAM --version output trimmed, or nil on failure."
+  (when program
+    (with-temp-buffer
+      (when (eq 0 (ignore-errors
+                    (call-process program nil t nil "--version")))
+        (string-trim
+         (buffer-substring-no-properties (point-min) (point-max)))))))
+
+(defun mod-tcl--docs-root ()
+  "Return a practical Tcl docs root, or nil when none can be determined."
+  (or (mod-tcl--project-root-for-directory default-directory)
+      (when orbit-user-doxygen-config-file
+        (file-name-directory orbit-user-doxygen-config-file))
+      (when orbit-user-tcl-doxygen-xml-directory
+        (file-name-directory
+         (directory-file-name
+          (file-name-directory
+           (directory-file-name orbit-user-tcl-doxygen-xml-directory)))))))
+
+(defun mod-tcl--doxygen-config-path ()
+  "Return the configured or default Doxygen config path, or nil."
+  (or orbit-user-doxygen-config-file
+      (when-let ((root (mod-tcl--docs-root)))
+        (expand-file-name "Doxyfile" root))))
+
+(defun mod-tcl--doxygen-xml-directory-path ()
+  "Return the configured or default Doxygen XML directory path, or nil."
+  (or orbit-user-tcl-doxygen-xml-directory
+      (when-let ((root (mod-tcl--docs-root)))
+        (expand-file-name "docs/xml/" root))))
+
+(defun mod-tcl--diagnostic-line (status label detail)
+  "Return a formatted Tcl tooling diagnostic line."
+  (format "%-8s %-20s %s" status label (or detail "")))
+
+(defun mod-tcl--ctags-status-line ()
+  "Return the Universal Ctags diagnostic line."
+  (let* ((program (mod-tcl--program-path orbit-user-ctags-program "ctags"))
+         (version (mod-tcl--program-version-output program)))
+    (cond
+     ((not program)
+      (mod-tcl--diagnostic-line "MISSING" "ctags" "Command not found"))
+     ((and (eq system-type 'darwin)
+           (string= program "/usr/bin/ctags"))
+      (mod-tcl--diagnostic-line "WARN" "ctags" (format "%s (likely Apple ctags)" program)))
+     ((and version (string-match-p "Apple" version))
+      (mod-tcl--diagnostic-line "WARN" "ctags" (format "%s (Apple ctags)" program)))
+     ((and version (string-match-p "Universal Ctags" version))
+      (mod-tcl--diagnostic-line "OK" "ctags" (format "%s (Universal Ctags)" program)))
+     (t
+      (mod-tcl--diagnostic-line "OK" "ctags" program)))))
+
+(defun mod-tcl-validate-tooling ()
+  "Display a Tcl tooling diagnostic report."
+  (interactive)
+  (let* ((tclint (mod-tcl--program-path orbit-user-tclint-program "tclint"))
+         (tclfmt (mod-tcl--program-path orbit-user-tclfmt-program "tclfmt"))
+         (doxygen (mod-tcl--program-path orbit-user-doxygen-program "doxygen"))
+         (config-file (mod-tcl--doxygen-config-path))
+         (xml-directory (mod-tcl--doxygen-xml-directory-path))
+         (index-file (and xml-directory (expand-file-name "index.xml" xml-directory)))
+         (lines
+          (list
+           (mod-tcl--diagnostic-line
+            (if tclint "OK" "MISSING") "tclint"
+            (or tclint "Command not found"))
+           (mod-tcl--diagnostic-line
+            (if tclfmt "OK" "MISSING") "tclfmt"
+            (or tclfmt "Command not found"))
+           (mod-tcl--ctags-status-line)
+           (mod-tcl--diagnostic-line
+            (if doxygen "OK" "MISSING") "doxygen"
+            (or doxygen "Command not found"))
+           (mod-tcl--diagnostic-line
+            (if (and config-file (file-exists-p config-file)) "OK" "MISSING")
+            "Doxyfile"
+            (or config-file "No project root or override found"))
+           (mod-tcl--diagnostic-line
+            (if (and xml-directory (file-directory-p xml-directory)) "OK" "MISSING")
+            "docs/xml"
+            (or xml-directory "No project root or override found"))
+           (mod-tcl--diagnostic-line
+            (if (and index-file (file-exists-p index-file)) "OK" "MISSING")
+            "index.xml"
+            (or index-file "No XML directory found")))))
+    (mod-tcl--write-output "Tcl Tooling Validation" lines)
+    (mod-tcl--display-output-buffer)))
 
 (defun mod-tcl--project-root ()
   "Return the current project root or signal a user-facing error."
@@ -488,6 +646,7 @@ Return non-nil when a project definition was found."
 (defalias 'mod-tcl-show-output #'mod-tcl--display-output-buffer)
 
 (with-eval-after-load 'tcl
+  (add-hook 'tcl-mode-hook #'mod-tcl--configure-editing-defaults)
   (add-hook 'tcl-mode-hook #'mod-tcl--enable-symbol-highlighting))
 
 (provide 'mod-tcl)

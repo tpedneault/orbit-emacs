@@ -2,6 +2,7 @@
 
 (require 'recentf)
 (require 'subr-x)
+(require 'whitespace)
 
 (declare-function persp-current-name "perspective")
 (declare-function battery "battery")
@@ -15,6 +16,18 @@
 (defconst mod-ui-recentf-save-file
   (expand-file-name "recentf" mod-core-var-directory)
   "Path used to persist recentf data.")
+
+(defconst mod-ui-big-font-scale 1.4
+  "Multiplier used when enabling big font mode.")
+
+(defconst mod-ui-big-font-weight 'bold
+  "Default face weight used when enabling big font mode.")
+
+(defvar-local mod-ui--saved-mode-line-format nil
+  "Buffer-local saved modeline used by `mod-ui-toggle-modeline'.")
+
+(defvar-local mod-ui--whitespace-visible nil
+  "Buffer-local state used by `mod-ui-toggle-whitespace'.")
 
 (defun mod-ui-font-family ()
   "Return the preferred UI font family."
@@ -132,6 +145,150 @@
                           :family (mod-ui-font-family)
                           :height (or (mod-ui-font-height) 'unspecified)))))
 
+(defun mod-ui--frame-default-height (&optional frame)
+  "Return the current default face height for FRAME."
+  (let ((height (face-attribute 'default :height (or frame (selected-frame)) 'default)))
+    (if (integerp height)
+        height
+      (or (mod-ui-font-height) 140))))
+
+(defun mod-ui-toggle-fullscreen ()
+  "Toggle the selected frame between fullscreen and normal."
+  (interactive)
+  (set-frame-parameter
+   nil
+   'fullscreen
+   (if (frame-parameter nil 'fullscreen) nil 'fullboth)))
+
+(defun mod-ui-toggle-big-font ()
+  "Toggle a larger, bolder default font on the selected frame."
+  (interactive)
+  (let* ((frame (selected-frame))
+         (enabled (frame-parameter frame 'mod-ui-big-font-enabled)))
+    (if enabled
+        (progn
+          (set-face-attribute
+           'default frame
+           :height (or (frame-parameter frame 'mod-ui-big-font-prev-height) 'unspecified)
+           :weight (or (frame-parameter frame 'mod-ui-big-font-prev-weight) 'normal))
+          (set-frame-parameter frame 'mod-ui-big-font-enabled nil)
+          (set-frame-parameter frame 'mod-ui-big-font-prev-height nil)
+          (set-frame-parameter frame 'mod-ui-big-font-prev-weight nil)
+          (message "Big font mode disabled"))
+      (let ((height (mod-ui--frame-default-height frame))
+            (weight (face-attribute 'default :weight frame 'default)))
+        (set-frame-parameter frame 'mod-ui-big-font-prev-height height)
+        (set-frame-parameter frame 'mod-ui-big-font-prev-weight weight)
+        (set-face-attribute
+         'default frame
+         :height (round (* height mod-ui-big-font-scale))
+         :weight mod-ui-big-font-weight)
+        (set-frame-parameter frame 'mod-ui-big-font-enabled t)
+        (message "Big font mode enabled")))))
+
+(defun mod-ui-toggle-line-numbers ()
+  "Toggle line numbers in the current buffer."
+  (interactive)
+  (if (bound-and-true-p display-line-numbers-mode)
+      (progn
+        (display-line-numbers-mode -1)
+        (message "Line numbers disabled"))
+    (display-line-numbers-mode 1)
+    (message "Line numbers enabled")))
+
+(defun mod-ui-toggle-line-number-style ()
+  "Toggle line numbers between relative and absolute styles."
+  (interactive)
+  (let ((new-type (if (eq display-line-numbers-type 'relative) t 'relative)))
+    (setq-default display-line-numbers-type new-type)
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (when (bound-and-true-p display-line-numbers-mode)
+          (setq-local display-line-numbers new-type)
+          (display-line-numbers-mode -1)
+          (display-line-numbers-mode 1))))
+    (message "Line number style: %s"
+             (if (eq new-type 'relative) "relative" "absolute"))))
+
+(defun mod-ui-toggle-hl-line ()
+  "Toggle current-line highlighting in the current buffer."
+  (interactive)
+  (if (bound-and-true-p hl-line-mode)
+      (progn
+        (hl-line-mode -1)
+        (message "Current line highlight disabled"))
+    (hl-line-mode 1)
+    (message "Current line highlight enabled")))
+
+(defun mod-ui-toggle-whitespace ()
+  "Toggle simple whitespace visibility in the current buffer."
+  (interactive)
+  (setq-local whitespace-style '(face tabs trailing))
+  (if (or mod-ui--whitespace-visible
+          (bound-and-true-p whitespace-mode))
+      (progn
+        (setq-local mod-ui--whitespace-visible nil)
+        (whitespace-mode -1)
+        (message "Whitespace visibility disabled"))
+    (setq-local mod-ui--whitespace-visible t)
+    (whitespace-mode 1)
+    (message "Whitespace visibility enabled")))
+
+(defun mod-ui-toggle-modeline ()
+  "Toggle modeline visibility in the current buffer."
+  (interactive)
+  (if mode-line-format
+      (progn
+        (setq mod-ui--saved-mode-line-format mode-line-format)
+        (setq-local mode-line-format nil)
+        (force-mode-line-update)
+        (message "Modeline hidden"))
+    (setq-local mode-line-format
+                (or mod-ui--saved-mode-line-format
+                    (default-value 'mode-line-format)))
+    (force-mode-line-update)
+    (message "Modeline shown")))
+
+(defun mod-ui-toggle-fill-column-indicator ()
+  "Toggle the fill-column indicator in the current buffer."
+  (interactive)
+  (if (bound-and-true-p display-fill-column-indicator-mode)
+      (progn
+        (display-fill-column-indicator-mode -1)
+        (message "Fill-column indicator disabled"))
+    (display-fill-column-indicator-mode 1)
+    (message "Fill-column indicator enabled")))
+
+(defun mod-ui-apply-truncate-defaults ()
+  "Apply the default unwrapped line behavior to the current buffer."
+  (setq truncate-lines t
+        word-wrap nil))
+
+(defun mod-ui-enable-prog-layout ()
+  "Keep programming buffers in truncation mode."
+  (mod-ui-apply-truncate-defaults)
+  (when (bound-and-true-p visual-line-mode)
+    (visual-line-mode -1)))
+
+(defun mod-ui-enable-org-layout ()
+  "Keep Org buffers in wrapped reading mode."
+  (setq truncate-lines nil
+        word-wrap t)
+  (visual-line-mode 1))
+
+(defun mod-ui-toggle-wrap ()
+  "Toggle the current buffer between wrapped and truncated lines."
+  (interactive)
+  (if (bound-and-true-p visual-line-mode)
+      (progn
+        (visual-line-mode -1)
+        (mod-ui-apply-truncate-defaults)
+        (message "Line wrapping disabled"))
+    (setq truncate-lines nil
+          word-wrap t)
+    (visual-line-mode 1)
+    (message "Line wrapping enabled")))
+
 ;; Keep new GUI frames aligned with the text-first startup defaults.
 (add-to-list 'default-frame-alist '(menu-bar-lines . 0))
 (add-to-list 'default-frame-alist '(tool-bar-lines . 0))
@@ -158,11 +315,16 @@
 
 (setq-default display-line-numbers-type 'relative
               indicate-empty-lines t
-              cursor-in-non-selected-windows nil)
+              cursor-in-non-selected-windows nil
+              truncate-lines t
+              word-wrap nil)
 
 (setq recentf-save-file mod-ui-recentf-save-file
       recentf-max-saved-items 200
       auto-revert-verbose nil)
+
+(when (bound-and-true-p global-visual-line-mode)
+  (global-visual-line-mode -1))
 
 (global-display-line-numbers-mode 1)
 (column-number-mode 1)
@@ -180,6 +342,9 @@
                 shell-mode-hook
                 eshell-mode-hook))
   (add-hook hook (lambda () (display-line-numbers-mode -1))))
+
+(add-hook 'prog-mode-hook #'mod-ui-enable-prog-layout)
+(add-hook 'org-mode-hook #'mod-ui-enable-org-layout)
 
 (provide 'mod-ui)
 
