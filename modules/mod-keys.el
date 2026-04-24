@@ -220,6 +220,7 @@
      :keymaps 'tcl-mode-map
      :prefix "SPC m"
      "d" '(:ignore t :which-key "docs")
+     "d d" '(mod-tcl-docs-manual :which-key "project manual")
      "d s" '(mod-tcl-docs-search :which-key "search docs")
      "d p" '(mod-tcl-docs-at-point :which-key "docs at point")
      "d r" '(mod-tcl-docs-regenerate :which-key "regen docs")

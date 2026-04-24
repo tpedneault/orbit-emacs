@@ -4,6 +4,7 @@
 (require 'compile)
 (require 'org)
 (require 'subr-x)
+(require 'xref)
 (require 'xml)
 
 (defgroup mod-tcl-docs nil
@@ -13,8 +14,34 @@
 (defconst mod-tcl-docs-buffer-prefix "*tcl-docs: "
   "Prefix used for temporary Tcl documentation buffers.")
 
+(defconst mod-tcl-docs-manual-buffer-prefix "*tcl-docs-manual: "
+  "Prefix used for temporary Tcl documentation manual buffers.")
+
 (defconst mod-tcl-docs-regenerate-buffer-name "*tcl-doxygen*"
   "Compilation buffer name for Doxygen regeneration.")
+
+(defun mod-tcl-docs-go-back ()
+  "Go back to the previous Tcl docs location using the xref stack."
+  (interactive)
+  (xref-go-back))
+
+(defvar mod-tcl-docs-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "q") #'mod-tcl-docs-go-back)
+    map)
+  "Keymap for temporary Tcl docs buffers.")
+
+(define-minor-mode mod-tcl-docs-mode
+  "Minor mode for temporary Tcl documentation buffers."
+  :lighter nil
+  :keymap mod-tcl-docs-mode-map)
+
+(defun mod-tcl-docs--enable-local-evil-bindings ()
+  "Install buffer-local Evil bindings for Tcl docs buffers.
+Minor-mode keymaps do not override Evil normal-state bindings by themselves,
+so `q' must be rebound through Evil in these generated docs buffers."
+  (when (fboundp 'evil-local-set-key)
+    (evil-local-set-key 'normal (kbd "q") #'mod-tcl-docs-go-back)))
 
 (defun mod-tcl-docs-xml-directory ()
   "Return the configured Doxygen XML directory."
@@ -24,6 +51,31 @@
 (defun mod-tcl-docs--index-file ()
   "Return the configured Doxygen index.xml path."
   (expand-file-name "index.xml" (mod-tcl-docs-xml-directory)))
+
+(defun mod-tcl-docs--project-root ()
+  "Return a practical project root for Tcl docs."
+  (or (when-let ((project (project-current nil)))
+        (project-root project))
+      (when orbit-user-doxygen-config-file
+        (file-name-directory orbit-user-doxygen-config-file))
+      (file-name-directory (directory-file-name (mod-tcl-docs-xml-directory)))))
+
+(defun mod-tcl-docs--project-name ()
+  "Return the current Tcl docs project name."
+  (file-name-nondirectory
+   (directory-file-name (mod-tcl-docs--project-root))))
+
+(defun mod-tcl-docs--docs-context-name ()
+  "Return the context name used for the Tcl docs manual."
+  (format "docs/%s" (mod-tcl-docs--project-name)))
+
+(defun mod-tcl-docs--manual-buffer-name ()
+  "Return the Tcl docs manual buffer name."
+  (format "%s%s*" mod-tcl-docs-manual-buffer-prefix (mod-tcl-docs--project-name)))
+
+(defun mod-tcl-docs--push-location ()
+  "Push the current point onto Emacs' built-in xref marker stack."
+  (xref-push-marker-stack))
 
 (defun mod-tcl-docs--parse-xml-file (file)
   "Parse FILE into a simple XML tree."
@@ -165,6 +217,17 @@ keep the original MEMBER-NAME."
       (format "%s::%s" compound-name member-name)
     member-name))
 
+(defun mod-tcl-docs--switch-to-manual-context ()
+  "Switch to the Tcl documentation context for the current project."
+  (cond
+   ((and (fboundp 'mod-context--switch-or-create)
+         (fboundp 'persp-switch))
+    (mod-context--switch-or-create (mod-tcl-docs--docs-context-name)))
+   ((fboundp 'persp-switch)
+    (persp-switch (mod-tcl-docs--docs-context-name)))
+   (t
+    nil)))
+
 (defun mod-tcl-docs--entry-candidate (entry duplicates)
   "Return a display candidate for ENTRY.
 DUPLICATES is a hash table keyed by symbol names with occurrence counts."
@@ -197,12 +260,30 @@ resolved inside the compound XML file named after the compound `refid'."
             (when (and symbol (not (string-empty-p symbol)))
               (push (list :symbol symbol
                           :member-name member-name
+                          :entry-type 'member
                           :refid (mod-tcl-docs--attr member 'refid)
                           :kind (mod-tcl-docs--attr member 'kind)
                           :compound-refid compound-refid
                           :compound-kind compound-kind
                           :compound-name compound-name)
                     entries))))))
+    (nreverse entries)))
+
+(defun mod-tcl-docs--collect-index-compounds ()
+  "Collect compound-level entries from Doxygen's index.xml."
+  (let* ((root (mod-tcl-docs--parse-xml-file (mod-tcl-docs--index-file)))
+         (compounds (mod-tcl-docs--children-named root 'compound))
+         entries)
+    (dolist (compound compounds)
+      (let ((name (mod-tcl-docs--text (mod-tcl-docs--child compound 'name)))
+            (kind (mod-tcl-docs--attr compound 'kind))
+            (refid (mod-tcl-docs--attr compound 'refid)))
+        (when (and name (not (string-empty-p name)))
+          (push (list :entry-type 'compound
+                      :symbol name
+                      :kind kind
+                      :refid refid)
+                entries))))
     (nreverse entries)))
 
 (defun mod-tcl-docs--find-entry-by-symbol (symbol)
@@ -309,6 +390,92 @@ resolved inside the compound XML file named after the compound `refid'."
        (and (eq (mod-tcl-docs--node-name node) 'memberdef)
             (equal (mod-tcl-docs--attr node 'id) target-refid))))))
 
+(defun mod-tcl-docs--compound-node (entry)
+  "Return the compounddef node matching compound ENTRY."
+  (let* ((compound-file
+          (expand-file-name
+           (format "%s.xml" (plist-get entry :refid))
+           (mod-tcl-docs-xml-directory)))
+         (root (mod-tcl-docs--parse-xml-file compound-file))
+         (target-refid (plist-get entry :refid)))
+    (mod-tcl-docs--find-first
+     root
+     (lambda (node)
+       (and (eq (mod-tcl-docs--node-name node) 'compounddef)
+            (equal (mod-tcl-docs--attr node 'id) target-refid))))))
+
+(defun mod-tcl-docs--entry-by-refid (refid)
+  "Return the indexed symbol entry identified by REFID."
+  (cl-find-if
+   (lambda (entry)
+     (equal (plist-get entry :refid) refid))
+   (mod-tcl-docs--collect-index-entries)))
+
+(defun mod-tcl-docs--compound-by-refid (refid)
+  "Return the indexed compound entry identified by REFID."
+  (cl-find-if
+   (lambda (entry)
+     (equal (plist-get entry :refid) refid))
+   (mod-tcl-docs--collect-index-compounds)))
+
+(defun mod-tcl-docs--compound-inner-namespaces (compound)
+  "Return indexed child namespace entries referenced by COMPOUND."
+  (delq nil
+        (mapcar
+         (lambda (node)
+           (mod-tcl-docs--compound-by-refid (mod-tcl-docs--attr node 'refid)))
+         (mod-tcl-docs--children-named compound 'innernamespace))))
+
+(defun mod-tcl-docs--namespace-member-entries (compound)
+  "Return direct symbol entries defined by namespace COMPOUND.
+This uses the compound XML `memberdef` list, which Doxygen 1.8.17 emits for
+Tcl namespace compounds."
+  (let (entries)
+    (cl-labels ((walk (node)
+                  (when (consp node)
+                    (when (eq (mod-tcl-docs--node-name node) 'memberdef)
+                      (when-let ((entry (mod-tcl-docs--entry-by-refid
+                                         (mod-tcl-docs--attr node 'id))))
+                        (push entry entries)))
+                    (dolist (child (mod-tcl-docs--node-children node))
+                      (walk child)))))
+      (walk compound))
+    (nreverse (cl-remove-duplicates entries :test #'equal))))
+
+(defun mod-tcl-docs--file-member-entries (compound entry)
+  "Return symbol entries belonging to file COMPOUND for compound ENTRY.
+File compounds in Doxygen's Tcl XML usually do not include their own
+`memberdef`s, so this falls back to the global symbol index and compares each
+symbol's resolved source file against the file compound's source path."
+  (let* ((location (mod-tcl-docs--child compound 'location))
+         (target-file (mod-tcl-docs--resolve-source-file
+                       (or (mod-tcl-docs--attr location 'bodyfile)
+                           (mod-tcl-docs--attr location 'file))))
+         (entries (mod-tcl-docs--collect-index-entries))
+         matches)
+    (dolist (symbol-entry entries)
+      (unless (equal (plist-get symbol-entry :compound-refid) (plist-get entry :refid))
+        (when-let ((source-file (plist-get (mod-tcl-docs--entry-doc symbol-entry) :source-file)))
+          (when (and target-file (string= source-file target-file))
+            (push symbol-entry matches)))))
+    (nreverse (cl-remove-duplicates matches :test #'equal))))
+
+(defun mod-tcl-docs--split-member-groups (entries)
+  "Split ENTRIES into function and other groups."
+  (list
+   :functions
+   (sort
+    (cl-remove-if-not
+     (lambda (entry) (equal (plist-get entry :kind) "function"))
+     entries)
+    (lambda (a b) (string< (plist-get a :symbol) (plist-get b :symbol))))
+   :others
+   (sort
+    (cl-remove-if
+     (lambda (entry) (equal (plist-get entry :kind) "function"))
+     entries)
+    (lambda (a b) (string< (plist-get a :symbol) (plist-get b :symbol))))))
+
 (defun mod-tcl-docs--entry-doc (entry)
   "Extract a minimal documentation plist for ENTRY.
 
@@ -347,6 +514,45 @@ Currently supported XML structures:
      :source-line (or (mod-tcl-docs--attr location 'bodyline)
                       (mod-tcl-docs--attr location 'line)))))
 
+(defun mod-tcl-docs--compound-doc (entry)
+  "Extract a minimal documentation plist for compound ENTRY."
+  (let* ((compound (mod-tcl-docs--compound-node entry))
+         (location (mod-tcl-docs--child compound 'location))
+         (members
+          (pcase (plist-get entry :kind)
+            ("namespace" (mod-tcl-docs--namespace-member-entries compound))
+            ("file" (mod-tcl-docs--file-member-entries compound entry))
+            (_ nil)))
+         (member-groups (mod-tcl-docs--split-member-groups members))
+         (brief (string-join
+                 (or (mod-tcl-docs--paragraph-texts
+                      (mod-tcl-docs--child compound 'briefdescription))
+                     '())
+                 "\n\n"))
+         (details (string-join
+                   (or (mod-tcl-docs--paragraph-texts
+                        (mod-tcl-docs--child compound 'detaileddescription))
+                       '())
+                   "\n\n")))
+    (list
+     :symbol (plist-get entry :symbol)
+     :kind (plist-get entry :kind)
+     :compound-name nil
+     :definition nil
+     :argsstring nil
+     :brief brief
+     :details details
+     :inner-namespaces (mod-tcl-docs--compound-inner-namespaces compound)
+     :functions (plist-get member-groups :functions)
+     :others (plist-get member-groups :others)
+     :parameters nil
+     :returns nil
+     :source-file (mod-tcl-docs--resolve-source-file
+                   (or (mod-tcl-docs--attr location 'bodyfile)
+                       (mod-tcl-docs--attr location 'file)))
+     :source-line (or (mod-tcl-docs--attr location 'bodyline)
+                      (mod-tcl-docs--attr location 'line)))))
+
 (defun mod-tcl-docs--source-link (doc)
   "Return an Org source link string for DOC, or nil."
   (when-let ((file (plist-get doc :source-file)))
@@ -356,6 +562,106 @@ Currently supported XML structures:
               (if line (format "::%s" line) "")
               (file-name-nondirectory file)
               (if line (format ":%s" line) "")))))
+
+(defun mod-tcl-docs-open-symbol (symbol)
+  "Open Tcl documentation for SYMBOL."
+  (interactive "sTcl symbol: ")
+  (mod-tcl-docs--push-location)
+  (let ((entry (mod-tcl-docs--find-entry-by-symbol symbol)))
+    (unless entry
+      (user-error "No Doxygen XML documentation found for: %s" symbol))
+    (mod-tcl-docs--render (mod-tcl-docs--entry-doc entry))))
+
+(defun mod-tcl-docs-open-compound (refid)
+  "Open Tcl documentation for a compound identified by REFID."
+  (interactive "sDoxygen compound refid: ")
+  (mod-tcl-docs--push-location)
+  (let ((entry (cl-find-if
+                (lambda (compound)
+                  (equal (plist-get compound :refid) refid))
+                (mod-tcl-docs--collect-index-compounds))))
+    (unless entry
+      (user-error "No Doxygen XML compound found for: %s" refid))
+    (mod-tcl-docs--render-compound (mod-tcl-docs--compound-doc entry))))
+
+(defun mod-tcl-docs--org-link-symbol-follow (symbol)
+  "Follow a `tcldoc:' Org link for SYMBOL."
+  (mod-tcl-docs-open-symbol symbol))
+
+(defun mod-tcl-docs--org-link-compound-follow (refid)
+  "Follow a `tcldoc-compound:' Org link for REFID."
+  (mod-tcl-docs-open-compound refid))
+
+(with-eval-after-load 'org
+  (org-link-set-parameters "tcldoc" :follow #'mod-tcl-docs--org-link-symbol-follow)
+  (org-link-set-parameters "tcldoc-compound" :follow #'mod-tcl-docs--org-link-compound-follow))
+
+(defun mod-tcl-docs--insert-manual-group (title entries link-fn)
+  "Insert a manual section TITLE for ENTRIES using LINK-FN.
+LINK-FN receives an entry plist and must return an Org link string."
+  (when entries
+    (insert (format "* %s\n\n" title))
+    (dolist (entry entries)
+      (insert (format "- %s\n" (funcall link-fn entry))))
+    (insert "\n")))
+
+(defun mod-tcl-docs--member-link (entry)
+  "Return an Org link for member ENTRY."
+  (format "[[tcldoc:%s][%s]]"
+          (plist-get entry :symbol)
+          (plist-get entry :symbol)))
+
+(defun mod-tcl-docs--compound-link (entry)
+  "Return an Org link for compound ENTRY."
+  (format "[[tcldoc-compound:%s][%s]]"
+          (plist-get entry :refid)
+          (plist-get entry :symbol)))
+
+(defun mod-tcl-docs--render-entry-list (title entries)
+  "Insert a compound doc section TITLE for symbol ENTRIES."
+  (when entries
+    (insert (format "* %s\n\n" title))
+    (dolist (entry entries)
+      (insert (format "- %s\n" (mod-tcl-docs--member-link entry))))
+    (insert "\n")))
+
+(defun mod-tcl-docs--render-compound (doc)
+  "Render compound DOC into a temporary read-only Org buffer."
+  (let ((buffer (get-buffer-create
+                 (format "%s%s*" mod-tcl-docs-buffer-prefix (plist-get doc :symbol)))))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (format "* %s\n" (plist-get doc :symbol)))
+        (insert (format "- Kind :: %s\n" (or (plist-get doc :kind) "unknown")))
+        (when-let ((source-link (mod-tcl-docs--source-link doc)))
+          (insert (format "- Source :: %s\n" source-link)))
+        (insert "\n")
+        (when-let ((brief (plist-get doc :brief)))
+          (unless (string-empty-p brief)
+            (insert "* Summary\n\n" brief "\n\n")))
+        (when-let ((details (plist-get doc :details)))
+          (unless (string-empty-p details)
+            (insert "* Details\n\n" details "\n\n")))
+        (when-let ((inner-namespaces (plist-get doc :inner-namespaces)))
+          (when inner-namespaces
+            (insert "* Namespaces\n\n")
+            (dolist (entry (sort (copy-sequence inner-namespaces)
+                                 (lambda (a b)
+                                   (string< (plist-get a :symbol)
+                                            (plist-get b :symbol)))))
+              (insert (format "- %s\n" (mod-tcl-docs--compound-link entry))))
+            (insert "\n")))
+        (mod-tcl-docs--render-entry-list "Functions / Procedures"
+                                         (plist-get doc :functions))
+        (mod-tcl-docs--render-entry-list "Variables / Other"
+                                         (plist-get doc :others)))
+      (goto-char (point-min))
+      (org-mode)
+      (mod-tcl-docs-mode 1)
+      (mod-tcl-docs--enable-local-evil-bindings)
+      (read-only-mode 1))
+    (switch-to-buffer buffer)))
 
 (defun mod-tcl-docs--render (doc)
   "Render DOC into a temporary read-only Org buffer."
@@ -399,8 +705,74 @@ Currently supported XML structures:
             (insert "* Details\n\n" details "\n"))))
       (goto-char (point-min))
       (org-mode)
+      (mod-tcl-docs-mode 1)
+      (mod-tcl-docs--enable-local-evil-bindings)
       (read-only-mode 1))
-    (pop-to-buffer buffer)))
+    (switch-to-buffer buffer)))
+
+(defun mod-tcl-docs-manual ()
+  "Open a project Tcl documentation manual from Doxygen XML."
+  (interactive)
+  (mod-tcl-docs--push-location)
+  (let* ((project-name (mod-tcl-docs--project-name))
+         (xml-directory (mod-tcl-docs-xml-directory))
+         (members (mod-tcl-docs--collect-index-entries))
+         (compounds (mod-tcl-docs--collect-index-compounds))
+         (functions
+          (sort
+           (cl-remove-if-not
+            (lambda (entry) (equal (plist-get entry :kind) "function"))
+            members)
+           (lambda (a b) (string< (plist-get a :symbol) (plist-get b :symbol)))))
+         (variables/other
+          (sort
+           (cl-remove-if
+            (lambda (entry) (equal (plist-get entry :kind) "function"))
+            members)
+           (lambda (a b) (string< (plist-get a :symbol) (plist-get b :symbol)))))
+         (namespaces
+          (sort
+           (cl-remove-if-not
+            (lambda (entry) (equal (plist-get entry :kind) "namespace"))
+            compounds)
+           (lambda (a b) (string< (plist-get a :symbol) (plist-get b :symbol)))))
+         (files
+          (sort
+           (cl-remove-if-not
+            (lambda (entry) (equal (plist-get entry :kind) "file"))
+            compounds)
+           (lambda (a b) (string< (plist-get a :symbol) (plist-get b :symbol)))))
+         (buffer (get-buffer-create (mod-tcl-docs--manual-buffer-name))))
+    (mod-tcl-docs--switch-to-manual-context)
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (format "* Tcl Docs Manual: %s\n\n" project-name))
+        (insert (format "- XML Directory :: %s\n" xml-directory))
+        (insert (format "- Context :: %s\n\n" (mod-tcl-docs--docs-context-name)))
+        (insert "* Commands\n\n")
+        (insert "- `SPC m d s` :: search docs\n")
+        (insert "- `SPC m d p` :: docs at point\n")
+        (insert "- `SPC m d r` :: regenerate XML\n")
+        (insert "- `SPC m d d` :: project manual\n\n")
+        (mod-tcl-docs--insert-manual-group "Functions / Procedures"
+                                           functions
+                                           #'mod-tcl-docs--member-link)
+        (mod-tcl-docs--insert-manual-group "Namespaces"
+                                           namespaces
+                                           #'mod-tcl-docs--compound-link)
+        (mod-tcl-docs--insert-manual-group "Files"
+                                           files
+                                           #'mod-tcl-docs--compound-link)
+        (mod-tcl-docs--insert-manual-group "Variables / Other"
+                                           variables/other
+                                           #'mod-tcl-docs--member-link))
+      (goto-char (point-min))
+      (org-mode)
+      (mod-tcl-docs-mode 1)
+      (mod-tcl-docs--enable-local-evil-bindings)
+      (read-only-mode 1))
+    (switch-to-buffer buffer)))
 
 (defun mod-tcl-docs-search ()
   "Search documented Tcl symbols from Doxygen XML."
@@ -422,11 +794,7 @@ Currently supported XML structures:
 (defun mod-tcl-docs-at-point ()
   "Open Tcl documentation for the symbol at point."
   (interactive)
-  (let* ((symbol (mod-tcl-docs--symbol-at-point))
-         (entry (mod-tcl-docs--find-entry-by-symbol symbol)))
-    (unless entry
-      (user-error "No Doxygen XML documentation found for: %s" symbol))
-    (mod-tcl-docs--render (mod-tcl-docs--entry-doc entry))))
+  (mod-tcl-docs-open-symbol (mod-tcl-docs--symbol-at-point)))
 
 (defun mod-tcl-docs-regenerate ()
   "Run Doxygen to regenerate Tcl XML documentation."
