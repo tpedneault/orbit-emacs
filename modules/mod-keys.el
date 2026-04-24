@@ -2,6 +2,8 @@
 
 (require 'project)
 
+(declare-function mod-context-open-path "mod-context")
+
 (defconst mod-keys-config-directory
   (file-name-directory
    (directory-file-name
@@ -11,12 +13,12 @@
 (defun mod-keys-open-init-file ()
   "Open init.el for this configuration."
   (interactive)
-  (find-file (expand-file-name "init.el" mod-keys-config-directory)))
+  (mod-context-open-path (expand-file-name "init.el" mod-keys-config-directory)))
 
 (defun mod-keys-open-early-init-file ()
   "Open early-init.el for this configuration."
   (interactive)
-  (find-file (expand-file-name "early-init.el" mod-keys-config-directory)))
+  (mod-context-open-path (expand-file-name "early-init.el" mod-keys-config-directory)))
 
 (defun mod-keys-open-modules-directory ()
   "Open the modules directory for this configuration."
@@ -26,7 +28,7 @@
 (defun mod-keys-open-agents-file ()
   "Open AGENTS.md for this configuration."
   (interactive)
-  (find-file (expand-file-name "AGENTS.md" mod-keys-config-directory)))
+  (mod-context-open-path (expand-file-name "AGENTS.md" mod-keys-config-directory)))
 
 (defun mod-keys-open-docs-directory ()
   "Open the docs directory for this configuration."
@@ -36,7 +38,7 @@
 (defun mod-keys-open-user-config-file ()
   "Open the user-local orbit-emacs config.el."
   (interactive)
-  (find-file mod-core-user-config-file))
+  (mod-context-open-path mod-core-user-config-file))
 
 (defun mod-keys-open-user-directory ()
   "Open the user-local orbit-emacs directory."
@@ -51,7 +53,7 @@
 (defun mod-keys-open-docs-manual ()
   "Open the Org documentation manual for this configuration."
   (interactive)
-  (find-file (expand-file-name "docs/manual.org" mod-keys-config-directory)))
+  (mod-context-open-path (expand-file-name "docs/manual.org" mod-keys-config-directory)))
 
 (defun mod-keys-reload-config ()
   "Reload the Orbit Emacs configuration."
@@ -102,7 +104,7 @@
     "f c s e" '(yas-visit-snippet-file :which-key "edit snippet")
     "f c s n" '(yas-new-snippet :which-key "new snippet")
     "f c s r" '(yas-reload-all :which-key "reload snippets")
-    "f f" '(find-file :which-key "find file")
+    "f f" '(mod-context-open-path :which-key "find file")
     "f r" '(recentf-open-files :which-key "recent")
     "f s" '(save-buffer :which-key "save")
     "b" '(:ignore t :which-key "buffers")
@@ -120,7 +122,7 @@
     "h v" '(describe-variable :which-key "describe variable")
     "p" '(:ignore t :which-key "projects")
     "p d" '(mod-project-forget :which-key "forget")
-    "p p" '(project-switch-project :which-key "switch project")
+    "p p" '(mod-project-switch :which-key "switch project")
     "p f" '(project-find-file :which-key "find file")
     "p s" '(mod-project-search :which-key "search")
     "s" '(:ignore t :which-key "search")

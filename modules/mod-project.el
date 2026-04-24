@@ -3,6 +3,8 @@
 (require 'project)
 
 (declare-function consult-ripgrep "consult")
+(declare-function mod-context-open-project-editor "mod-context")
+(declare-function mod-context--directory-name "mod-context")
 
 (defun mod-project-current ()
   "Return the current project or signal a user-facing error."
@@ -22,6 +24,17 @@
   "Forget a known project from the built-in project list."
   (interactive)
   (call-interactively #'project-forget-project))
+
+(defun mod-project-switch ()
+  "Switch to a project's edit context without showing the action menu."
+  (interactive)
+  (let* ((projects (project-known-project-roots)))
+    (unless projects
+      (user-error "No known projects available"))
+    (let* ((root (completing-read "Project: " projects nil t))
+           (project (list :root root
+                          :name (mod-context--directory-name root))))
+      (mod-context-open-project-editor project))))
 
 (setq project-switch-commands
       '((project-find-file "Find file")

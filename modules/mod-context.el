@@ -31,6 +31,9 @@
   "Return the edit context name for ROOT."
   (format "edit/%s" (mod-context--directory-name root)))
 
+(defconst mod-context-loose-edit-context-name "edit/loose"
+  "Dedicated edit context name for files outside recognized projects.")
+
 (defun mod-context--files-context-name (root)
   "Return the files context name for ROOT."
   (format "files/%s" (mod-context--directory-name root)))
@@ -64,6 +67,40 @@ buffers and no file-visiting buffers inside ROOT."
   "Return the current project root, or nil if not in a project."
   (when-let* ((project (project-current nil)))
     (project-root project)))
+
+(defun mod-context--project-root-for-file (file)
+  "Return the project root for FILE, or nil when FILE is not in a project."
+  (let ((default-directory (file-name-directory file)))
+    (mod-context--project-root)))
+
+(defun mod-context--edit-context-name-for-file (file)
+  "Return the edit context name appropriate for FILE."
+  (if-let* ((root (mod-context--project-root-for-file file)))
+      (mod-context--edit-context-name root)
+    mod-context-loose-edit-context-name))
+
+(defun mod-context--files-context-name-for-directory (dir)
+  "Return the files context name appropriate for DIR."
+  (let ((default-directory dir))
+    (if-let* ((root (mod-context--project-root)))
+        (mod-context--files-context-name root)
+      (mod-context--files-context-name dir))))
+
+(defun mod-context-open-path (path)
+  "Open PATH in the appropriate edit or files context."
+  (interactive "FOpen path: ")
+  (let ((expanded (expand-file-name path)))
+    (if (file-directory-p expanded)
+        (let ((default-directory expanded))
+          (mod-context--activate-template
+           (mod-context--files-context-name-for-directory expanded)
+           (lambda ()
+             (let ((default-directory expanded))
+               (mod-dired-here)))))
+      (let ((default-directory (or (mod-context--project-root-for-file expanded)
+                                   (file-name-directory expanded))))
+        (persp-switch (mod-context--edit-context-name-for-file expanded))
+        (find-file expanded)))))
 
 (defun mod-context--read-known-project-root ()
   "Prompt for one of the known project roots."
@@ -138,10 +175,11 @@ projects are available."
            (mod-git-status)
            (delete-other-windows)))))))
 
-(defun mod-context-editor ()
-  "Switch to an editing context for a project."
-  (interactive)
-  (let* ((project (mod-context--select-project))
+(defun mod-context-open-project-editor (&optional project)
+  "Switch to the edit context for PROJECT.
+PROJECT should be a plist with `:root' and `:name'. When PROJECT is nil,
+select one using the existing project helper."
+  (let* ((project (or project (mod-context--select-project)))
          (root (plist-get project :root))
          (name (format "edit/%s" (plist-get project :name)))
          (should-prompt (or (not (mod-context--exists-p name))
@@ -151,6 +189,11 @@ projects are available."
       (when should-prompt
         (mod-context--open-project-file-in-edit-context root)))))
 
+(defun mod-context-editor ()
+  "Switch to an editing context for a project."
+  (interactive)
+  (mod-context-open-project-editor))
+
 (defun mod-context-files ()
   "Switch to a file-management context for the current project or directory."
   (interactive)
@@ -159,8 +202,8 @@ projects are available."
     (mod-context--activate-template
      name
      (lambda ()
-       (let ((default-directory root))
-         (mod-dired-here))))))
+      (let ((default-directory root))
+        (mod-dired-here))))))
 
 (defun mod-context--files-root-for-directory (dir)
   "Return the matching edit/files root for DIR."
@@ -177,9 +220,7 @@ arguments."
              (root (mod-context--files-root-for-directory default-directory)))
         (if (file-directory-p path)
             (apply orig-fun args)
-          (let ((default-directory root))
-            (persp-switch (mod-context--edit-context-name root))
-            (find-file path))))
+          (mod-context-open-path path)))
     (apply orig-fun args)))
 
 (advice-add 'dired-find-file :around #'mod-context-dired-find-file-advice)

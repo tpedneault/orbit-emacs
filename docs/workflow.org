@@ -18,7 +18,8 @@
 
 * Working Loop
 
-1. Jump into a project editing context with =SPC x e=.
+1. Jump into a project editing context with =SPC x e= or =SPC p p=.
+   - both routes open or reuse =edit/<project>= instead of showing the project action menu
 2. Find files with =SPC .= or =SPC p f=.
 3. Search with =SPC /= or =SPC p s=.
 4. Use =SPC x f= when you want a dedicated file-management workspace.

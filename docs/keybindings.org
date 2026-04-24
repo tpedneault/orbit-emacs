@@ -28,7 +28,7 @@
 | =SPC f c s e= | =yas-visit-snippet-file=  | edit snippet file |
 | =SPC f c s n= | =yas-new-snippet=         | new snippet       |
 | =SPC f c s r= | =yas-reload-all=          | reload snippets   |
-| =SPC f f=   | =find-file=                 | open file         |
+| =SPC f f=   | =mod-context-open-path=     | open file/path in matching context |
 | =SPC f r=   | =recentf-open-files=        | recent files      |
 | =SPC f s=   | =save-buffer=               | save current file |
 
@@ -45,7 +45,7 @@
 | Key       | Action                   | Notes                |
 |-----------+--------------------------+----------------------|
 | =SPC p d= | =mod-project-forget=     | forget known project |
-| =SPC p p= | =project-switch-project= | switch project       |
+| =SPC p p= | =mod-project-switch=    | switch to =edit/<project>= |
 | =SPC p f= | =project-find-file=      | find project file    |
 | =SPC p s= | =mod-project-search=     | project ripgrep      |
 
@@ -106,7 +106,7 @@
 | =SPC x ]= | =mod-context-next=    | next context                           |
 | =SPC x e= | =mod-context-editor=  | prompt project if needed; file picker for empty =edit= |
 | =SPC x g= | =mod-context-git=     | prompt project if needed; init once, later switch only |
-| =SPC x f= | =mod-context-files=   | Dired stays here, files open in =edit= |
+| =SPC x f= | =mod-context-files=   | Dired stays here, project files open in =edit/<project>=, loose files in =edit/loose= |
 | =SPC x o= | =mod-context-notes=   | =notes= context                        |
 | =SPC x a= | =mod-context-agenda=  | =agenda= dashboard context             |
 | =SPC x s= | =mod-context-scratch= | =scratch= context                      |
