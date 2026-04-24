@@ -44,7 +44,7 @@
 
 (defun mod-ui-context-modeline ()
   "Return the current context in bracket form for the modeline."
-  (when-let ((name (mod-ui-context-name)))
+  (when-let* ((name (mod-ui-context-name)))
     (format "[%s]" name)))
 
 (defun mod-ui-evil-state-modeline ()

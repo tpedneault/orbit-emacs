@@ -148,13 +148,13 @@
 (defun mod-tcl--doxygen-config-path ()
   "Return the configured or default Doxygen config path, or nil."
   (or orbit-user-doxygen-config-file
-      (when-let ((root (mod-tcl--docs-root)))
+      (when-let* ((root (mod-tcl--docs-root)))
         (expand-file-name "Doxyfile" root))))
 
 (defun mod-tcl--doxygen-xml-directory-path ()
   "Return the configured or default Doxygen XML directory path, or nil."
   (or orbit-user-tcl-doxygen-xml-directory
-      (when-let ((root (mod-tcl--docs-root)))
+      (when-let* ((root (mod-tcl--docs-root)))
         (expand-file-name "docs/xml/" root))))
 
 (defun mod-tcl--diagnostic-line (status label detail)
@@ -216,14 +216,14 @@
 
 (defun mod-tcl--project-root ()
   "Return the current project root or signal a user-facing error."
-  (if-let ((project (project-current nil)))
+  (if-let* ((project (project-current nil)))
       (project-root project)
     (user-error "Not in a project")))
 
 (defun mod-tcl--project-root-for-directory (dir)
   "Return the project root for DIR, or nil if DIR is not in a project."
   (let ((default-directory dir))
-    (when-let ((project (project-current nil)))
+    (when-let* ((project (project-current nil)))
       (project-root project))))
 
 (defun mod-tcl--current-file ()
@@ -401,7 +401,7 @@ section so file-local context does not leak across TAGS entries."
       (while (< (point) end)
         (let* ((line-end (min end (line-end-position)))
                (line (buffer-substring-no-properties (point) line-end)))
-          (when-let ((parsed-namespace (mod-tcl--parse-tags-namespace line)))
+          (when-let* ((parsed-namespace (mod-tcl--parse-tags-namespace line)))
             (setq namespace parsed-namespace))
           (when-let* ((proc (mod-tcl--parse-tags-proc-line line))
                       (symbol (plist-get proc :symbol)))
@@ -732,7 +732,7 @@ Return non-nil when a project definition was found."
              (mod-tcl--invalidate-canonical-symbol-cache root)
              (mod-tcl--refresh-symbol-highlighting-in-project root)))
          nil t)))
-    (when-let ((tags-file (expand-file-name "TAGS" root)))
+    (when-let* ((tags-file (expand-file-name "TAGS" root)))
       (when (file-exists-p tags-file)
         (visit-tags-table tags-file t)))))
 

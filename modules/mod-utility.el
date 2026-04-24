@@ -35,9 +35,9 @@
 (defun mod-utility-toggle ()
   "Toggle the bottom utility bay window."
   (interactive)
-  (if-let ((window (mod-utility--window)))
+  (if-let* ((window (mod-utility--window)))
       (delete-window window)
-    (if-let ((buffer (and (buffer-live-p mod-utility-last-buffer)
+    (if-let* ((buffer (and (buffer-live-p mod-utility-last-buffer)
                           mod-utility-last-buffer)))
         (mod-utility--display-buffer buffer)
       (mod-utility-shell))))

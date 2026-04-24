@@ -75,7 +75,7 @@ When no explicit override is set, this defaults to
 
 (defun mod-tcl-docs--project-root ()
   "Return a practical project root for Tcl docs."
-  (or (when-let ((project (project-current nil)))
+  (or (when-let* ((project (project-current nil)))
         (project-root project))
       (when orbit-user-doxygen-config-file
         (file-name-directory orbit-user-doxygen-config-file))
@@ -486,7 +486,7 @@ Tcl namespace compounds."
     (cl-labels ((walk (node)
                   (when (consp node)
                     (when (eq (mod-tcl-docs--node-name node) 'memberdef)
-                      (when-let ((entry (mod-tcl-docs--entry-by-refid
+                      (when-let* ((entry (mod-tcl-docs--entry-by-refid
                                          (mod-tcl-docs--attr node 'id))))
                         (push entry entries)))
                     (dolist (child (mod-tcl-docs--node-children node))
@@ -507,7 +507,7 @@ symbol's resolved source file against the file compound's source path."
          matches)
     (dolist (symbol-entry entries)
       (unless (equal (plist-get symbol-entry :compound-refid) (plist-get entry :refid))
-        (when-let ((source-file (plist-get (mod-tcl-docs--entry-doc symbol-entry) :source-file)))
+        (when-let* ((source-file (plist-get (mod-tcl-docs--entry-doc symbol-entry) :source-file)))
           (when (and target-file (string= source-file target-file))
             (push symbol-entry matches)))))
     (nreverse (cl-remove-duplicates matches :test #'equal))))
@@ -607,7 +607,7 @@ Currently supported XML structures:
 
 (defun mod-tcl-docs--source-link (doc)
   "Return an Org source link string for DOC, or nil."
-  (when-let ((file (plist-get doc :source-file)))
+  (when-let* ((file (plist-get doc :source-file)))
     (let ((line (plist-get doc :source-line)))
       (format "[[file:%s%s][%s%s]]"
               file
@@ -714,16 +714,16 @@ LINK-FN receives an entry plist and must return an Org link string."
         (erase-buffer)
         (insert (format "* %s\n" (plist-get doc :symbol)))
         (insert (format "- Kind :: %s\n" (or (plist-get doc :kind) "unknown")))
-        (when-let ((source-link (mod-tcl-docs--source-link doc)))
+        (when-let* ((source-link (mod-tcl-docs--source-link doc)))
           (insert (format "- Source :: %s\n" source-link)))
         (insert "\n")
-        (when-let ((brief (plist-get doc :brief)))
+        (when-let* ((brief (plist-get doc :brief)))
           (unless (string-empty-p brief)
             (insert "* Summary\n\n" brief "\n\n")))
-        (when-let ((details (plist-get doc :details)))
+        (when-let* ((details (plist-get doc :details)))
           (unless (string-empty-p details)
             (insert "* Details\n\n" details "\n\n")))
-        (when-let ((inner-namespaces (plist-get doc :inner-namespaces)))
+        (when-let* ((inner-namespaces (plist-get doc :inner-namespaces)))
           (when inner-namespaces
             (insert "* Namespaces\n\n")
             (dolist (entry (sort (copy-sequence inner-namespaces)
@@ -751,7 +751,7 @@ LINK-FN receives an entry plist and must return an Org link string."
       (let ((inhibit-read-only t))
         (erase-buffer)
         (insert (format "* %s\n" (plist-get doc :symbol)))
-        (when-let ((definition (plist-get doc :definition)))
+        (when-let* ((definition (plist-get doc :definition)))
           (insert (format "#+begin_example\n%s%s%s\n#+end_example\n\n"
                           definition
                           (if (and (plist-get doc :argsstring)
@@ -761,13 +761,13 @@ LINK-FN receives an entry plist and must return an Org link string."
                           (or (plist-get doc :argsstring) ""))))
         (insert (format "- Kind :: %s\n" (or (plist-get doc :kind) "unknown")))
         (insert (format "- Compound :: %s\n" (or (plist-get doc :compound-name) "unknown")))
-        (when-let ((source-link (mod-tcl-docs--source-link doc)))
+        (when-let* ((source-link (mod-tcl-docs--source-link doc)))
           (insert (format "- Source :: %s\n" source-link)))
         (insert "\n")
-        (when-let ((brief (plist-get doc :brief)))
+        (when-let* ((brief (plist-get doc :brief)))
           (unless (string-empty-p brief)
             (insert "* Summary\n\n" brief "\n\n")))
-        (when-let ((parameters (plist-get doc :parameters)))
+        (when-let* ((parameters (plist-get doc :parameters)))
           (when parameters
             (insert "* Parameters\n\n")
             (dolist (parameter parameters)
@@ -775,12 +775,12 @@ LINK-FN receives an entry plist and must return an Org link string."
                               (car parameter)
                               (cdr parameter))))
             (insert "\n")))
-        (when-let ((returns (plist-get doc :returns)))
+        (when-let* ((returns (plist-get doc :returns)))
           (when returns
             (insert "* Returns\n\n"
                     (string-join returns "\n\n")
                     "\n\n")))
-        (when-let ((details (plist-get doc :details)))
+        (when-let* ((details (plist-get doc :details)))
           (unless (string-empty-p details)
             (insert "* Details\n\n" details "\n"))))
       (goto-char (point-min))

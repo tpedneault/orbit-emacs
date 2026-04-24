@@ -45,7 +45,7 @@
             (list beg end keys
                   :annotation-function
                   (lambda (candidate)
-                    (when-let ((template (cdar (mod-snippets--templates-for-key candidate))))
+                    (when-let* ((template (cdar (mod-snippets--templates-for-key candidate))))
                       (format " %s" (yas--template-name template))))
                   :exclusive 'no
                   :exit-function

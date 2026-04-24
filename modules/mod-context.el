@@ -42,7 +42,7 @@
 
 (defun mod-context--project-file-buffer-p (buffer root)
   "Return non-nil when BUFFER visits a file inside ROOT."
-  (when-let ((file (buffer-local-value 'buffer-file-name buffer)))
+  (when-let* ((file (buffer-local-value 'buffer-file-name buffer)))
     (string-prefix-p (file-truename root)
                      (file-truename file))))
 
@@ -62,7 +62,7 @@ buffers and no file-visiting buffers inside ROOT."
 
 (defun mod-context--project-root ()
   "Return the current project root, or nil if not in a project."
-  (when-let ((project (project-current nil)))
+  (when-let* ((project (project-current nil)))
     (project-root project)))
 
 (defun mod-context--read-known-project-root ()
