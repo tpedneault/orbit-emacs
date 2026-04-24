@@ -11,6 +11,12 @@ Tools assumed:
 
 There is no LSP layer here.
 
+Optional user symbols:
+- set =orbit-user-tcl-known-symbols-file= to a plain text file with one symbol per line
+- blank lines are ignored
+- lines starting with =#= are ignored
+- these symbols are merged with project =TAGS= symbols for highlighting
+
 * Local Leader
 
 In =tcl-mode=:
@@ -20,6 +26,7 @@ In =tcl-mode=:
 | =SPC m l=   | lint current file      | runs =tclint=      |
 | =SPC m f=   | format current file    | runs =tclfmt=      |
 | =SPC m g=   | visit tag / definition | Emacs tags         |
+| =SPC m s=   | search Tcl symbols     | TAGS + known list  |
 | =SPC m r=   | rebuild TAGS           | project-local      |
 | =SPC m e=   | show tool output       | =*tcl-tools*=      |
 | =SPC m d d= | project manual         | =docs/<project>=   |
@@ -46,6 +53,7 @@ Defaults:
   - =<project-root>/Doxyfile=
   - =<project-root>/docs/xml/=
 - user config can override these with:
+  - =orbit-user-tcl-known-symbols-file=
   - =orbit-user-doxygen-config-file=
   - =orbit-user-tcl-doxygen-xml-directory=
   - =orbit-user-doxygen-program=
@@ -77,7 +85,7 @@ the XML index.
 1. Open a Tcl project with =SPC x e=.
 2. Find files with =SPC .= or =SPC p f=.
 3. Rebuild tags with =SPC m r= when needed.
-4. Jump to definitions with =SPC m g=.
+4. Jump to definitions with =SPC m g= or search symbols with =SPC m s=.
 5. Run =SPC m l= before commit-worthy changes.
 6. Run =SPC m f= when you want formatting applied.
 7. Use =SPC m e= to revisit tool output.
@@ -86,6 +94,7 @@ the XML index.
 * Practical Notes
 
 - TAGS live at the project root.
+- Optional extra Tcl symbols can come from =orbit-user-tcl-known-symbols-file=.
 - Navigation uses built-in Emacs tags support.
 - Tool output is shared so lint/format messages are easy to revisit.
 - Snippets are available in =tcl-mode= through the local =snippets/tcl-mode/= directory.

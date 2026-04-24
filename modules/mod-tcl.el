@@ -193,31 +193,153 @@ local tclfmt uses a different CLI shape, set `orbit-user-tclfmt-program'."
       (string-remove-prefix "::" symbol)
     symbol))
 
+(defun mod-tcl--parse-tags-namespace (line)
+  "Return a normalized namespace from TAGS LINE, or nil.
+Only simple `namespace eval NAME' entries are recognized."
+  (when (string-match
+         "^[ \t]*namespace[ \t]+eval[ \t]+\\(\\(?:::\\)?[A-Za-z0-9_:]+\\)\\(?:[ \t]+{\\|[ \t]*$\\)"
+         line)
+    (mod-tcl--normalize-tag-symbol (match-string 1 line))))
+
+(defun mod-tcl--parse-tags-proc-line (line)
+  "Return Tcl proc metadata parsed from TAGS LINE, or nil.
+The result is a plist containing `:symbol' and `:indented'."
+  (when (string-match
+         "^\\([ \t]*\\)proc[ \t]+\\(\\(?:::\\)?[A-Za-z0-9_:]+\\)[ \t]*{"
+         line)
+    (list :symbol (mod-tcl--normalize-tag-symbol (match-string 2 line))
+          :indented (> (length (match-string 1 line)) 0))))
+
+(defun mod-tcl--parse-tags-section-symbols (start end qualified unqualified-counts)
+  "Parse Tcl symbols in the TAGS section between START and END.
+Fully qualified proc names are recorded in QUALIFIED. Unique bare proc names
+are counted in UNQUALIFIED-COUNTS. Namespace synthesis is reset for each
+section so file-local context does not leak across TAGS entries."
+  (let ((namespace nil))
+    (save-excursion
+      (goto-char start)
+      (while (< (point) end)
+        (let* ((line-end (min end (line-end-position)))
+               (line (buffer-substring-no-properties (point) line-end)))
+          (when-let ((parsed-namespace (mod-tcl--parse-tags-namespace line)))
+            (setq namespace parsed-namespace))
+          (when-let* ((proc (mod-tcl--parse-tags-proc-line line))
+                      (symbol (plist-get proc :symbol)))
+            (if (mod-tcl--symbol-qualified-p symbol)
+                (push symbol qualified)
+              (puthash symbol (1+ (gethash symbol unqualified-counts 0))
+                       unqualified-counts)
+              ;; Only synthesize namespace-qualified names for indented proc
+              ;; tags after a matching namespace entry in the same TAGS section.
+              (when (and namespace (plist-get proc :indented))
+                (push (concat namespace "::" symbol) qualified))))
+          (forward-line 1))))
+    qualified))
+
 (defun mod-tcl--parse-tags-symbols (tags-file)
   "Return conservative Tcl proc symbols parsed from TAGS-FILE.
 Fully qualified proc names are preferred. Unqualified names are included only
-when they are unique across the current TAGS file."
+when they are unique across the current TAGS file. When a TAGS section records
+`namespace eval NAME' followed by indented unqualified proc tags, synthesized
+`NAME::proc' symbols are added conservatively for that section."
   (let ((qualified '())
         (unqualified-counts (make-hash-table :test #'equal))
         (unique-unqualified '()))
     (with-temp-buffer
       (insert-file-contents tags-file)
       (goto-char (point-min))
-      (while (re-search-forward
-              "\\(?:\\`\\|[\n\f]\\)[ \t]*proc[ \t]+\\(\\(?:::\\)?[A-Za-z0-9_:]+\\)[ \t]*{"
-              nil t)
-        (let* ((raw (match-string-no-properties 1))
-               (symbol (mod-tcl--normalize-tag-symbol raw)))
-          (if (string-match-p "::" symbol)
-              (push symbol qualified)
-            (puthash symbol (1+ (gethash symbol unqualified-counts 0))
-                     unqualified-counts)))))
+      (let ((section-start (point-min)))
+        (while (< section-start (point-max))
+          (let ((section-end (or (save-excursion
+                                   (goto-char section-start)
+                                   (when (search-forward "\f" nil t)
+                                     (1- (point))))
+                                 (point-max))))
+            (setq qualified
+                  (mod-tcl--parse-tags-section-symbols
+                   section-start section-end qualified unqualified-counts))
+            (setq section-start
+                  (if (< section-end (point-max))
+                      (1+ section-end)
+                    (point-max)))))))
     (maphash
      (lambda (symbol count)
        (when (= count 1)
          (push symbol unique-unqualified)))
      unqualified-counts)
     (delete-dups (nreverse (append qualified unique-unqualified)))))
+
+(defun mod-tcl--read-known-symbols-file (&optional message-missing)
+  "Return symbols from `orbit-user-tcl-known-symbols-file'.
+When MESSAGE-MISSING is non-nil, emit a clear message if the configured file
+does not exist. Blank lines and lines starting with `#' are ignored."
+  (let ((file orbit-user-tcl-known-symbols-file)
+        (symbols '()))
+    (cond
+     ((not file) nil)
+     ((not (file-exists-p file))
+      (when message-missing
+        (message "Tcl known symbols file not found: %s" file))
+      nil)
+     (t
+      (with-temp-buffer
+        (insert-file-contents file)
+        (goto-char (point-min))
+        (while (not (eobp))
+          (let ((line (string-trim
+                       (buffer-substring-no-properties
+                        (line-beginning-position)
+                        (line-end-position)))))
+            (unless (or (string-empty-p line)
+                        (string-prefix-p "#" line))
+              (let ((symbol (mod-tcl--normalize-tag-symbol line)))
+                (when (string-match-p "\\`[A-Za-z0-9_:]+\\'" symbol)
+                  (push symbol symbols)))))
+          (forward-line 1)))
+      (delete-dups (nreverse symbols))))))
+
+(defun mod-tcl--collect-highlight-symbols (&optional message-missing)
+  "Return Tcl symbols to highlight for the current buffer.
+Project TAGS symbols remain the foundation. Symbols from
+`orbit-user-tcl-known-symbols-file' are merged in when available. When
+MESSAGE-MISSING is non-nil, report a missing configured known symbols file."
+  (let* ((root (mod-tcl--project-root-for-directory default-directory))
+         (tags-file (and root (mod-tcl--project-tags-file-for-root root)))
+         (tags-symbols (when (and tags-file (file-exists-p tags-file))
+                         (mod-tcl--parse-tags-symbols tags-file)))
+         (user-symbols (mod-tcl--read-known-symbols-file message-missing)))
+    (delete-dups (append tags-symbols user-symbols))))
+
+(defun mod-tcl--symbol-qualified-p (symbol)
+  "Return non-nil when SYMBOL is namespace-qualified."
+  (string-match-p "::" symbol))
+
+(defun mod-tcl--sort-symbols (symbols)
+  "Return SYMBOLS sorted with qualified names first."
+  (sort (delete-dups (copy-sequence symbols))
+        (lambda (left right)
+          (let ((left-qualified (mod-tcl--symbol-qualified-p left))
+                (right-qualified (mod-tcl--symbol-qualified-p right)))
+            (cond
+             ((and left-qualified (not right-qualified)) t)
+             ((and right-qualified (not left-qualified)) nil)
+             (t (string-lessp left right)))))))
+
+(defun mod-tcl--canonical-search-symbols (symbols)
+  "Return canonical search candidates derived from SYMBOLS.
+Fully qualified names are preferred. A bare name is removed from the search
+list when a qualified `ns::name' candidate already exists, but top-level bare
+names are preserved when no qualified form is present."
+  (let ((qualified-by-tail (make-hash-table :test #'equal))
+        (candidates '()))
+    (dolist (symbol symbols)
+      (when (mod-tcl--symbol-qualified-p symbol)
+        (puthash (car (last (split-string symbol "::" t))) t qualified-by-tail)))
+    (dolist (symbol symbols)
+      (when (or (mod-tcl--symbol-qualified-p symbol)
+                (not (gethash symbol qualified-by-tail)))
+        (push symbol candidates)))
+    (mod-tcl--sort-symbols candidates)))
 
 (defun mod-tcl--symbol-highlight-matcher (limit)
   "Search for a known Tcl project symbol before LIMIT.
@@ -250,16 +372,39 @@ Matches inside comments and strings are ignored."
     (font-lock-ensure)))
 
 (defun mod-tcl-refresh-symbol-highlighting ()
-  "Refresh Tcl project symbol highlighting from the project-local TAGS file."
+  "Refresh Tcl symbol highlighting from TAGS and user-known symbols."
   (interactive)
   (unless (derived-mode-p 'tcl-mode)
     (user-error "Current buffer is not in tcl-mode"))
-  (let* ((root (mod-tcl--project-root))
-         (tags-file (mod-tcl--project-tags-file-for-root root)))
-    (if (file-exists-p tags-file)
-        (mod-tcl--apply-symbol-highlighting
-         (mod-tcl--parse-tags-symbols tags-file))
-      (mod-tcl--apply-symbol-highlighting nil))))
+  (mod-tcl--apply-symbol-highlighting
+   (mod-tcl--sort-symbols
+    (mod-tcl--collect-highlight-symbols
+     (called-interactively-p 'interactive)))))
+
+(defun mod-tcl--find-project-symbol (symbol)
+  "Jump to SYMBOL using the current project's TAGS file.
+Return non-nil when a project definition was found."
+  (let ((root (mod-tcl--project-root-for-directory default-directory)))
+    (when root
+      (let ((tags-file (mod-tcl--project-tags-file-for-root root)))
+        (when (file-exists-p tags-file)
+          (visit-tags-table tags-file t)
+          (mod-tcl--find-tag-with-fallbacks symbol))))))
+
+(defun mod-tcl-search-symbols ()
+  "Search known Tcl symbols and jump to a project definition when available."
+  (interactive)
+  (unless (derived-mode-p 'tcl-mode)
+    (user-error "Current buffer is not in tcl-mode"))
+  (let* ((symbols (mod-tcl--canonical-search-symbols
+                   (mod-tcl--collect-highlight-symbols
+                    (called-interactively-p 'interactive))))
+         (default-symbol (thing-at-point 'symbol t)))
+    (unless symbols
+      (user-error "No Tcl symbols available"))
+    (let ((symbol (completing-read "Tcl symbol: " symbols nil t nil nil default-symbol)))
+      (unless (mod-tcl--find-project-symbol symbol)
+        (message "Known symbol has no project definition: %s" symbol)))))
 
 (defun mod-tcl--refresh-symbol-highlighting-in-project (root)
   "Refresh Tcl symbol highlighting in all live Tcl buffers for ROOT."

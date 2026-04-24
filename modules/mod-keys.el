@@ -227,6 +227,7 @@
      "l" '(mod-tcl-lint-file :which-key "lint")
      "f" '(mod-tcl-format-file :which-key "format")
      "g" '(mod-tcl-find-tag :which-key "goto tag")
+     "s" '(mod-tcl-search-symbols :which-key "search symbols")
      "r" '(mod-tcl-rebuild-tags :which-key "rebuild TAGS")
      "e" '(mod-tcl-show-output :which-key "tool output")))
 
