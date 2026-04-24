@@ -8,6 +8,7 @@
 (require 'xref)
 
 (declare-function mod-tcl-docs-doxygen-config-file "mod-tcl-docs")
+(declare-function mod-snippets-setup-completion "mod-snippets")
 (declare-function evil-vimish-fold-mode "evil-vimish-fold")
 (declare-function vimish-fold-mode "vimish-fold")
 (declare-function vimish-fold-toggle "vimish-fold")
@@ -39,6 +40,9 @@
 
 (defvar-local mod-tcl--symbol-highlight-regexp nil
   "Buffer-local regexp used for Tcl project symbol highlighting.")
+
+(defvar mod-tcl--canonical-symbol-cache (make-hash-table :test #'equal)
+  "Cache of canonical Tcl symbols keyed by project and file mtimes.")
 
 (defconst mod-tcl--symbol-highlight-keywords
   '((mod-tcl--symbol-highlight-matcher
@@ -517,6 +521,77 @@ names are preserved when no qualified form is present."
         (push symbol candidates)))
     (mod-tcl--sort-symbols candidates)))
 
+(defun mod-tcl--file-mtime (file)
+  "Return FILE's modification time, or nil when FILE is missing."
+  (when (and file (file-exists-p file))
+    (file-attribute-modification-time (file-attributes file))))
+
+(defun mod-tcl--canonical-symbol-cache-key (root tags-file known-file)
+  "Return a cache key for ROOT, TAGS-FILE, and KNOWN-FILE."
+  (list root
+        tags-file
+        (mod-tcl--file-mtime tags-file)
+        known-file
+        (mod-tcl--file-mtime known-file)))
+
+(defun mod-tcl--canonical-symbols (&optional message-missing require-tags)
+  "Return canonical Tcl symbols for the current context.
+When MESSAGE-MISSING is non-nil, report a missing configured known-symbols
+file. When REQUIRE-TAGS is non-nil, return nil unless the current project has
+an existing TAGS file."
+  (let* ((root (mod-tcl--project-root-for-directory default-directory))
+         (tags-file (and root (mod-tcl--project-tags-file-for-root root)))
+         (known-file orbit-user-tcl-known-symbols-file))
+    (when (or (not require-tags)
+              (and tags-file (file-exists-p tags-file)))
+      (let ((cache-key (mod-tcl--canonical-symbol-cache-key root tags-file known-file)))
+        (or (gethash cache-key mod-tcl--canonical-symbol-cache)
+            (let ((symbols
+                   (mod-tcl--canonical-search-symbols
+                    (mod-tcl--collect-highlight-symbols message-missing))))
+              (puthash cache-key symbols mod-tcl--canonical-symbol-cache)
+              symbols))))))
+
+(defun mod-tcl--invalidate-canonical-symbol-cache (&optional root)
+  "Clear cached canonical Tcl symbols.
+When ROOT is non-nil, only remove cache entries for that project root."
+  (if root
+      (maphash
+       (lambda (key _value)
+         (when (equal (car key) root)
+           (remhash key mod-tcl--canonical-symbol-cache)))
+       mod-tcl--canonical-symbol-cache)
+    (clrhash mod-tcl--canonical-symbol-cache)))
+
+(defun mod-tcl--completion-bounds ()
+  "Return practical Tcl symbol completion bounds at point."
+  (save-excursion
+    (let ((end (point)))
+      (skip-chars-backward "A-Za-z0-9_:")
+      (let ((beg (point)))
+        (when (< beg end)
+          (cons beg end))))))
+
+(defun mod-tcl-completion-at-point ()
+  "Provide Tcl symbol completion from project TAGS and known symbols."
+  (when (and (derived-mode-p 'tcl-mode)
+             (not (active-minibuffer-window)))
+    (when-let* ((bounds (mod-tcl--completion-bounds))
+                (symbols (mod-tcl--canonical-symbols nil t)))
+      (pcase-let ((`(,beg . ,end) bounds))
+        (list beg end
+              (completion-table-dynamic
+               (lambda (_string)
+                 (mod-tcl--canonical-symbols nil t)))
+              :exclusive 'no)))))
+
+(defun mod-tcl-setup-completion ()
+  "Add Tcl symbol completion to the current buffer's CAPF flow."
+  (add-hook 'completion-at-point-functions #'mod-tcl-completion-at-point nil t)
+  (when (and (bound-and-true-p yas-minor-mode)
+             (fboundp 'mod-snippets-setup-completion))
+    (mod-snippets-setup-completion)))
+
 (defun mod-tcl--symbol-highlight-matcher (limit)
   "Search for a known Tcl project symbol before LIMIT.
 Matches inside comments and strings are ignored."
@@ -572,15 +647,14 @@ Return non-nil when a project definition was found."
   (interactive)
   (unless (derived-mode-p 'tcl-mode)
     (user-error "Current buffer is not in tcl-mode"))
-  (let* ((symbols (mod-tcl--canonical-search-symbols
-                   (mod-tcl--collect-highlight-symbols
-                    (called-interactively-p 'interactive))))
+  (let* ((symbols (mod-tcl--canonical-symbols
+                   (called-interactively-p 'interactive)))
          (default-symbol (thing-at-point 'symbol t)))
     (unless symbols
       (user-error "No Tcl symbols available"))
     (let ((symbol (completing-read "Tcl symbol: " symbols nil t nil nil default-symbol)))
       (unless (mod-tcl--find-project-symbol symbol)
-        (message "Known symbol has no project definition: %s" symbol)))))
+        (message "Known external symbol has no project definition: %s" symbol)))))
 
 (defun mod-tcl--refresh-symbol-highlighting-in-project (root)
   "Refresh Tcl symbol highlighting in all live Tcl buffers for ROOT."
@@ -655,6 +729,7 @@ Return non-nil when a project definition was found."
          'compilation-finish-functions
          (lambda (_buffer status)
            (when (string-match-p "\\`finished" status)
+             (mod-tcl--invalidate-canonical-symbol-cache root)
              (mod-tcl--refresh-symbol-highlighting-in-project root)))
          nil t)))
     (when-let ((tags-file (expand-file-name "TAGS" root)))
@@ -666,6 +741,7 @@ Return non-nil when a project definition was found."
 (with-eval-after-load 'tcl
   (add-hook 'tcl-mode-hook #'mod-tcl--configure-editing-defaults)
   (add-hook 'tcl-mode-hook #'mod-tcl-enable-manual-folding)
+  (add-hook 'tcl-mode-hook #'mod-tcl-setup-completion)
   (add-hook 'tcl-mode-hook #'mod-tcl--enable-symbol-highlighting))
 
 (provide 'mod-tcl)

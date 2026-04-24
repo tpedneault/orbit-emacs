@@ -48,6 +48,7 @@ In =tcl-mode=:
 - =SPC m r= rebuilds the project-local =TAGS= file.
 - =SPC m g= visits the project =TAGS= file automatically and jumps to the definition at point.
 - =SPC m s= searches known Tcl symbols gathered from project =TAGS= and optional user-known symbols.
+- completion-at-point / Corfu uses the same canonical symbol list when project =TAGS= is available.
 - Rebuild =TAGS= when navigation or highlighting looks stale.
 
 * Namespace Behavior
@@ -71,6 +72,7 @@ ait::session::current_step
 
 Practical behavior:
 - fully qualified names are preferred in symbol search
+- fully qualified names are also preferred in Tcl symbol completion
 - duplicate short-name entries are hidden from symbol search when a qualified form exists
 - top-level procs such as =assert= or =titled= still appear normally
 
@@ -86,7 +88,16 @@ Optional extra symbols:
 - set =orbit-user-tcl-known-symbols-file= to a plain text file with one symbol per line
 - blank lines are ignored
 - lines starting with =#= are ignored
-- these symbols are merged into highlighting and symbol search
+- these symbols are merged into highlighting, symbol search, and Tcl symbol completion
+- a fake test file lives at [docs/examples/tcl-known-symbols-example.txt](/Users/thomas/.config/emacs/docs/examples/tcl-known-symbols-example.txt)
+- point your user config at it with:
+
+#+begin_src emacs-lisp
+(setq orbit-user-tcl-known-symbols-file
+      "/Users/thomas/.config/emacs/docs/examples/tcl-known-symbols-example.txt")
+#+end_src
+
+- replace or remove that example file later when you want to use real external symbols
 
 User config can also override Tcl editing defaults with:
 - =orbit-user-enable-fill-column-indicator=

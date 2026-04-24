@@ -1,0 +1,8 @@
+# Fake Tcl known symbols example for orbit-emacs testing.
+# Replace or remove this file when using real external symbols.
+
+egse::tm::read
+egse::tm::write
+egse::tc::send
+egse::log
+egse::wait_for_event

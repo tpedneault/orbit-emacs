@@ -39,9 +39,18 @@
   :ensure t
   :demand t
   :config
-  (setq corfu-auto nil
+  (setq corfu-auto t
+        corfu-auto-delay 0.15
+        corfu-auto-prefix 2
         corfu-cycle t
         corfu-preselect 'prompt)
+  (define-key corfu-map (kbd "TAB") nil)
+  (define-key corfu-map (kbd "<tab>") nil)
+  (define-key corfu-map (kbd "<backtab>") nil)
+  (define-key corfu-map (kbd "S-TAB") nil)
+  (define-key corfu-map (kbd "C-j") #'corfu-next)
+  (define-key corfu-map (kbd "C-k") #'corfu-previous)
+  (define-key corfu-map (kbd "RET") #'corfu-insert)
   (global-corfu-mode 1))
 
 (use-package cape
