@@ -9,6 +9,10 @@ Core ideas:
 - practical Org workflow
 - small command language under `SPC`
 
+Runtime state:
+- internal state is written under `var/` where possible
+- this includes save-place state and vimish-fold persistence
+
 Quick start:
 - use this repo as `~/.config/emacs/`
 - launch Emacs normally

@@ -320,6 +320,7 @@
               word-wrap nil)
 
 (setq recentf-save-file mod-ui-recentf-save-file
+      save-place-file mod-core-save-place-file
       recentf-max-saved-items 200
       auto-revert-verbose nil)
 

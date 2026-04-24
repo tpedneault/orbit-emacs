@@ -23,6 +23,10 @@ file path rather than only its basename, which avoids simple collisions
 between same-named files in different directories.")
 (defconst mod-core-savehist-file
   (expand-file-name "history" mod-core-var-directory))
+(defconst mod-core-save-place-file
+  (expand-file-name "places" mod-core-var-directory))
+(defconst mod-core-vimish-fold-directory
+  (expand-file-name "vimish-fold/" mod-core-var-directory))
 (defconst mod-core-user-directory
   (expand-file-name
    ".orbit-emacs.d/"
@@ -103,7 +107,8 @@ between same-named files in different directories.")
 (dolist (dir (list mod-core-var-directory
                    mod-core-backup-directory
                    mod-core-auto-save-directory
-                   mod-core-lockfile-directory))
+                   mod-core-lockfile-directory
+                   mod-core-vimish-fold-directory))
   (make-directory dir t))
 
 (mod-core-ensure-user-files)

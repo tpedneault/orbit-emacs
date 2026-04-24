@@ -45,6 +45,8 @@
 
 (use-package vimish-fold
   :ensure t
+  :init
+  (setq vimish-fold-dir mod-core-vimish-fold-directory)
   :commands (vimish-fold-mode
              vimish-fold-toggle
              vimish-fold
