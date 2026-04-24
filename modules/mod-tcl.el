@@ -26,11 +26,25 @@
   "Arguments passed to the ctags program when rebuilding TAGS."
   :type '(repeat string))
 
+(defvar-local mod-tcl--symbol-highlight-regexp nil
+  "Buffer-local regexp used for Tcl project symbol highlighting.")
+
+(defconst mod-tcl--symbol-highlight-keywords
+  '((mod-tcl--symbol-highlight-matcher
+     (1 'font-lock-function-name-face keep)))
+  "Font-lock keywords used for Tcl project symbol highlighting.")
+
 (defun mod-tcl--project-root ()
   "Return the current project root or signal a user-facing error."
   (if-let ((project (project-current nil)))
       (project-root project)
     (user-error "Not in a project")))
+
+(defun mod-tcl--project-root-for-directory (dir)
+  "Return the project root for DIR, or nil if DIR is not in a project."
+  (let ((default-directory dir))
+    (when-let ((project (project-current nil)))
+      (project-root project))))
 
 (defun mod-tcl--current-file ()
   "Return the current file path or signal a user-facing error."
@@ -161,6 +175,10 @@ local tclfmt uses a different CLI shape, set `orbit-user-tclfmt-program'."
   "Return the current project's TAGS file path."
   (expand-file-name "TAGS" (mod-tcl--project-root)))
 
+(defun mod-tcl--project-tags-file-for-root (root)
+  "Return the TAGS file path for ROOT."
+  (expand-file-name "TAGS" root))
+
 (defun mod-tcl--visit-project-tags-table ()
   "Visit the current project's TAGS file and return its path."
   (let ((tags-file (mod-tcl--project-tags-file)))
@@ -168,6 +186,96 @@ local tclfmt uses a different CLI shape, set `orbit-user-tclfmt-program'."
       (user-error "No TAGS file found at %s" tags-file))
     (visit-tags-table tags-file t)
     tags-file))
+
+(defun mod-tcl--normalize-tag-symbol (symbol)
+  "Return a practical Tcl symbol spelling for SYMBOL."
+  (if (string-prefix-p "::" symbol)
+      (string-remove-prefix "::" symbol)
+    symbol))
+
+(defun mod-tcl--parse-tags-symbols (tags-file)
+  "Return conservative Tcl proc symbols parsed from TAGS-FILE.
+Fully qualified proc names are preferred. Unqualified names are included only
+when they are unique across the current TAGS file."
+  (let ((qualified '())
+        (unqualified-counts (make-hash-table :test #'equal))
+        (unique-unqualified '()))
+    (with-temp-buffer
+      (insert-file-contents tags-file)
+      (goto-char (point-min))
+      (while (re-search-forward
+              "\\(?:\\`\\|[\n\f]\\)[ \t]*proc[ \t]+\\(\\(?:::\\)?[A-Za-z0-9_:]+\\)[ \t]*{"
+              nil t)
+        (let* ((raw (match-string-no-properties 1))
+               (symbol (mod-tcl--normalize-tag-symbol raw)))
+          (if (string-match-p "::" symbol)
+              (push symbol qualified)
+            (puthash symbol (1+ (gethash symbol unqualified-counts 0))
+                     unqualified-counts)))))
+    (maphash
+     (lambda (symbol count)
+       (when (= count 1)
+         (push symbol unique-unqualified)))
+     unqualified-counts)
+    (delete-dups (nreverse (append qualified unique-unqualified)))))
+
+(defun mod-tcl--symbol-highlight-matcher (limit)
+  "Search for a known Tcl project symbol before LIMIT.
+Matches inside comments and strings are ignored."
+  (catch 'match
+    (while (and mod-tcl--symbol-highlight-regexp
+                (re-search-forward mod-tcl--symbol-highlight-regexp limit t))
+      (unless (nth 8 (syntax-ppss (match-beginning 1)))
+        (throw 'match t)))))
+
+(defun mod-tcl--build-symbol-highlight-regexp (symbols)
+  "Return a regexp that matches SYMBOLS conservatively."
+  (when symbols
+    (concat
+     "\\(?:^\\|[^[:alnum:]_:]\\)"
+     "\\("
+     (regexp-opt symbols)
+     "\\)"
+     "\\(?:$\\|[^[:alnum:]_:]\\)")))
+
+(defun mod-tcl--apply-symbol-highlighting (symbols)
+  "Apply Tcl project symbol highlighting for SYMBOLS in the current buffer."
+  (font-lock-remove-keywords nil mod-tcl--symbol-highlight-keywords)
+  (setq mod-tcl--symbol-highlight-regexp
+        (mod-tcl--build-symbol-highlight-regexp symbols))
+  (when mod-tcl--symbol-highlight-regexp
+    (font-lock-add-keywords nil mod-tcl--symbol-highlight-keywords 'append))
+  (when font-lock-mode
+    (font-lock-flush)
+    (font-lock-ensure)))
+
+(defun mod-tcl-refresh-symbol-highlighting ()
+  "Refresh Tcl project symbol highlighting from the project-local TAGS file."
+  (interactive)
+  (unless (derived-mode-p 'tcl-mode)
+    (user-error "Current buffer is not in tcl-mode"))
+  (let* ((root (mod-tcl--project-root))
+         (tags-file (mod-tcl--project-tags-file-for-root root)))
+    (if (file-exists-p tags-file)
+        (mod-tcl--apply-symbol-highlighting
+         (mod-tcl--parse-tags-symbols tags-file))
+      (mod-tcl--apply-symbol-highlighting nil))))
+
+(defun mod-tcl--refresh-symbol-highlighting-in-project (root)
+  "Refresh Tcl symbol highlighting in all live Tcl buffers for ROOT."
+  (dolist (buffer (buffer-list))
+    (with-current-buffer buffer
+      (when (and (derived-mode-p 'tcl-mode)
+                 buffer-file-name
+                 (equal (mod-tcl--project-root-for-directory default-directory) root))
+        (mod-tcl-refresh-symbol-highlighting)))))
+
+(defun mod-tcl--enable-symbol-highlighting ()
+  "Enable Tcl project symbol highlighting for the current buffer when possible."
+  (when (and (derived-mode-p 'tcl-mode)
+             buffer-file-name)
+    (ignore-errors
+      (mod-tcl-refresh-symbol-highlighting))))
 
 (defun mod-tcl--symbol-at-point ()
   "Return the Tcl symbol at point or signal a user-facing error."
@@ -220,12 +328,22 @@ local tclfmt uses a different CLI shape, set `orbit-user-tclfmt-program'."
   (interactive)
   (let ((root (mod-tcl--project-root))
         (program (mod-tcl-ctags-program)))
-    (mod-tcl--run-compilation program mod-tcl-ctags-args root)
+    (let ((buffer (mod-tcl--run-compilation program mod-tcl-ctags-args root)))
+      (with-current-buffer buffer
+        (add-hook
+         'compilation-finish-functions
+         (lambda (_buffer status)
+           (when (string-match-p "\\`finished" status)
+             (mod-tcl--refresh-symbol-highlighting-in-project root)))
+         nil t)))
     (when-let ((tags-file (expand-file-name "TAGS" root)))
       (when (file-exists-p tags-file)
         (visit-tags-table tags-file t)))))
 
 (defalias 'mod-tcl-show-output #'mod-tcl--display-output-buffer)
+
+(with-eval-after-load 'tcl
+  (add-hook 'tcl-mode-hook #'mod-tcl--enable-symbol-highlighting))
 
 (provide 'mod-tcl)
 
