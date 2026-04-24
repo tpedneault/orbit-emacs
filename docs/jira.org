@@ -62,12 +62,50 @@ That means v1 sync is intentionally scoped to:
 | Key         | Action                | Notes                     |
 |-------------+-----------------------+---------------------------|
 | =SPC n j s= | =mod-jira-sync=       | fetch and refresh =jira.org= |
+| =SPC n j r= | =mod-jira-refresh-issue= | refresh current issue subtree only |
 | =SPC n j o= | =mod-jira-open-issue= | open issue at point in browser |
 | =SPC n j j= | =mod-org-capture-journal= | journal capture moved here |
 
 * Org Sync Shape
 
 Each issue becomes one heading in =jira.org=.
+
+Synced headings are agenda-friendly:
+- they get a =:JIRA:= tag
+- they get an Org TODO keyword mapped from the Jira status
+- they keep the original Jira status in =JIRA_STATUS=
+
+Status mapping:
+- To Do / Open / Reopened -> =TODO=
+- In Progress -> =IN-PROGRESS=
+- Blocked / Waiting -> =WAIT=
+- Done / Closed / Resolved -> =DONE=
+- unknown status -> =TODO=
+
+Heading shape:
+
+#+begin_example
+* TODO ABC-123 Summary :JIRA:
+#+end_example
+
+Managed content under each issue:
+
+#+begin_example
+** Description
+** Comments
+** Notes
+#+end_example
+
+Managed by sync:
+- =Description=
+- =Comments=
+
+User-editable and preserved across refresh:
+- =Notes=
+
+That means you should keep local notes under =** Notes=.
+Sync may replace =Description= and =Comments= on every refresh, but it will not overwrite =Notes=.
+The single-issue refresh command updates only the issue subtree at point and leaves other Jira issue subtrees unchanged.
 
 Stored properties include:
 - =JIRA_KEY=
@@ -77,7 +115,12 @@ Stored properties include:
 - =JIRA_UPDATED=
 - =JIRA_URL=
 
-Refreshing keeps note text already written under an existing issue heading.
+Refreshing keeps local note text already written under =** Notes=.
+Existing non-Jira tags on a synced heading are preserved, and =:JIRA:= is kept without duplication.
+
+If you have older freeform content directly under the issue heading, orbit-emacs will carry it forward into =Notes= on refresh.
+
+Because =jira.org= lives under your Org directory by default, synced Jira items appear in the agenda automatically.
 
 * Troubleshooting
 
@@ -88,4 +131,3 @@ Refreshing keeps note text already written under an existing issue heading.
   - or set both =orbit-user-jira-project-key= and =orbit-user-jira-username=
 - HTTP error on sync:
   - confirm the base URL, API prefix, PAT, and Jira Server/Data Center endpoint
-

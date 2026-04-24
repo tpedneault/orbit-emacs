@@ -12,6 +12,7 @@
 (declare-function mod-core-open-at-point "mod-core")
 (declare-function mod-core-recentf-open "mod-core")
 (declare-function mod-jira-open-issue "mod-jira")
+(declare-function mod-jira-refresh-issue "mod-jira")
 (declare-function mod-jira-sync "mod-jira")
 (declare-function er/expand-region "expand-region")
 
@@ -192,6 +193,7 @@
     "n j" '(:ignore t :which-key "jira")
     "n j j" '(mod-org-capture-journal :which-key "journal")
     "n j s" '(mod-jira-sync :which-key "sync")
+    "n j r" '(mod-jira-refresh-issue :which-key "refresh issue")
     "n j o" '(mod-jira-open-issue :which-key "open issue")
     "n N" '(mod-org-capture-note :which-key "note")
     "x" '(:ignore t :which-key "contexts")
