@@ -235,6 +235,7 @@
      "d r" '(mod-tcl-docs-regenerate :which-key "regen docs")
      "l" '(mod-tcl-lint-file :which-key "lint")
      "f" '(mod-tcl-format-file :which-key "format")
+     "F" '(mod-tcl-fold-definitions :which-key "fold definitions")
      "TAB" '(mod-tcl-toggle-fold :which-key "toggle fold")
      "g" '(mod-tcl-find-tag :which-key "goto tag")
      "s" '(mod-tcl-search-symbols :which-key "search symbols")

@@ -58,6 +58,7 @@ between same-named files in different directories.")
 ;; (setq orbit-user-tcl-enable-fill-column-indicator 'inherit)\n\
 ;; (setq orbit-user-tcl-enable-whitespace 'inherit)\n\
 ;; (setq orbit-user-tcl-enable-hl-line 'inherit)\n\
+;; (setq orbit-user-tcl-auto-fold-definitions nil)\n\
 ;; (setq orbit-user-tcl-known-symbols-file \"/path/to/tcl-known-symbols.txt\")\n\
 ;; (setq orbit-user-tcl-doxygen-xml-directory nil)\n\
 ;; (setq orbit-user-doxygen-program \"doxygen\")\n\
@@ -82,6 +83,7 @@ between same-named files in different directories.")
 (defvar orbit-user-tcl-enable-fill-column-indicator 'inherit)
 (defvar orbit-user-tcl-enable-whitespace 'inherit)
 (defvar orbit-user-tcl-enable-hl-line 'inherit)
+(defvar orbit-user-tcl-auto-fold-definitions nil)
 (defvar orbit-user-tcl-known-symbols-file nil)
 (defvar orbit-user-tcl-doxygen-xml-directory nil)
 (defvar orbit-user-doxygen-program nil)

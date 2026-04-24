@@ -29,6 +29,7 @@ In =tcl-mode=:
 |-------------+------------------------+----------------------------|
 | =SPC m l=   | lint current file      | runs =tclint=              |
 | =SPC m f=   | format current file    | runs =tclfmt=              |
+| =SPC m F=   | fold definitions       | top-level proc/namespace   |
 | =SPC m TAB= | toggle fold            | manual fold at point       |
 | =SPC m r=   | rebuild TAGS           | project-local =TAGS=       |
 | =SPC m g=   | jump to definition     | uses project =TAGS=        |
@@ -110,6 +111,7 @@ User config can also override Tcl editing defaults with:
 - =orbit-user-enable-hl-line=
 - =orbit-user-tcl-enable-whitespace= where ='inherit= falls back to the global setting
 - =orbit-user-tcl-enable-hl-line= where ='inherit= falls back to the global setting
+- =orbit-user-tcl-auto-fold-definitions= to fold top-level definitions on buffer open
 
 The Tcl tooling diagnostic command =SPC m v= reports:
 - =tclint=
@@ -149,6 +151,7 @@ If the XML directory or =index.xml= is missing, regenerate docs with =SPC m d r=
 
 - folding is manual and powered by =vimish-fold=
 - use visual selection plus =zf= to create a fold around a verbose Doxygen block
+- =SPC m F= folds top-level =proc= and =namespace eval= blocks conservatively
 - =SPC m TAB= or =za= toggles a fold at point
 - =zo= opens a fold
 - =zc= closes a fold
@@ -157,6 +160,12 @@ If the XML directory or =index.xml= is missing, regenerate docs with =SPC m d r=
 Why manual only:
 - the earlier comment-scanning fold experiment was intentionally removed
 - no fold-all comment scanner is used now because stability matters more than automation
+
+Definition folding limits:
+- only top-level =proc NAME ARGS {= and =namespace eval NAME {= lines are considered
+- comments are not folded
+- control blocks like =if=, =foreach=, =while=, and =switch= are ignored
+- if a block cannot be matched safely with balanced-brace movement, it is skipped
 
 * Doxyfile Requirements
 

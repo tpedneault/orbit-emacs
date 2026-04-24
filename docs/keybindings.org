@@ -194,6 +194,7 @@
 |-------------+--------------------------+---------------------|
 | =SPC m l=   | =mod-tcl-lint-file=      | lint current file   |
 | =SPC m f=   | =mod-tcl-format-file=    | format current file |
+| =SPC m F=   | =mod-tcl-fold-definitions= | fold definitions  |
 | =SPC m TAB= | =mod-tcl-toggle-fold=    | toggle fold at point |
 | =SPC m g=   | =mod-tcl-find-tag=       | jump to definition  |
 | =SPC m s=   | =mod-tcl-search-symbols= | search Tcl symbols  |

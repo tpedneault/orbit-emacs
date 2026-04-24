@@ -10,6 +10,7 @@
 (declare-function mod-tcl-docs-doxygen-config-file "mod-tcl-docs")
 (declare-function mod-snippets-setup-completion "mod-snippets")
 (declare-function evil-vimish-fold-mode "evil-vimish-fold")
+(declare-function vimish-fold "vimish-fold")
 (declare-function vimish-fold-mode "vimish-fold")
 (declare-function vimish-fold-toggle "vimish-fold")
 
@@ -119,6 +120,91 @@
       (vimish-fold-toggle)
     (error
      (message "No manual fold at point"))))
+
+(defun mod-tcl--definition-start-line-p ()
+  "Return non-nil when the current line starts a top-level Tcl definition."
+  (and (= (car (syntax-ppss (line-beginning-position))) 0)
+       (not (nth 4 (syntax-ppss (line-beginning-position))))
+       (save-excursion
+         (let ((line-end (line-end-position)))
+           (and (re-search-forward "{[[:blank:]]*$" line-end t)
+                (save-excursion
+                  (goto-char (line-beginning-position))
+                  (or (looking-at-p
+                       "^[[:blank:]]*proc[[:blank:]]+\\(?:\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]+")
+                      (looking-at-p
+                       "^[[:blank:]]*namespace[[:blank:]]+eval[[:blank:]]+\\(?:\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]*{"))))))))
+
+(defun mod-tcl--definition-brace-position ()
+  "Return the opening brace position for the current definition line, or nil."
+  (save-excursion
+    (let ((line-end (line-end-position))
+          (brace-pos nil))
+      (while (re-search-forward "{" line-end t)
+        (setq brace-pos (match-beginning 0)))
+      brace-pos)))
+
+(defun mod-tcl--definition-bounds ()
+  "Return fold bounds for the top-level Tcl definition on the current line.
+The result is a cons cell of beginning and end positions, or nil when the
+definition cannot be parsed safely."
+  (save-excursion
+    (let ((start (line-beginning-position)))
+      (when-let* ((brace-pos (mod-tcl--definition-brace-position)))
+        (goto-char brace-pos)
+        (condition-case nil
+            (let ((end (scan-sexps (point) 1)))
+              (when end
+                (goto-char end)
+                (end-of-line)
+                (when (> (line-number-at-pos (point))
+                         (line-number-at-pos start))
+                  (cons start (point)))))
+          (error nil))))))
+
+(defun mod-tcl--definition-folded-p (beg end)
+  "Return non-nil when a vimish fold already covers BEG..END."
+  (cl-some
+   (lambda (overlay)
+     (and (memq (overlay-get overlay 'type)
+                '(vimish-fold--folded vimish-fold--unfolded))
+          (<= (overlay-start overlay) beg)
+          (>= (overlay-end overlay) end)))
+   (overlays-in beg end)))
+
+(defun mod-tcl-fold-definitions ()
+  "Fold top-level Tcl proc and namespace definitions in the current buffer."
+  (interactive)
+  (unless (derived-mode-p 'tcl-mode)
+    (user-error "Current buffer is not in tcl-mode"))
+  (unless (fboundp 'vimish-fold)
+    (user-error "vimish-fold is not available"))
+  (unless (bound-and-true-p vimish-fold-mode)
+    (vimish-fold-mode 1))
+  (let ((folds-created 0))
+    (save-excursion
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (let ((line-start (line-beginning-position)))
+          (cond
+           ((mod-tcl--definition-start-line-p)
+            (let ((next-pos (save-excursion (forward-line 1) (point))))
+              (when-let* ((bounds (mod-tcl--definition-bounds)))
+                (pcase-let ((`(,beg . ,end) bounds))
+                  (unless (mod-tcl--definition-folded-p beg end)
+                    (vimish-fold beg end)
+                    (setq folds-created (1+ folds-created)))
+                  (setq next-pos (min (point-max) (1+ end)))))
+              (goto-char (max next-pos (save-excursion (forward-line 1) (point))))))
+           (t
+            (forward-line 1))))))
+    (message "Folded %d Tcl definitions" folds-created)))
+
+(defun mod-tcl--maybe-auto-fold-definitions ()
+  "Fold top-level Tcl definitions when configured to do so."
+  (when orbit-user-tcl-auto-fold-definitions
+    (ignore-errors
+      (mod-tcl-fold-definitions))))
 
 (defun mod-tcl--program-path (override fallback-name)
   "Return OVERRIDE or a resolved FALLBACK-NAME path, or nil."
@@ -741,6 +827,7 @@ Return non-nil when a project definition was found."
 (with-eval-after-load 'tcl
   (add-hook 'tcl-mode-hook #'mod-tcl--configure-editing-defaults)
   (add-hook 'tcl-mode-hook #'mod-tcl-enable-manual-folding)
+  (add-hook 'tcl-mode-hook #'mod-tcl--maybe-auto-fold-definitions)
   (add-hook 'tcl-mode-hook #'mod-tcl-setup-completion)
   (add-hook 'tcl-mode-hook #'mod-tcl--enable-symbol-highlighting))
 
