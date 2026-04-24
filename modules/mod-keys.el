@@ -219,6 +219,10 @@
      :states '(normal visual motion emacs)
      :keymaps 'tcl-mode-map
      :prefix "SPC m"
+     "d" '(:ignore t :which-key "docs")
+     "d s" '(mod-tcl-docs-search :which-key "search docs")
+     "d p" '(mod-tcl-docs-at-point :which-key "docs at point")
+     "d r" '(mod-tcl-docs-regenerate :which-key "regen docs")
      "l" '(mod-tcl-lint-file :which-key "lint")
      "f" '(mod-tcl-format-file :which-key "format")
      "g" '(mod-tcl-find-tag :which-key "goto tag")

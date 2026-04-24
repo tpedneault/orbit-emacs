@@ -43,7 +43,10 @@ between same-named files in different directories.")
 ;; (setq orbit-user-rg-program \"rg\")\n\
 ;; (setq orbit-user-ctags-program \"ctags\")\n\
 ;; (setq orbit-user-tclint-program \"tclint\")\n\
-;; (setq orbit-user-tclfmt-program \"tclfmt\")\n")
+;; (setq orbit-user-tclfmt-program \"tclfmt\")\n\
+;; (setq orbit-user-tcl-doxygen-xml-directory nil)\n\
+;; (setq orbit-user-doxygen-program \"doxygen\")\n\
+;; (setq orbit-user-doxygen-config-file nil)\n")
 
 (defvar orbit-user-shell nil)
 (defvar orbit-user-font-family nil)
@@ -54,6 +57,9 @@ between same-named files in different directories.")
 (defvar orbit-user-ctags-program nil)
 (defvar orbit-user-tclint-program nil)
 (defvar orbit-user-tclfmt-program nil)
+(defvar orbit-user-tcl-doxygen-xml-directory nil)
+(defvar orbit-user-doxygen-program nil)
+(defvar orbit-user-doxygen-config-file nil)
 
 (defun mod-core-gui-shell-environment-p ()
   "Return non-nil when shell environment import should run."
