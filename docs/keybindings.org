@@ -104,8 +104,8 @@
 | =SPC x r= | =mod-context-rename=  | rename context                         |
 | =SPC x [= | =mod-context-previous= | previous context                      |
 | =SPC x ]= | =mod-context-next=    | next context                           |
-| =SPC x e= | =mod-context-editor=  | =edit/<project>=                       |
-| =SPC x g= | =mod-context-git=     | init once, later switch only           |
+| =SPC x e= | =mod-context-editor=  | prompt project if needed; file picker for empty =edit= |
+| =SPC x g= | =mod-context-git=     | prompt project if needed; init once, later switch only |
 | =SPC x f= | =mod-context-files=   | Dired stays here, files open in =edit= |
 | =SPC x o= | =mod-context-notes=   | =notes= context                        |
 | =SPC x a= | =mod-context-agenda=  | =agenda= dashboard context             |

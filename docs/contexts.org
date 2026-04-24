@@ -29,13 +29,15 @@ Key: =SPC x e=
 - If current buffer is in a project, that project is used.
 - Otherwise you are prompted for a known project.
 - Switches to or creates =edit/<project-name>=.
-- Does not force =project-find-file=.
+- If the edit context is new or only has scratch-like buffers, it immediately prompts with =project-find-file=.
+- If the edit context already has project files open, it just switches there.
 
 ** =git/<project>=
 
 Key: =SPC x g=
 
-- Requires a project or Git repo.
+- If current buffer is in a project, that project is used.
+- Otherwise you are prompted for a known project.
 - On first use, creates =git/<project-name>=, opens Magit, and starts in a single-purpose window.
 - Later calls only switch back to the existing context.
 

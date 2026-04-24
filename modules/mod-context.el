@@ -40,6 +40,26 @@
   (mod-context--switch-or-create name)
   (funcall opener))
 
+(defun mod-context--project-file-buffer-p (buffer root)
+  "Return non-nil when BUFFER visits a file inside ROOT."
+  (when-let ((file (buffer-local-value 'buffer-file-name buffer)))
+    (string-prefix-p (file-truename root)
+                     (file-truename file))))
+
+(defun mod-context--edit-context-empty-p (name root)
+  "Return non-nil when edit context NAME has no meaningful project buffers.
+An edit context counts as empty when it has no buffers, or only scratch-like
+buffers and no file-visiting buffers inside ROOT."
+  (let ((buffers (seq-filter #'buffer-live-p (persp-get-buffers name))))
+    (not (seq-some (lambda (buffer)
+                     (mod-context--project-file-buffer-p buffer root))
+                   buffers))))
+
+(defun mod-context--open-project-file-in-edit-context (root)
+  "Prompt for and open a project file for ROOT in the current edit context."
+  (let ((default-directory root))
+    (call-interactively #'project-find-file)))
+
 (defun mod-context--project-root ()
   "Return the current project root, or nil if not in a project."
   (when-let ((project (project-current nil)))
@@ -56,10 +76,15 @@
   "Return the final directory name component of DIR."
   (file-name-nondirectory (directory-file-name dir)))
 
-(defun mod-context--git-root ()
-  "Return the current Git root, or nil if none can be determined."
-  (or (mod-context--project-root)
-      (vc-root-dir)))
+(defun mod-context--select-project ()
+  "Return the selected project as a plist with `:root' and `:name'.
+If the current buffer is in a project, use that project. Otherwise prompt for
+one of the known projects. Signal a user-facing error only when no known
+projects are available."
+  (let* ((root (or (mod-context--project-root)
+                   (mod-context--read-known-project-root)))
+         (name (mod-context--directory-name root)))
+    (list :root root :name name)))
 
 (defun mod-context-switch ()
   "Switch to an existing context or create one by name."
@@ -101,10 +126,9 @@
 (defun mod-context-git ()
   "Switch to a Git context for the current project or repository."
   (interactive)
-  (let* ((root (mod-context--git-root))
-         (name (and root (format "git/%s" (mod-context--directory-name root)))))
-    (unless root
-      (user-error "Not in a project or Git repository"))
+  (let* ((project (mod-context--select-project))
+         (root (plist-get project :root))
+         (name (format "git/%s" (plist-get project :name))))
     (if (mod-context--exists-p name)
         (persp-switch name)
       (mod-context--activate-template
@@ -117,11 +141,15 @@
 (defun mod-context-editor ()
   "Switch to an editing context for a project."
   (interactive)
-  (let* ((root (or (mod-context--project-root)
-                   (mod-context--read-known-project-root)))
-         (name (mod-context--edit-context-name root)))
+  (let* ((project (mod-context--select-project))
+         (root (plist-get project :root))
+         (name (format "edit/%s" (plist-get project :name)))
+         (should-prompt (or (not (mod-context--exists-p name))
+                            (mod-context--edit-context-empty-p name root))))
     (let ((default-directory root))
-      (mod-context--switch-or-create name))))
+      (mod-context--switch-or-create name)
+      (when should-prompt
+        (mod-context--open-project-file-in-edit-context root)))))
 
 (defun mod-context-files ()
   "Switch to a file-management context for the current project or directory."

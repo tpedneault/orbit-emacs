@@ -1,12 +1,14 @@
 ;;; -*- coding: utf-8; mode: lisp-data -*-
-(("/Users/thomas/Repos/testtcl/ait/session.tcl" . 3612)
+(("/Users/thomas/Repos/testtcl/ait/tm.tcl" . 588)
+ ("/Users/thomas/Repos/testtcl/ait/session.tcl" . 337)
+ ("/Users/thomas/" (dired-filename . "/Users/thomas/Repos"))
+ ("/Users/thomas/Repos/testtcl/TAGS" . 383)
+ ("/Users/thomas/Repos/testtcl/example.tcl" . 388)
+ ("/Users/thomas/Repos/testtcl/titled_test.tcl" . 400)
+ ("/Users/thomas/Repos/testtcl/ait/result.tcl" . 1596)
  ("/Users/thomas/Repos/testtcl/ait/log.tcl" . 743)
- ("/Users/thomas/Repos/testtcl/TAGS" . 384)
- ("/Users/thomas/Repos/testtcl/titled_test.tcl" . 118)
  ("/Users/thomas/.config/emacs/docs/manual.org" . 867)
  ("/Users/thomas/.config/emacs/docs/tcl.org" . 1425)
- ("/Users/thomas/Repos/testtcl/ait/tm.tcl" . 588)
- ("/Users/thomas/Repos/testtcl/ait/result.tcl" . 3410)
  ("/Users/thomas/Repos/testtcl/titled.tcl" . 786)
  ("/Users/thomas/.config/.orbit-emacs.d/config.el" . 977)
  ("/Users/thomas/Repos/testtcl/"
@@ -16,7 +18,6 @@
  ("/Users/thomas/.config/emacs/docs/vim.org" . 1318)
  ("/Users/thomas/.config/emacs/docs/vim-training.org" . 1348)
  ("/Users/thomas/.config/emacs/snippets/tcl-mode/puts" . 55)
- ("/Users/thomas/" (dired-filename . "/Users/thomas/Repos"))
  ("/Users/thomas/Repos/"
   (dired-filename . "/Users/thomas/Repos/testtcl"))
  ("/Users/thomas/.config/emacs/modules/mod-core.el" . 810)
