@@ -61,10 +61,17 @@ That means v1 sync is intentionally scoped to:
 
 | Key         | Action                | Notes                     |
 |-------------+-----------------------+---------------------------|
+| =SPC n j i= | =mod-jira-import-issue= | import one issue by key or number |
 | =SPC n j s= | =mod-jira-sync=       | fetch and refresh =jira.org= |
 | =SPC n j r= | =mod-jira-refresh-issue= | refresh current issue subtree only |
 | =SPC n j o= | =mod-jira-open-issue= | open issue at point in browser |
 | =SPC n j j= | =mod-org-capture-journal= | journal capture moved here |
+
+Import input:
+- full key like =PROJ-75=
+- bare number like =75=
+
+If you enter a bare number, orbit-emacs prefixes it with =orbit-user-jira-project-key=.
 
 * Org Sync Shape
 
@@ -121,6 +128,12 @@ Existing non-Jira tags on a synced heading are preserved, and =:JIRA:= is kept w
 If you have older freeform content directly under the issue heading, orbit-emacs will carry it forward into =Notes= on refresh.
 
 Because =jira.org= lives under your Org directory by default, synced Jira items appear in the agenda automatically.
+
+Why Jira items were easy to miss before:
+- on a fresh setup, =jira.org= might not exist yet
+- if the file did not exist, Org agenda discovery had nothing to include
+
+orbit-emacs now ensures =jira.org= exists under the Org directory early, so imported or synced Jira items are visible to the agenda/dashboard.
 
 * Troubleshooting
 

@@ -103,6 +103,7 @@
 | =SPC n c= | =mod-org-capture=          | capture menu       |
 | =SPC n t= | =mod-org-capture-inbox-task= | inbox task       |
 | =SPC n j j= | =mod-org-capture-journal= | journal entry    |
+| =SPC n j i= | =mod-jira-import-issue=  | import issue by key or number |
 | =SPC n j s= | =mod-jira-sync=          | sync Jira issues into agenda-visible =jira.org= |
 | =SPC n j r= | =mod-jira-refresh-issue= | refresh issue at point |
 | =SPC n j o= | =mod-jira-open-issue=    | open issue at point |

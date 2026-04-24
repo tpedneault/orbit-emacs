@@ -20,7 +20,7 @@
   :type 'string)
 
 (defconst mod-org-default-files
-  '("inbox.org" "tasks.org" "projects.org" "notes.org" "journal.org")
+  '("inbox.org" "tasks.org" "projects.org" "notes.org" "journal.org" "jira.org")
   "Default Org files expected under `mod-org-directory'.")
 
 (defconst mod-org-agenda-work-view-key "w"

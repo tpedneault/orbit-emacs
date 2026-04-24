@@ -45,6 +45,14 @@
         (expand-file-name "jira.org"
                           (expand-file-name "org/" (getenv "HOME"))))))
 
+(defun mod-jira--ensure-org-file ()
+  "Ensure the Jira Org file exists."
+  (let ((file (mod-jira-org-file)))
+    (make-directory (file-name-directory file) t)
+    (unless (file-exists-p file)
+      (write-region "#+title: jira\n\n" nil file nil 'silent))
+    file))
+
 (defun mod-jira--token ()
   "Return the configured Jira token, or nil."
   (let ((token
@@ -255,6 +263,20 @@
                          token)))
     (mod-jira--simplify-issue payload base-url)))
 
+(defun mod-jira--normalize-issue-key (identifier)
+  "Return a Jira issue key for IDENTIFIER."
+  (let ((trimmed (string-trim identifier)))
+    (cond
+     ((string-match-p "\\`[A-Za-z][A-Za-z0-9_]*-[0-9]+\\'" trimmed)
+      (upcase trimmed))
+     ((string-match-p "\\`[0-9]+\\'" trimmed)
+      (unless orbit-user-jira-project-key
+        (user-error
+         "Bare Jira issue IDs require orbit-user-jira-project-key to be configured"))
+      (format "%s-%s" orbit-user-jira-project-key trimmed))
+     (t
+      (user-error "Enter a Jira issue key like PROJ-75 or a bare number like 75")))))
+
 (defun mod-jira--section-body (start)
   "Return body text for the subtree heading at START."
   (save-excursion
@@ -303,7 +325,7 @@
 
 (defun mod-jira--file-heading-data ()
   "Return an alist of Jira key to preserved heading data from the current file."
-  (let ((file (mod-jira-org-file))
+  (let ((file (mod-jira--ensure-org-file))
         (entries '()))
     (when (file-exists-p file)
       (with-current-buffer (find-file-noselect file)
@@ -472,7 +494,7 @@
 
 (defun mod-jira--write-issues-file (issues)
   "Write ISSUES into the configured Jira Org file."
-  (let* ((file (mod-jira-org-file))
+  (let* ((file (mod-jira--ensure-org-file))
          (directory (file-name-directory file))
          (preserved-data (mod-jira--file-heading-data)))
     (make-directory directory t)
@@ -493,6 +515,55 @@
         (file (mod-jira-org-file)))
     (mod-jira--write-issues-file issues)
     (message "Synced %d Jira issues to %s" (length issues) file)))
+
+(defun mod-jira--find-issue-heading (key)
+  "Return the position of Jira issue heading KEY in the current buffer, or nil."
+  (goto-char (point-min))
+  (let (found)
+    (org-map-entries
+     (lambda ()
+       (when (and (not found)
+                  (string= (or (org-entry-get (point) "JIRA_KEY") "") key))
+         (setq found (point))))
+     nil
+     'file)
+    found))
+
+(defun mod-jira-import-issue (identifier)
+  "Import or update one Jira issue by IDENTIFIER."
+  (interactive (list (read-string "Jira issue: ")))
+  (let* ((key (mod-jira--normalize-issue-key identifier))
+         (issue (mod-jira-fetch-issue key))
+         (file (mod-jira--ensure-org-file)))
+    (with-current-buffer (find-file-noselect file)
+      (org-with-wide-buffer
+        (let ((existing (mod-jira--find-issue-heading key)))
+          (if existing
+              (progn
+                (goto-char existing)
+                (let* ((preserved (mod-jira--issue-heading-data-at-point))
+                     (beg (point))
+                     (end (save-excursion
+                            (org-end-of-subtree t t)))
+                     (replacement
+                      (with-temp-buffer
+                        (mod-jira--insert-issue
+                         issue
+                         (list (cons key
+                                     (list :notes (plist-get preserved :notes)
+                                           :tags (plist-get preserved :tags)))))
+                        (buffer-string))))
+                  (delete-region beg end)
+                  (goto-char beg)
+                  (insert replacement)))
+            (goto-char (point-max))
+            (unless (bolp)
+              (insert "\n"))
+            (mod-jira--insert-issue issue nil)))
+        (save-buffer)))
+    (when (fboundp 'mod-org-refresh-agenda-files)
+      (mod-org-refresh-agenda-files))
+    (message "Imported Jira issue %s into %s" key file)))
 
 (defun mod-jira-refresh-issue ()
   "Refresh only the Jira issue subtree at point."
