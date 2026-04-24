@@ -1,5 +1,6 @@
 ;;; mod-tcl.el --- Minimal Tcl workflow foundation -*- lexical-binding: t; -*-
 
+(require 'cl-lib)
 (require 'compile)
 (require 'etags)
 (require 'project)
@@ -14,26 +15,15 @@
   "Shared output buffer name for Tcl tool commands."
   :type 'string)
 
-(defcustom mod-tcl-tclint-command
-  (or orbit-user-tclint-program "tclint")
-  "Executable used to lint Tcl files."
-  :type 'string)
-
-(defcustom mod-tcl-tclfmt-command
-  (or orbit-user-tclfmt-program "tclfmt")
-  "Executable used to format Tcl files."
-  :type 'string)
-
-(defcustom mod-tcl-ctags-command
-  (or orbit-user-ctags-program "ctags")
-  "Executable used to rebuild the project TAGS file."
-  :type 'string)
-
 (defcustom mod-tcl-ctags-args
   '("-e" "-R" "--languages=Tcl"
-    "--langmap=Tcl:+.tcl,.tm,.sdc,.xdc,.upf"
+    "--map-Tcl=+.tcl"
+    "--map-Tcl=+.tm"
+    "--map-Tcl=+.sdc"
+    "--map-Tcl=+.xdc"
+    "--map-Tcl=+.upf"
     "-f" "TAGS" ".")
-  "Arguments passed to `mod-tcl-ctags-command' when rebuilding TAGS."
+  "Arguments passed to the ctags program when rebuilding TAGS."
   :type '(repeat string))
 
 (defun mod-tcl--project-root ()
@@ -52,10 +42,31 @@
     (save-buffer))
   buffer-file-name)
 
-(defun mod-tcl--ensure-command (command)
-  "Return COMMAND's executable path or signal an error."
-  (or (executable-find command)
-      (user-error "Command not found: %s" command)))
+(defun mod-tcl--ensure-program (program fallback-name)
+  "Return PROGRAM or resolve FALLBACK-NAME, otherwise signal an error."
+  (or program
+      (user-error "Command not found: %s" fallback-name)))
+
+(defun mod-tcl-ctags-program ()
+  "Return the configured ctags program for Tcl TAGS generation."
+  (mod-tcl--ensure-program
+   (or orbit-user-ctags-program
+       (executable-find "ctags"))
+   "ctags"))
+
+(defun mod-tcl-tclint-program ()
+  "Return the configured tclint program."
+  (mod-tcl--ensure-program
+   (or orbit-user-tclint-program
+       (executable-find "tclint"))
+   "tclint"))
+
+(defun mod-tcl-tclfmt-program ()
+  "Return the configured tclfmt program."
+  (mod-tcl--ensure-program
+   (or orbit-user-tclfmt-program
+       (executable-find "tclfmt"))
+   "tclfmt"))
 
 (defun mod-tcl--output-buffer ()
   "Return the shared Tcl tool output buffer."
@@ -98,17 +109,17 @@ When ERRORP is non-nil, keep point at the top and display the buffer."
   "Run tclint on the current file."
   (interactive)
   (let ((file (mod-tcl--current-file))
-        (program (mod-tcl--ensure-command mod-tcl-tclint-command)))
+        (program (mod-tcl-tclint-program)))
     (mod-tcl--run-compilation program (list file) (file-name-directory file))))
 
 (defun mod-tcl-format-file ()
   "Run tclfmt on the current file and replace the buffer with formatted output.
 
 This assumes `tclfmt FILE' writes formatted Tcl to standard output. If your
-local tclfmt uses a different CLI shape, customize `mod-tcl-tclfmt-command'."
+local tclfmt uses a different CLI shape, set `orbit-user-tclfmt-program'."
   (interactive)
   (let* ((file (mod-tcl--current-file))
-         (program (mod-tcl--ensure-command mod-tcl-tclfmt-command))
+         (program (mod-tcl-tclfmt-program))
          (output (generate-new-buffer " *tclfmt-output*"))
          (errors (generate-new-buffer " *tclfmt-errors*"))
          (coding-system-for-read 'utf-8)
@@ -150,22 +161,65 @@ local tclfmt uses a different CLI shape, customize `mod-tcl-tclfmt-command'."
   "Return the current project's TAGS file path."
   (expand-file-name "TAGS" (mod-tcl--project-root)))
 
-(defun mod-tcl-find-tag ()
-  "Jump to a definition using the project's TAGS file."
-  (interactive)
+(defun mod-tcl--visit-project-tags-table ()
+  "Visit the current project's TAGS file and return its path."
   (let ((tags-file (mod-tcl--project-tags-file)))
     (unless (file-exists-p tags-file)
       (user-error "No TAGS file found at %s" tags-file))
     (visit-tags-table tags-file t)
-    (if-let ((symbol (thing-at-point 'symbol t)))
-        (xref-find-definitions symbol)
-      (call-interactively #'find-tag))))
+    tags-file))
+
+(defun mod-tcl--symbol-at-point ()
+  "Return the Tcl symbol at point or signal a user-facing error."
+  (or (thing-at-point 'symbol t)
+      (user-error "No symbol at point")))
+
+(defun mod-tcl--fallback-tag-name (symbol)
+  "Return the unqualified fallback tag name for SYMBOL."
+  (car (last (split-string symbol "::" t))))
+
+(defun mod-tcl--lookup-variants (symbol)
+  "Return ordered tag lookup variants for SYMBOL."
+  (let ((variants (list symbol)))
+    (when (string-prefix-p "::" symbol)
+      (push (string-remove-prefix "::" symbol) variants))
+    (when (and (string-match-p "::" symbol)
+               (not (string-prefix-p "::" symbol)))
+      (push (concat "::" symbol) variants))
+    (nreverse (cl-remove-duplicates variants :test #'equal))))
+
+(defun mod-tcl--tag-matches (tag)
+  "Return exact tag matches for TAG from the active TAGS table."
+  (cl-remove-if-not
+   (lambda (candidate) (string= candidate tag))
+   (all-completions tag (tags-completion-table))))
+
+(defun mod-tcl--find-tag-exact (tag)
+  "Find TAG only when it exists exactly in the active TAGS table."
+  (when (mod-tcl--tag-matches tag)
+    (find-tag tag)
+    t))
+
+(defun mod-tcl--find-tag-with-fallbacks (symbol)
+  "Find SYMBOL using exact namespace variants, then safe fallback names."
+  (or (cl-some #'mod-tcl--find-tag-exact (mod-tcl--lookup-variants symbol))
+      (let ((fallback (mod-tcl--fallback-tag-name symbol)))
+        (when (= (length (mod-tcl--tag-matches fallback)) 1)
+          (mod-tcl--find-tag-exact fallback)))))
+
+(defun mod-tcl-find-tag ()
+  "Jump to a definition using the project's TAGS file."
+  (interactive)
+  (mod-tcl--visit-project-tags-table)
+  (let ((symbol (mod-tcl--symbol-at-point)))
+    (unless (mod-tcl--find-tag-with-fallbacks symbol)
+      (user-error "No TAGS definition found for: %s" symbol))))
 
 (defun mod-tcl-rebuild-tags ()
   "Rebuild the project-local TAGS file for Tcl sources."
   (interactive)
   (let ((root (mod-tcl--project-root))
-        (program (mod-tcl--ensure-command mod-tcl-ctags-command)))
+        (program (mod-tcl-ctags-program)))
     (mod-tcl--run-compilation program mod-tcl-ctags-args root)
     (when-let ((tags-file (expand-file-name "TAGS" root)))
       (when (file-exists-p tags-file)
