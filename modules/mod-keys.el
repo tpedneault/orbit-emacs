@@ -3,6 +3,15 @@
 (require 'project)
 
 (declare-function mod-context-open-path "mod-context")
+(declare-function mod-core-copy-absolute-file-path "mod-core")
+(declare-function mod-core-copy-directory-path "mod-core")
+(declare-function mod-core-copy-project-relative-file-path "mod-core")
+(declare-function mod-core-duplicate-line-or-region "mod-core")
+(declare-function mod-core-move-line-or-region-down "mod-core")
+(declare-function mod-core-move-line-or-region-up "mod-core")
+(declare-function mod-core-open-at-point "mod-core")
+(declare-function mod-core-recentf-open "mod-core")
+(declare-function er/expand-region "expand-region")
 
 (defconst mod-keys-config-directory
   (file-name-directory
@@ -53,13 +62,25 @@
 (defun mod-keys-open-docs-manual ()
   "Open the Org documentation manual for this configuration."
   (interactive)
-  (mod-context-open-path (expand-file-name "docs/manual.org" mod-keys-config-directory)))
+  (let ((manual-file (expand-file-name "docs/manual.org" mod-keys-config-directory)))
+    (mod-context-open-path manual-file)
+    (when (and buffer-file-name
+               (file-equal-p buffer-file-name manual-file))
+      (read-only-mode 1)
+      (view-mode 1))))
 
 (defun mod-keys-reload-config ()
   "Reload the Orbit Emacs configuration."
   (interactive)
   (load-file (expand-file-name "init.el" mod-keys-config-directory))
   (message "Reloaded orbit-emacs config"))
+
+(defun mod-keys-find-file-dwim ()
+  "Find a file using the current project when available."
+  (interactive)
+  (if-let* ((project (project-current nil)))
+      (project-find-file)
+    (call-interactively #'find-file)))
 
 (use-package which-key
   :ensure t
@@ -84,14 +105,15 @@
 
   (mod-keys-leader-def
     "" '(:ignore t :which-key "leader")
-    "SPC" '(consult-buffer :which-key "buffer")
-    "." '(project-find-file :which-key "project file")
+    "SPC" '(mod-keys-find-file-dwim :which-key "find file")
+    "." '(consult-buffer :which-key "buffer")
     "/" '(mod-project-search :which-key "project search")
     ":" '(execute-extended-command :which-key "M-x")
     "," '(mod-keys-local-leader-map :which-key "local")
     "f" '(:ignore t :which-key "files")
     "f c" '(:ignore t :which-key "config")
     "f c s" '(:ignore t :which-key "snippets")
+    "f y" '(:ignore t :which-key "yank path")
     "f c i" '(mod-keys-open-init-file :which-key "init.el")
     "f c e" '(mod-keys-open-early-init-file :which-key "early-init.el")
     "f c m" '(mod-keys-open-modules-directory :which-key "modules/")
@@ -105,12 +127,17 @@
     "f c s n" '(yas-new-snippet :which-key "new snippet")
     "f c s r" '(yas-reload-all :which-key "reload snippets")
     "f f" '(mod-context-open-path :which-key "find file")
-    "f r" '(recentf-open-files :which-key "recent")
+    "f r" '(mod-core-recentf-open :which-key "recent")
     "f s" '(save-buffer :which-key "save")
+    "f y a" '(mod-core-copy-absolute-file-path :which-key "absolute path")
+    "f y r" '(mod-core-copy-project-relative-file-path :which-key "relative path")
+    "f y d" '(mod-core-copy-directory-path :which-key "directory path")
     "b" '(:ignore t :which-key "buffers")
     "b b" '(switch-to-buffer :which-key "switch buffer")
     "b d" '(kill-current-buffer :which-key "kill buffer")
     "b r" '(revert-buffer :which-key "revert")
+    "c" '(:ignore t :which-key "code")
+    "c d" '(mod-core-duplicate-line-or-region :which-key "duplicate")
     "h" '(:ignore t :which-key "help")
     "h b" '(xref-go-back :which-key "back")
     "h B" '(xref-go-forward :which-key "forward")
@@ -128,6 +155,7 @@
     "s" '(:ignore t :which-key "search")
     "s s" '(consult-ripgrep :which-key "ripgrep")
     "s b" '(consult-line :which-key "buffer line")
+    "v" '(er/expand-region :which-key "expand region")
     "w" '(:ignore t :which-key "windows")
     "w w" '(other-window :which-key "other window")
     "w h" '(windmove-left :which-key "left")
@@ -149,6 +177,7 @@
     "m" '(mod-keys-local-leader-map :which-key "local")
     "o" '(:ignore t :which-key "utility")
     "o o" '(mod-utility-toggle :which-key "toggle")
+    "o O" '(mod-core-open-at-point :which-key "open at point")
     "o s" '(mod-utility-shell :which-key "shell")
     "o m" '(mod-utility-messages :which-key "messages")
     "o h" '(mod-utility-help :which-key "help")
@@ -264,6 +293,16 @@
      "r" '(org-agenda-refile :which-key "refile")
      "a" '(org-agenda-archive :which-key "archive")
      "v" '(mod-org-agenda-visit :which-key "visit"))))
+
+(global-set-key (kbd "M-j") #'mod-core-move-line-or-region-down)
+(global-set-key (kbd "M-k") #'mod-core-move-line-or-region-up)
+
+(with-eval-after-load 'evil
+  (general-define-key
+   :states '(normal visual insert motion emacs)
+   :keymaps 'override
+   "M-j" #'mod-core-move-line-or-region-down
+   "M-k" #'mod-core-move-line-or-region-up))
 
 (provide 'mod-keys)
 

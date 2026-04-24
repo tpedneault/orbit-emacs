@@ -2,6 +2,7 @@
 
 (require 'recentf)
 (require 'subr-x)
+(require 'uniquify)
 (require 'whitespace)
 
 (declare-function persp-current-name "perspective")
@@ -318,6 +319,11 @@
               cursor-in-non-selected-windows nil
               truncate-lines t
               word-wrap nil)
+
+(setq uniquify-buffer-name-style 'forward
+      uniquify-separator "/"
+      uniquify-after-kill-buffer-p t
+      uniquify-ignore-buffers-re "^\\*")
 
 (setq recentf-save-file mod-ui-recentf-save-file
       save-place-file mod-core-save-place-file

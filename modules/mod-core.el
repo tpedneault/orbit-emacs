@@ -1,5 +1,12 @@
 ;;; mod-core.el --- Core bootstrap -*- lexical-binding: t; -*-
 
+(require 'cl-lib)
+(require 'browse-url)
+(require 'project)
+(require 'thingatpt)
+
+(declare-function mod-context-open-path "mod-context")
+
 (defconst mod-core-config-directory
   (file-name-directory
    (directory-file-name
@@ -89,6 +96,9 @@ between same-named files in different directories.")
 (defvar orbit-user-doxygen-program nil)
 (defvar orbit-user-doxygen-config-file nil)
 
+(defvar mod-core-recentf-history nil
+  "Minibuffer history for recent file selection.")
+
 (defun mod-core-gui-shell-environment-p ()
   "Return non-nil when shell environment import should run."
   (and (memq system-type '(darwin gnu/linux))
@@ -118,6 +128,189 @@ between same-named files in different directories.")
 
 (unless orbit-user-snippets-directory
   (setq orbit-user-snippets-directory mod-core-user-snippets-directory))
+
+(defun mod-core--current-project-root ()
+  "Return the current project root, or nil when outside a project."
+  (when-let* ((project (project-current nil)))
+    (project-root project)))
+
+(defun mod-core--path-token-bounds ()
+  "Return bounds for the non-whitespace token at point."
+  (save-excursion
+    (skip-chars-backward "^ \t\n\"'`()[]{}<>")
+    (let ((beg (point)))
+      (skip-chars-forward "^ \t\n\"'`()[]{}<>")
+      (cons beg (point)))))
+
+(defun mod-core--path-token-at-point ()
+  "Return the non-whitespace token at point, or nil when empty."
+  (pcase-let ((`(,beg . ,end) (mod-core--path-token-bounds)))
+    (when (< beg end)
+      (buffer-substring-no-properties beg end))))
+
+(defun mod-core--open-file-path (path &optional line)
+  "Open PATH, optionally moving to LINE."
+  (let ((expanded (expand-file-name (substitute-in-file-name path))))
+    (if (fboundp 'mod-context-open-path)
+        (mod-context-open-path expanded)
+      (find-file expanded))
+    (when line
+      (goto-char (point-min))
+      (forward-line (1- line)))))
+
+(defun mod-core-open-at-point ()
+  "Open a URL or file path at point."
+  (interactive)
+  (if-let* ((url (thing-at-point 'url t)))
+      (browse-url url)
+    (let ((token (mod-core--path-token-at-point)))
+      (unless token
+        (user-error "No URL or file path at point"))
+      (let ((line nil)
+            (path token))
+        (when (string-match "\\`\\(.+\\):\\([0-9]+\\)\\'" token)
+          (let ((candidate (match-string 1 token))
+                (candidate-line (string-to-number (match-string 2 token))))
+            (when (file-exists-p (expand-file-name (substitute-in-file-name candidate)))
+              (setq path candidate
+                    line candidate-line))))
+        (unless (file-exists-p (expand-file-name (substitute-in-file-name path)))
+          (user-error "No URL or file path at point"))
+        (mod-core--open-file-path path line)))))
+
+(defun mod-core--kill-ring-save (text label)
+  "Copy TEXT to the kill ring and report LABEL."
+  (kill-new text)
+  (message "Copied %s: %s" label text))
+
+(defun mod-core-copy-absolute-file-path ()
+  "Copy the current buffer's absolute file path."
+  (interactive)
+  (unless buffer-file-name
+    (user-error "Current buffer is not visiting a file"))
+  (mod-core--kill-ring-save (expand-file-name buffer-file-name) "absolute path"))
+
+(defun mod-core-copy-project-relative-file-path ()
+  "Copy the current file path relative to the project root when possible."
+  (interactive)
+  (unless buffer-file-name
+    (user-error "Current buffer is not visiting a file"))
+  (let* ((absolute (expand-file-name buffer-file-name))
+         (project-root (mod-core--current-project-root))
+         (path (if project-root
+                   (file-relative-name absolute project-root)
+                 absolute)))
+    (mod-core--kill-ring-save path "project-relative path")))
+
+(defun mod-core-copy-directory-path ()
+  "Copy the current buffer directory path."
+  (interactive)
+  (let ((dir (expand-file-name (or (and buffer-file-name
+                                        (file-name-directory buffer-file-name))
+                                   default-directory))))
+    (mod-core--kill-ring-save dir "directory path")))
+
+(defun mod-core--linewise-region-bounds ()
+  "Return bounds covering the active region or current line."
+  (if (use-region-p)
+      (let ((beg (save-excursion
+                   (goto-char (region-beginning))
+                   (line-beginning-position)))
+            (end (save-excursion
+                   (goto-char (region-end))
+                   (if (and (> (region-end) (region-beginning))
+                            (= (region-end) (line-beginning-position)))
+                       (point)
+                     (forward-line 1)
+                     (point)))))
+        (cons beg end))
+    (cons (line-beginning-position)
+          (save-excursion
+            (forward-line 1)
+            (point)))))
+
+(defun mod-core-duplicate-line-or-region ()
+  "Duplicate the active region, or the current line when no region is active."
+  (interactive)
+  (pcase-let ((`(,beg . ,end) (mod-core--linewise-region-bounds)))
+    (let ((text (buffer-substring-no-properties beg end)))
+      (goto-char end)
+      (insert text))))
+
+(defun mod-core-move-line-or-region-down ()
+  "Move the active region or current line down by one line."
+  (interactive)
+  (pcase-let ((`(,beg . ,end) (mod-core--linewise-region-bounds)))
+    (save-excursion
+      (goto-char end)
+      (when (eobp)
+        (user-error "Cannot move past end of buffer")))
+    (let* ((block (buffer-substring-no-properties beg end))
+           (next-end (save-excursion
+                       (goto-char end)
+                       (forward-line 1)
+                       (point)))
+           (next-line (buffer-substring-no-properties end next-end)))
+      (delete-region beg next-end)
+      (goto-char beg)
+      (insert next-line block)
+      (goto-char (+ beg (length next-line))))))
+
+(defun mod-core-move-line-or-region-up ()
+  "Move the active region or current line up by one line."
+  (interactive)
+  (pcase-let ((`(,beg . ,end) (mod-core--linewise-region-bounds)))
+    (when (<= beg (point-min))
+      (user-error "Cannot move past beginning of buffer"))
+    (let* ((prev-end beg)
+           (prev-beg (save-excursion
+                       (goto-char prev-end)
+                       (forward-line -1)
+                       (point)))
+           (prev (buffer-substring-no-properties prev-beg prev-end))
+           (block (buffer-substring-no-properties beg end)))
+      (delete-region prev-beg end)
+      (goto-char prev-beg)
+      (insert block prev)
+      (goto-char prev-beg))))
+
+(defun mod-core--recentf-candidates ()
+  "Return recent files, preferring current-project entries first."
+  (require 'recentf)
+  (let* ((files (cl-remove-if-not #'file-exists-p recentf-list))
+         (project-root (mod-core--current-project-root))
+         (project-files '())
+         (other-files '()))
+    (dolist (file files)
+      (if (and project-root
+               (string-prefix-p (file-truename project-root)
+                                (file-truename file)))
+          (push file project-files)
+        (push file other-files)))
+    (append (nreverse project-files) (nreverse other-files))))
+
+(defun mod-core-recentf-open ()
+  "Open a recent file, preferring current-project entries first."
+  (interactive)
+  (let ((candidates (mod-core--recentf-candidates)))
+    (unless candidates
+      (user-error "No recent files available"))
+    (let ((file (completing-read "Recent file: " candidates nil t nil
+                                 'mod-core-recentf-history)))
+      (if (fboundp 'mod-context-open-path)
+          (mod-context-open-path file)
+        (find-file file)))))
+
+(defun mod-core-maybe-create-parent-directory ()
+  "Prompt to create missing parent directories before saving a file."
+  (when-let* ((file buffer-file-name)
+              (directory (file-name-directory file))
+              ((not (file-directory-p directory))))
+    (if (y-or-n-p (format "Directory %s does not exist. Create it? " directory))
+        (make-directory directory t)
+      (user-error "Parent directory does not exist: %s" directory))))
+
+(add-hook 'before-save-hook #'mod-core-maybe-create-parent-directory)
 
 (when orbit-user-shell
   (setq shell-file-name orbit-user-shell

@@ -8,6 +8,7 @@
 (require 'mod-ui)
 (require 'mod-dired)
 (require 'mod-evil)
+(require 'mod-pairs)
 (require 'mod-git)
 (require 'mod-utility)
 (require 'mod-keys)

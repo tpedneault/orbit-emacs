@@ -114,6 +114,7 @@ foo(arg1, replacement, arg3)
 - =ci)= change inside parens
 - =da}= delete around braces
 - =vi]= select inside brackets
+- =SPC v= expand the current selection before a structural edit
 
 ** Argument editing
 
@@ -136,6 +137,15 @@ This is especially useful for Tcl and function-call-heavy code.
 - =ysiw}= wrap word in braces
 - =cs"'= change quote type
 - =ds"= remove quotes
+
+** Paired insertion
+
+In programming buffers and Org buffers, opening delimiters insert their closing pair.
+
+Examples:
+- type =\"= to get =\"\"= with point between
+- type ={= to get ={}=
+- type =[= to get =[]=
 
 * Macros, Registers, Marks
 

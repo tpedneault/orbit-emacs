@@ -8,13 +8,14 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 
 * Quick Start
 
-- =SPC SPC=: switch buffers
-- =SPC .=: find a file in the current project
+- =SPC SPC=: find a file in the current project, or =find-file= outside a project
+- =SPC .=: switch buffers
 - =SPC /=: search the current project
+- =SPC v=: expand region
 - =SPC x e=: jump into an editing context
 - =SPC x a=: open the agenda dashboard context
 - =SPC n t=: capture an inbox task
-- =SPC h d=: reopen this manual
+- =SPC h d=: reopen this manual read-only
 - =RET=: follow an Org doc link in normal state
 - =SPC h b= / =SPC h B=: move back and forward through doc links
 
@@ -40,8 +41,24 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 
 - Contexts/workspaces: Perspective-backed task separation.
 - Org workflow: inbox capture, refile, notes, journal, and a custom work dashboard.
-- Vim layer: Evil, surround, commentary, argument text objects, and multiple cursors.
+- Vim layer: Evil, surround, commentary, expand-region, argument text objects, and multiple cursors.
 - Utility bay: one reusable bottom window for shell, messages, help, and compilation.
+- Editing helpers: smart paired delimiters and quiet symbol-at-point highlighting in programming buffers.
+
+* Editing Basics
+
+- =smartparens= is enabled in programming buffers and Org buffers.
+- Pair insertion stays conservative and uses the package defaults for quotes, brackets, braces, and parens.
+- =show-smartparens-mode= gives delimiter matching feedback while you edit.
+- =SPC v= grows the current selection with =expand-region=.
+- In programming buffers, occurrences of the symbol at point are highlighted after a short idle delay.
+- =evil-surround= and =evil-commentary= are part of the default Vim layer.
+
+Useful examples:
+- =ysiw"=: wrap the word at point in quotes
+- =cs"'=: change double quotes to single quotes
+- =gcc=: comment the current line
+- visual =gc=: comment the current selection
 
 * User-Local Layer
 

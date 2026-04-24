@@ -3,6 +3,8 @@
 * Installed Vim Layer
 
 - Evil
+- smartparens
+- expand-region
 - evil-surround
 - evil-commentary
 - evil-args
@@ -80,6 +82,19 @@ Provided by =evil-surround=.
 | =cs"'=  | change =\"= to ='=              |
 | =ds"=   | delete quote surround            |
 
+* Expand Region
+
+Provided by =expand-region=.
+
+| Keys    | Meaning                       |
+|---------+-------------------------------|
+| =SPC v= | expand selection semantically |
+
+Use it when you want to grow from:
+- symbol -> string contents -> delimited form -> enclosing expression
+
+It works well before surround or commentary operations.
+
 * Commentary
 
 Provided by =evil-commentary=.
@@ -91,6 +106,19 @@ Provided by =evil-commentary=.
 | =gcj=   | comment current + next |
 | =gcap=  | comment paragraph      |
 | visual =gc= | comment selection  |
+
+* Paired Delimiters
+
+Provided by =smartparens= in programming buffers and Org buffers.
+
+- typing an opening delimiter inserts the closing delimiter
+- point stays between the pair
+- delimiter matching is shown visually
+
+Typical examples:
+- typing =\"= inserts =\"\"=
+- typing ={= inserts ={}=
+- typing =[= inserts =[]=
 
 * Argument Text Objects
 

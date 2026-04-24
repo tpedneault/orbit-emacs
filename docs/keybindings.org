@@ -4,11 +4,12 @@
 
 | Key       | Action                     | Notes                  |
 |-----------+----------------------------+------------------------|
-| =SPC SPC= | =consult-buffer=           | fast buffer switch     |
-| =SPC .=   | =project-find-file=        | current project        |
+| =SPC SPC= | =mod-keys-find-file-dwim=  | project file finder in project, =find-file= otherwise |
+| =SPC .=   | =consult-buffer=           | fast buffer switch     |
 | =SPC /=   | =mod-project-search=       | ripgrep in project     |
 | =SPC :=   | =execute-extended-command= | =M-x=                  |
 | =SPC ,=   | local leader               | same target as =SPC m= |
+| =SPC v=   | =er/expand-region=         | grow selection         |
 
 * =SPC f= Files
 
@@ -29,8 +30,11 @@
 | =SPC f c s n= | =yas-new-snippet=         | new snippet       |
 | =SPC f c s r= | =yas-reload-all=          | reload snippets   |
 | =SPC f f=   | =mod-context-open-path=     | open file/path in matching context |
-| =SPC f r=   | =recentf-open-files=        | recent files      |
+| =SPC f r=   | =mod-core-recentf-open=     | recent files, current project first when available |
 | =SPC f s=   | =save-buffer=               | save current file |
+| =SPC f y a= | copy absolute file path     | current buffer file |
+| =SPC f y r= | copy project-relative path  | falls back to absolute outside a project |
+| =SPC f y d= | copy current directory path | file dir or =default-directory= |
 
 * =SPC b= Buffers
 
@@ -39,6 +43,12 @@
 | =SPC b b= | =consult-buffer=      | =switch-to-buffer= is remapped |
 | =SPC b d= | =kill-current-buffer= | kill buffer                   |
 | =SPC b r= | =revert-buffer=       | revert from disk              |
+
+* =SPC c= Code
+
+| Key       | Action                           | Notes                   |
+|-----------+----------------------------------+-------------------------|
+| =SPC c d= | =mod-core-duplicate-line-or-region= | duplicate region or line |
 
 * =SPC p= Projects
 
@@ -78,6 +88,7 @@
 | Key       | Action                    | Notes            |
 |-----------+---------------------------+------------------|
 | =SPC o o= | =mod-utility-toggle=      | close or reopen  |
+| =SPC o O= | =mod-core-open-at-point=  | open URL or file path at point |
 | =SPC o s= | =mod-utility-shell=       | built-in shell   |
 | =SPC o m= | =mod-utility-messages=    | =*Messages*=     |
 | =SPC o h= | =mod-utility-help=        | =*Help*=         |
@@ -119,7 +130,7 @@
 | =SPC h B= | =xref-go-forward=       | docs/code jump forward |
 | =SPC h k= | =describe-key=          | describe key       |
 | =SPC h f= | =describe-function=     | describe function  |
-| =SPC h d= | open docs manual        | =docs/manual.org=  |
+| =SPC h d= | open docs manual        | opens =docs/manual.org= read-only |
 | =SPC h D= | open docs directory     | =docs/=            |
 | =SPC h m= | =describe-mode=         | describe mode      |
 | =SPC h v= | =describe-variable=     | describe variable  |
@@ -136,6 +147,13 @@
 |-----------+-----------------------+--------------------------|
 | =SPC t c= | =mod-ui-toggle-fill-column-indicator= | toggle fill-column indicator |
 | =SPC t w= | =mod-ui-toggle-wrap=  | toggle wrap / truncation |
+
+* Editing
+
+| Key   | Action                              | Notes                  |
+|-------+-------------------------------------+------------------------|
+| =M-j= | =mod-core-move-line-or-region-down= | move line or region down |
+| =M-k= | =mod-core-move-line-or-region-up=   | move line or region up   |
 
 * =SPC q= Quit / Session
 

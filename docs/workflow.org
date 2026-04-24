@@ -21,6 +21,8 @@
 1. Jump into a project editing context with =SPC x e= or =SPC p p=.
    - both routes open or reuse =edit/<project>= instead of showing the project action menu
 2. Find files with =SPC .= or =SPC p f=.
+   - =SPC SPC= is the quickest file entry point: project file finder in a project, =find-file= otherwise
+   - =SPC .= is the quick buffer switcher
 3. Search with =SPC /= or =SPC p s=.
 4. Use =SPC x f= when you want a dedicated file-management workspace.
    - Dired stays in =files/...=
@@ -32,7 +34,11 @@
    - =SPC o s= shell
    - =SPC o m= messages
    - =SPC o c= compilation
-7. Capture interruptions quickly:
+7. For small editing moves:
+   - =SPC v= expands the current region
+   - programming buffers highlight the symbol at point after a short idle pause
+   - paired delimiters are handled by =smartparens=
+8. Capture interruptions quickly:
    - =SPC n t= inbox task
    - =SPC n N= quick note
    - =SPC n j= journal entry
