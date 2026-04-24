@@ -183,10 +183,16 @@
 
 ** Tcl Buffer
 
-| Key       | Action                 | Notes         |
-|-----------+------------------------+---------------|
-| =SPC m l= | =mod-tcl-lint-file=    | lint file     |
-| =SPC m f= | =mod-tcl-format-file=  | format file   |
-| =SPC m g= | =mod-tcl-find-tag=     | jump to tag   |
-| =SPC m r= | =mod-tcl-rebuild-tags= | rebuild TAGS  |
-| =SPC m e= | =mod-tcl-show-output=  | tool output   |
+| Key         | Action                   | Notes               |
+|-------------+--------------------------+---------------------|
+| =SPC m l=   | =mod-tcl-lint-file=      | lint file           |
+| =SPC m f=   | =mod-tcl-format-file=    | format file         |
+| =SPC m g=   | =mod-tcl-find-tag=       | jump to tag         |
+| =SPC m r=   | =mod-tcl-rebuild-tags=   | rebuild TAGS        |
+| =SPC m e=   | =mod-tcl-show-output=    | tool output         |
+| =SPC m d d= | =mod-tcl-docs-manual=    | project docs manual |
+| =SPC m d s= | =mod-tcl-docs-search=    | search docs         |
+| =SPC m d p= | =mod-tcl-docs-at-point=  | docs at point       |
+| =SPC m d r= | =mod-tcl-docs-regenerate= | regenerate XML     |
+| =RET=       | follow docs link         | docs buffers only   |
+| =q=         | back in docs             | docs buffers only   |

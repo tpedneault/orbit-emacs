@@ -28,6 +28,7 @@
 (defvar mod-tcl-docs-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") #'mod-tcl-docs-go-back)
+    (define-key map (kbd "RET") #'mod-tcl-docs-open-at-point-dwim)
     map)
   "Keymap for temporary Tcl docs buffers.")
 
@@ -39,18 +40,38 @@
 (defun mod-tcl-docs--enable-local-evil-bindings ()
   "Install buffer-local Evil bindings for Tcl docs buffers.
 Minor-mode keymaps do not override Evil normal-state bindings by themselves,
-so `q' must be rebound through Evil in these generated docs buffers."
+so keys like `q' and `RET' must be rebound through Evil here."
   (when (fboundp 'evil-local-set-key)
-    (evil-local-set-key 'normal (kbd "q") #'mod-tcl-docs-go-back)))
+    (evil-local-set-key 'normal (kbd "q") #'mod-tcl-docs-go-back)
+    (evil-local-set-key 'normal (kbd "RET") #'mod-tcl-docs-open-at-point-dwim)))
 
 (defun mod-tcl-docs-xml-directory ()
-  "Return the configured Doxygen XML directory."
-  (or orbit-user-tcl-doxygen-xml-directory
-      (user-error "Set orbit-user-tcl-doxygen-xml-directory in user config")))
+  "Return the configured or default Doxygen XML directory.
+When no explicit override is set, this defaults to
+`<project-root>/docs/xml/'."
+  (let ((dir (or orbit-user-tcl-doxygen-xml-directory
+                 (expand-file-name "docs/xml/" (mod-tcl-docs--project-root)))))
+    (unless (file-directory-p dir)
+      (user-error
+       "Doxygen XML directory not found: %s. Run SPC m d r to generate docs, or set orbit-user-tcl-doxygen-xml-directory."
+       dir))
+    dir))
+
+(defun mod-tcl-docs-doxygen-config-file ()
+  "Return the configured or default Doxygen config file.
+When no explicit override is set, this defaults to
+`<project-root>/Doxyfile'."
+  (or orbit-user-doxygen-config-file
+      (expand-file-name "Doxyfile" (mod-tcl-docs--project-root))))
 
 (defun mod-tcl-docs--index-file ()
   "Return the configured Doxygen index.xml path."
-  (expand-file-name "index.xml" (mod-tcl-docs-xml-directory)))
+  (let ((index-file (expand-file-name "index.xml" (mod-tcl-docs-xml-directory))))
+    (unless (file-exists-p index-file)
+      (user-error
+       "Doxygen index not found: %s. Run SPC m d r to generate docs."
+       index-file))
+    index-file))
 
 (defun mod-tcl-docs--project-root ()
   "Return a practical project root for Tcl docs."
@@ -58,7 +79,13 @@ so `q' must be rebound through Evil in these generated docs buffers."
         (project-root project))
       (when orbit-user-doxygen-config-file
         (file-name-directory orbit-user-doxygen-config-file))
-      (file-name-directory (directory-file-name (mod-tcl-docs-xml-directory)))))
+      (when orbit-user-tcl-doxygen-xml-directory
+        (file-name-directory
+         (directory-file-name
+          (file-name-directory
+           (directory-file-name orbit-user-tcl-doxygen-xml-directory)))))
+      (user-error
+       "Not in a project. Open a project file first, or set orbit-user-doxygen-config-file / orbit-user-tcl-doxygen-xml-directory.")))
 
 (defun mod-tcl-docs--project-name ()
   "Return the current Tcl docs project name."
@@ -77,6 +104,25 @@ so `q' must be rebound through Evil in these generated docs buffers."
   "Push the current point onto Emacs' built-in xref marker stack."
   (xref-push-marker-stack))
 
+(defun mod-tcl-docs--edit-context-name ()
+  "Return the matching edit context name for the current Tcl docs project."
+  (let ((root (mod-tcl-docs--project-root)))
+    (if (fboundp 'mod-context--edit-context-name)
+        (mod-context--edit-context-name root)
+      (format "edit/%s" (file-name-nondirectory (directory-file-name root))))))
+
+(defun mod-tcl-docs--switch-to-edit-context ()
+  "Switch to the matching edit context for the current Tcl docs project."
+  (let ((name (mod-tcl-docs--edit-context-name)))
+    (cond
+     ((and (fboundp 'mod-context--switch-or-create)
+           (fboundp 'persp-switch))
+      (mod-context--switch-or-create name))
+     ((fboundp 'persp-switch)
+      (persp-switch name))
+     (t
+      nil))))
+
 (defun mod-tcl-docs--parse-xml-file (file)
   "Parse FILE into a simple XML tree."
   (unless (file-exists-p file)
@@ -86,6 +132,12 @@ so `q' must be rebound through Evil in these generated docs buffers."
     (if (fboundp 'libxml-parse-xml-region)
         (libxml-parse-xml-region (point-min) (point-max))
       (car (xml-parse-region (point-min) (point-max))))))
+
+(defun mod-tcl-docs--line-at-search-option (search-option)
+  "Return a line number parsed from SEARCH-OPTION, or nil."
+  (when (and search-option
+             (string-match-p "\\`[0-9]+\\'" search-option))
+    (string-to-number search-option)))
 
 (defun mod-tcl-docs--node-name (node)
   "Return the tag symbol for NODE."
@@ -310,8 +362,8 @@ resolved inside the compound XML file named after the compound `refid'."
     (cond
      ((file-name-absolute-p file) file)
      ((file-exists-p file) (expand-file-name file))
-     (orbit-user-doxygen-config-file
-      (expand-file-name file (file-name-directory orbit-user-doxygen-config-file)))
+     ((mod-tcl-docs-doxygen-config-file)
+      (expand-file-name file (file-name-directory (mod-tcl-docs-doxygen-config-file))))
      (t
       (expand-file-name file (file-name-directory (mod-tcl-docs-xml-directory)))))))
 
@@ -584,6 +636,34 @@ Currently supported XML structures:
       (user-error "No Doxygen XML compound found for: %s" refid))
     (mod-tcl-docs--render-compound (mod-tcl-docs--compound-doc entry))))
 
+(defun mod-tcl-docs-open-source-link-at-point ()
+  "Open the file link at point in the matching edit context."
+  (let* ((context (org-element-context))
+         (path (org-element-property :path context))
+         (search-option (org-element-property :search-option context))
+         (file (if (file-name-absolute-p path)
+                   path
+                 (expand-file-name path default-directory)))
+         (line (mod-tcl-docs--line-at-search-option search-option))
+         (default-directory (mod-tcl-docs--project-root)))
+    (mod-tcl-docs--push-location)
+    (mod-tcl-docs--switch-to-edit-context)
+    (find-file file)
+    (when line
+      (goto-char (point-min))
+      (forward-line (1- line)))))
+
+(defun mod-tcl-docs-open-at-point-dwim ()
+  "Open the Org link at point, with Tcl docs source links routed to edit context."
+  (interactive)
+  (let ((context (org-element-context)))
+    (if (eq (org-element-type context) 'link)
+        (if (equal (org-element-property :type context) "file")
+            (mod-tcl-docs-open-source-link-at-point)
+          (org-open-at-point))
+      (when (boundp 'mod-org-return-fallback-command)
+        (call-interactively mod-org-return-fallback-command)))))
+
 (defun mod-tcl-docs--org-link-symbol-follow (symbol)
   "Follow a `tcldoc:' Org link for SYMBOL."
   (mod-tcl-docs-open-symbol symbol))
@@ -801,18 +881,20 @@ LINK-FN receives an entry plist and must return an Org link string."
   (interactive)
   (unless orbit-user-doxygen-program
     (user-error "Set orbit-user-doxygen-program in user config"))
-  (unless orbit-user-doxygen-config-file
-    (user-error "Set orbit-user-doxygen-config-file in user config"))
-  (unless (file-exists-p orbit-user-doxygen-config-file)
-    (user-error "Doxygen config file not found: %s" orbit-user-doxygen-config-file))
-  (let ((default-directory (file-name-directory orbit-user-doxygen-config-file))
+  (let ((config-file (mod-tcl-docs-doxygen-config-file)))
+    (unless (file-exists-p config-file)
+      (user-error
+       "Doxygen config file not found: %s. Create %s or set orbit-user-doxygen-config-file."
+       config-file
+       config-file))
+    (let ((default-directory (file-name-directory config-file))
         (compilation-buffer-name-function (lambda (_) mod-tcl-docs-regenerate-buffer-name)))
-    (compilation-start
-     (mapconcat #'shell-quote-argument
-                (list orbit-user-doxygen-program orbit-user-doxygen-config-file)
-                " ")
-     'compilation-mode
-     (lambda (_) mod-tcl-docs-regenerate-buffer-name))))
+      (compilation-start
+       (mapconcat #'shell-quote-argument
+                  (list orbit-user-doxygen-program config-file)
+                  " ")
+       'compilation-mode
+       (lambda (_) mod-tcl-docs-regenerate-buffer-name)))))
 
 (provide 'mod-tcl-docs)
 

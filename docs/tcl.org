@@ -15,13 +15,62 @@ There is no LSP layer here.
 
 In =tcl-mode=:
 
-| Key       | Action                 | Notes           |
-|-----------+------------------------+-----------------|
-| =SPC m l= | lint current file      | runs =tclint=   |
-| =SPC m f= | format current file    | runs =tclfmt=   |
-| =SPC m g= | visit tag / definition | Emacs tags      |
-| =SPC m r= | rebuild TAGS           | project-local   |
-| =SPC m e= | show tool output       | =*tcl-tools*=   |
+| Key         | Action                 | Notes              |
+|-------------+------------------------+--------------------|
+| =SPC m l=   | lint current file      | runs =tclint=      |
+| =SPC m f=   | format current file    | runs =tclfmt=      |
+| =SPC m g=   | visit tag / definition | Emacs tags         |
+| =SPC m r=   | rebuild TAGS           | project-local      |
+| =SPC m e=   | show tool output       | =*tcl-tools*=      |
+| =SPC m d d= | project manual         | =docs/<project>=   |
+| =SPC m d s= | search docs            | Doxygen XML search |
+| =SPC m d p= | docs at point          | symbol docs        |
+| =SPC m d r= | regenerate Doxygen XML | runs Doxygen       |
+
+* Tcl Docs
+
+Tcl docs use Doxygen XML as the backend and render into temporary read-only
+Org buffers.
+
+Practical behavior:
+- =SPC m d d= opens a project manual in =docs/<project>=.
+- =SPC m d s= searches all indexed Tcl symbols.
+- =SPC m d p= opens docs for the symbol at point.
+- =SPC m d r= regenerates the XML using Doxygen.
+- =q= goes back inside Tcl docs buffers.
+- source links from docs open in =edit/<project>= so the docs context stays a
+  reading context.
+
+Defaults:
+- if no override is set, orbit-emacs expects:
+  - =<project-root>/Doxyfile=
+  - =<project-root>/docs/xml/=
+- user config can override these with:
+  - =orbit-user-doxygen-config-file=
+  - =orbit-user-tcl-doxygen-xml-directory=
+  - =orbit-user-doxygen-program=
+
+If the XML directory or =index.xml= is missing, Tcl docs commands fail clearly
+and tell you to run =SPC m d r=.
+
+* Doxyfile Requirements
+
+Minimum settings for the Tcl docs browser:
+- =GENERATE_XML = YES=
+- =XML_OUTPUT = xml=
+- =OUTPUT_DIRECTORY = docs=
+- =RECURSIVE = YES=
+- =INPUT= should include the Tcl source directory or project root
+- =FILE_PATTERNS= should include:
+  - =*.tcl=
+  - =*.tm=
+  - =*.sdc=
+  - =*.xdc=
+  - =*.upf=
+
+Do not force Tcl through the C parser with =EXTENSION_MAPPING = tcl=C=. Doxygen
+1.8.17 has native Tcl support, and forcing C parsing caused missing symbols in
+the XML index.
 
 * Typical Loop
 
@@ -32,6 +81,7 @@ In =tcl-mode=:
 5. Run =SPC m l= before commit-worthy changes.
 6. Run =SPC m f= when you want formatting applied.
 7. Use =SPC m e= to revisit tool output.
+8. Use =SPC m d d= when you want a browsable docs manual.
 
 * Practical Notes
 
@@ -39,6 +89,7 @@ In =tcl-mode=:
 - Navigation uses built-in Emacs tags support.
 - Tool output is shared so lint/format messages are easy to revisit.
 - Snippets are available in =tcl-mode= through the local =snippets/tcl-mode/= directory.
+- Tcl docs stay in =docs/<project>=; source links open in =edit/<project>=.
 
 * Example
 
