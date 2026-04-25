@@ -34,14 +34,39 @@ Notes:
 
 | Key       | Target       | Use         |
 |-----------+--------------+-------------|
-| =SPC n c= | capture menu | choose any template |
+| =SPC n C= | capture menu | choose any template |
 | =SPC n t= | =inbox.org=  | quick task  |
 | =SPC n N= | =notes.org=  | quick note  |
 | =SPC n j j= | =journal.org= | journal entry |
 
+* Clock
+
+Active clock visibility:
+- the active Org clock appears in the modeline while a clock is running
+- normal Org tasks show the task heading and elapsed time
+- Jira issue headings with =JIRA_KEY= show only the key, for example:
+  - =[ABC-123] 0:32=
+
+Top-level clock commands:
+- =SPC n c g=: jump to the active clock
+- =SPC n c o=: clock out
+- =SPC n c c=: cancel the active clock
+
+Local Org clock commands stay available inside Org buffers:
+- =SPC m c i=: clock in
+- =SPC m c o=: clock out
+- =SPC m c c=: cancel clock
+- =SPC m c g=: jump to active clock
+
 Jira sync:
+- =SPC n j c=: add a Jira comment explicitly
+- =SPC n j i=: import one Jira issue by key or number
 - =SPC n j s=: fetch Jira issues into =jira.org=
+- =SPC n j r=: refresh only the current Jira issue subtree
+- =SPC n j t=: transition the current Jira issue explicitly
 - =SPC n j o=: open the Jira issue at point in the browser
+- =SPC n j w=: submit one Jira worklog from an Org CLOCK entry
+- =SPC n j W=: submit one manual Jira worklog
 
 Templates:
 - inbox task
@@ -95,6 +120,10 @@ Meaning:
 In agenda:
 - =j= / =k= move up and down
 - =RET= visits the selected item in the =notes= context
+- =SPC m c i= clocks into the item at point
+- =SPC m c o= clocks out
+- =SPC m c c= cancels the active clock
+- =SPC m c g= jumps to the active clock
 - =SPC m t= changes TODO state
 - =SPC m s= schedules
 - =SPC m d= sets deadline
@@ -149,7 +178,11 @@ In a normal Org buffer:
 
 | Key       | Use             |
 |-----------+-----------------|
-| =SPC m c= | toggle checkbox |
+| =SPC m c x= | toggle checkbox |
+| =SPC m c i= | clock in        |
+| =SPC m c o= | clock out       |
+| =SPC m c c= | cancel clock    |
+| =SPC m c g= | goto active clock |
 | =SPC m z= | narrow subtree  |
 | =SPC m Z= | widen           |
 
@@ -200,6 +233,17 @@ Use it to:
 - pull assigned issues from one configured Jira project into =jira.org=
 - keep private notes under issue headings
 - reopen the browser issue from Org
+- add comments, transitions, and worklogs only through explicit confirmed commands
+
+Org clock workflow for Jira worklogs:
+1. put point on a Jira issue heading
+2. =SPC m c i= to clock in
+3. =SPC m c o= to clock out
+4. =SPC n j w= to submit that time explicitly
+
+Notes:
+- write actions are explicit and confirmed
+- Org TODO changes do not automatically push to Jira
 
 Setup and details:
 - [[file:jira.org][jira sync]]

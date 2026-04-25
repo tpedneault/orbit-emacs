@@ -103,6 +103,19 @@
       (when (and data (not (equal "N/A" (battery-format "%B" data))))
         (string-trim (battery-format "%p%%" data))))))
 
+(defun mod-ui-org-clock-modeline ()
+  "Return the active Org clock string for the modeline, when present."
+  (when (and (fboundp 'org-clocking-p)
+             (org-clocking-p)
+             (boundp 'org-clock-heading)
+             (fboundp 'org-clock-get-clocked-time)
+             (fboundp 'org-duration-from-minutes))
+    (propertize
+     (format "[%s] %s"
+             org-clock-heading
+             (org-duration-from-minutes (org-clock-get-clocked-time)))
+     'face 'org-mode-line-clock)))
+
 (defun mod-ui-window-width ()
   "Return the width of the selected window."
   (window-total-width (selected-window)))
@@ -116,6 +129,7 @@
   (string-join
    (delq nil
          (list (and (mod-ui-wide-enough-p 100) (mod-ui-vc-branch-modeline))
+               (mod-ui-org-clock-modeline)
                (mod-ui--segment-string "%l:%c")
                (and (mod-ui-wide-enough-p 85) (mod-ui-battery-modeline))
                (and (bound-and-true-p display-time-mode) (format-time-string "%H:%M"))))

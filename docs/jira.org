@@ -7,11 +7,14 @@ This first Jira pass is read-only:
 - sync them into =jira.org=
 - open the browser issue from Org
 
-Not included yet:
-- comments
-- transitions
-- worklogs
-- write-back from Org to Jira
+Write actions now supported:
+- explicit comments
+- explicit transitions
+- explicit worklog submission from Org clocks
+
+Still not automatic:
+- Org TODO changes do not push to Jira
+- sync still preserves local =Notes=
 
 * Setup
 
@@ -61,17 +64,24 @@ That means v1 sync is intentionally scoped to:
 
 | Key         | Action                | Notes                     |
 |-------------+-----------------------+---------------------------|
+| =SPC n j c= | =mod-jira-add-comment= | add comment after confirmation |
 | =SPC n j i= | =mod-jira-import-issue= | import one issue by key or number |
 | =SPC n j s= | =mod-jira-sync=       | fetch and refresh =jira.org= |
 | =SPC n j r= | =mod-jira-refresh-issue= | refresh current issue subtree only |
+| =SPC n j t= | =mod-jira-transition-issue= | choose and apply a transition |
 | =SPC n j o= | =mod-jira-open-issue= | open issue at point in browser |
-| =SPC n j j= | =mod-org-capture-journal= | journal capture moved here |
+| =SPC n j w= | =mod-jira-log-work=   | submit one Org CLOCK as a Jira worklog |
+| =SPC n j W= | =mod-jira-log-work-manual= | submit a manual Jira worklog |
+| =SPC n j J= | =mod-jira-open-file= | open =jira.org= in the notes workflow |
+| =SPC n j j= | =mod-org-capture-journal= | journal capture stays here |
 
 Import input:
 - full key like =PROJ-75=
 - bare number like =75=
 
 If you enter a bare number, orbit-emacs prefixes it with =orbit-user-jira-project-key=.
+
+All write actions are explicit and confirmed before the request is sent.
 
 * Org Sync Shape
 
@@ -128,12 +138,94 @@ Existing non-Jira tags on a synced heading are preserved, and =:JIRA:= is kept w
 If you have older freeform content directly under the issue heading, orbit-emacs will carry it forward into =Notes= on refresh.
 
 Because =jira.org= lives under your Org directory by default, synced Jira items appear in the agenda automatically.
+When you clock a Jira issue, the active clock also appears in the modeline
+using the Jira key only, for example = [ABC-123] 0:32 =.
 
 Why Jira items were easy to miss before:
 - on a fresh setup, =jira.org= might not exist yet
 - if the file did not exist, Org agenda discovery had nothing to include
 
 orbit-emacs now ensures =jira.org= exists under the Org directory early, so imported or synced Jira items are visible to the agenda/dashboard.
+
+* Write Actions
+
+Endpoints used:
+- add comment:
+  - =POST /issue/<KEY>/comment=
+- transition issue:
+  - =GET /issue/<KEY>/transitions=
+  - =POST /issue/<KEY>/transitions=
+- worklog:
+  - =POST /issue/<KEY>/worklog=
+
+Comments:
+- =SPC n j c=
+- prompts for comment text
+- asks for confirmation
+- refreshes the issue afterward
+
+Transitions:
+- =SPC n j t=
+- fetches live transitions from Jira for the current issue
+- prompts with transition names
+- asks for confirmation
+- refreshes the issue afterward
+
+Worklogs:
+- =SPC n j w=
+- uses a closed Org =CLOCK= entry under the current Jira issue
+- prompts for a worklog comment describing what was done during that logged time
+- asks for confirmation
+- submits only once
+- refreshes the issue afterward
+
+Clock navigation:
+- =SPC n c g=
+- jumps directly to the active Org clock
+- Jira clocks keep the shortened modeline display with only the Jira key
+
+Manual worklogs:
+- =SPC n j W=
+- does not require an Org =CLOCK= entry
+- prompts for time spent like =15m=, =1h30m=, or =3h=
+- prompts for a worklog comment describing what was done
+- prompts for a start date/time
+- asks for confirmation
+- refreshes the issue afterward
+
+Open Jira Org file:
+- =SPC n j J=
+- opens the configured =jira.org=
+- prefers the notes context when available
+
+Journal capture:
+- =SPC n j j=
+- stays on this binding intentionally
+- =SPC n j J= is used for =jira.org= so the journal workflow is not broken
+
+Duplicate worklog protection:
+- after a successful submission, orbit-emacs adds a local marker line after the CLOCK entry
+- the same CLOCK entry will not be offered again
+
+Org clock workflow:
+1. clock in on a Jira issue heading
+2. clock out
+3. run =SPC n j w=
+4. enter a worklog comment describing what you did
+5. pick the CLOCK entry if more than one is available
+6. confirm the worklog submission
+
+From agenda:
+- =SPC m c i= clocks into the Jira item at point
+- the modeline still shows the shortened Jira clock as = [ABC-123] 0:xx =
+- =SPC m c g= jumps to the active clocked task
+
+Manual worklog workflow:
+1. put point on a Jira issue heading
+2. run =SPC n j W=
+3. enter the time spent
+4. enter a short description of the work
+5. confirm the Jira worklog submission
 
 * Troubleshooting
 

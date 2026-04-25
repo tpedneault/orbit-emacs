@@ -100,13 +100,21 @@
 |-----------+----------------------------+--------------------|
 | =SPC n n= | =mod-org-open-notes=       | open =notes.org=   |
 | =SPC n a= | =mod-org-open-agenda=      | work dashboard     |
-| =SPC n c= | =mod-org-capture=          | capture menu       |
+| =SPC n c g= | =org-clock-goto=         | jump to active clock |
+| =SPC n c o= | =org-clock-out=          | clock out          |
+| =SPC n c c= | =org-clock-cancel=       | cancel active clock |
+| =SPC n C= | =mod-org-capture=          | capture menu       |
 | =SPC n t= | =mod-org-capture-inbox-task= | inbox task       |
 | =SPC n j j= | =mod-org-capture-journal= | journal entry    |
+| =SPC n j J= | =mod-jira-open-file=     | open =jira.org=   |
+| =SPC n j c= | =mod-jira-add-comment=   | add Jira comment   |
 | =SPC n j i= | =mod-jira-import-issue=  | import issue by key or number |
 | =SPC n j s= | =mod-jira-sync=          | sync Jira issues into agenda-visible =jira.org= |
 | =SPC n j r= | =mod-jira-refresh-issue= | refresh issue at point |
+| =SPC n j t= | =mod-jira-transition-issue= | transition issue |
 | =SPC n j o= | =mod-jira-open-issue=    | open issue at point |
+| =SPC n j w= | =mod-jira-log-work=      | submit worklog from Org clock |
+| =SPC n j W= | =mod-jira-log-work-manual= | submit manual Jira worklog |
 | =SPC n N= | =mod-org-capture-note=     | quick note         |
 
 * =SPC x= Contexts
@@ -192,7 +200,11 @@
 | =SPC m i h= | =org-insert-heading=        | insert heading      |
 | =SPC m i t= | =org-insert-todo-heading=   | insert TODO heading |
 | =SPC m i s= | =org-insert-subheading=     | insert subheading   |
-| =SPC m c=   | =org-toggle-checkbox=       | toggle checkbox     |
+| =SPC m c x= | =org-toggle-checkbox=       | toggle checkbox     |
+| =SPC m c i= | =org-clock-in=              | clock in            |
+| =SPC m c o= | =org-clock-out=             | clock out           |
+| =SPC m c c= | =org-clock-cancel=          | cancel clock        |
+| =SPC m c g= | =org-clock-goto=            | jump to active clock |
 | =SPC m z=   | =org-narrow-to-subtree=     | narrow subtree      |
 | =SPC m Z=   | =widen=                     | widen               |
 
@@ -203,6 +215,10 @@
 | =j=       | =org-agenda-next-line= | Vim-style movement        |
 | =k=       | =org-agenda-previous-line= | Vim-style movement   |
 | =RET=     | =mod-org-agenda-visit= | open item in notes context |
+| =SPC m c i= | =org-agenda-clock-in= | clock in selected item    |
+| =SPC m c o= | =org-agenda-clock-out= | clock out                |
+| =SPC m c c= | =org-agenda-clock-cancel= | cancel active clock   |
+| =SPC m c g= | =org-agenda-clock-goto= | jump to active clock  |
 | =SPC m t= | =org-agenda-todo=    | change state                |
 | =SPC m s= | =org-agenda-schedule= | schedule                   |
 | =SPC m d= | =org-agenda-deadline= | deadline                   |

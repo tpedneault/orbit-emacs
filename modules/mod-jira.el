@@ -2,6 +2,7 @@
 
 (require 'browse-url)
 (require 'json)
+(require 'org-clock)
 (require 'org)
 (require 'subr-x)
 (require 'url)
@@ -10,6 +11,7 @@
 
 (declare-function mod-org-file "mod-org" (name))
 (declare-function mod-org-refresh-agenda-files "mod-org")
+(declare-function mod-context-notes-visit-marker "mod-context" (marker))
 
 (defgroup mod-jira nil
   "Read-only Jira sync into Org."
@@ -26,6 +28,9 @@
 
 (defconst mod-jira-managed-section-names '("Description" "Comments" "Notes")
   "Level-two Jira section names used under synced issue headings.")
+
+(defconst mod-jira-worklog-marker-prefix "- Jira worklog submitted:"
+  "Marker prefix inserted after CLOCK lines once submitted to Jira.")
 
 (defun mod-jira-api-prefix ()
   "Return the configured Jira API prefix."
@@ -134,6 +139,30 @@
    (url-build-query-string
     '(("fields" "summary,status,assignee,priority,updated,description,comment")))))
 
+(defun mod-jira--issue-comment-url (key)
+  "Return the comment endpoint URL for Jira issue KEY."
+  (concat (mod-jira-base-url)
+          (mod-jira-api-prefix)
+          "/issue/"
+          (url-hexify-string key)
+          "/comment"))
+
+(defun mod-jira--issue-transitions-url (key)
+  "Return the transitions endpoint URL for Jira issue KEY."
+  (concat (mod-jira-base-url)
+          (mod-jira-api-prefix)
+          "/issue/"
+          (url-hexify-string key)
+          "/transitions"))
+
+(defun mod-jira--issue-worklog-url (key)
+  "Return the worklog endpoint URL for Jira issue KEY."
+  (concat (mod-jira-base-url)
+          (mod-jira-api-prefix)
+          "/issue/"
+          (url-hexify-string key)
+          "/worklog"))
+
 (defun mod-jira--http-status ()
   "Return the HTTP status code from the current response buffer."
   (save-excursion
@@ -156,6 +185,31 @@
               (user-error "Jira request failed with HTTP %s" status))
             (goto-char (or url-http-end-of-headers (point-min)))
             (json-parse-buffer :object-type 'alist :array-type 'list))
+        (kill-buffer (current-buffer))))))
+
+(defun mod-jira--request-data (method url token &optional payload success-statuses)
+  "Send METHOD to URL with TOKEN and optional JSON PAYLOAD.
+Return parsed JSON when available. SUCCESS-STATUSES defaults to '(200 201 204)."
+  (let ((url-request-method method)
+        (url-request-extra-headers
+         (append
+          `(("Accept" . "application/json")
+            ("Authorization" . ,(concat "Bearer " token)))
+          (when payload
+            '(("Content-Type" . "application/json")))))
+        (url-request-data (when payload (json-encode payload)))
+        (ok-statuses (or success-statuses '(200 201 204))))
+    (with-current-buffer (or (url-retrieve-synchronously url t t)
+                             (user-error "Jira request failed for %s" url))
+      (unwind-protect
+          (let ((status (mod-jira--http-status)))
+            (unless (memq status ok-statuses)
+              (user-error "Jira request failed with HTTP %s" status))
+            (goto-char (or url-http-end-of-headers (point-min)))
+            (unless (eobp)
+              (condition-case nil
+                  (json-parse-buffer :object-type 'alist :array-type 'list)
+                (error nil))))
         (kill-buffer (current-buffer))))))
 
 (defun mod-jira--issue-url (base-url key)
@@ -565,6 +619,234 @@
       (mod-org-refresh-agenda-files))
     (message "Imported Jira issue %s into %s" key file)))
 
+(defun mod-jira--current-issue-key ()
+  "Return the Jira issue key at point, or fail clearly."
+  (save-excursion
+    (mod-jira--goto-issue-heading)
+    (or (org-entry-get (point) "JIRA_KEY")
+        (user-error "Point is not inside a Jira issue subtree"))))
+
+(defun mod-jira--confirm (action key)
+  "Confirm ACTION for Jira issue KEY."
+  (y-or-n-p (format "%s Jira issue %s? " action key)))
+
+(defun mod-jira--parse-time-spent (input)
+  "Parse Jira worklog INPUT like 15m, 1h, 1h30m, or 3h into seconds."
+  (let* ((trimmed (downcase (replace-regexp-in-string "[[:space:]]+" "" input)))
+         (matched (string-match
+                   "\\`\\(?:\\([0-9]+\\)h\\)?\\(?:\\([0-9]+\\)m\\)?\\'"
+                   trimmed))
+         (hours (and matched
+                     (match-string 1 trimmed)
+                     (string-to-number (match-string 1 trimmed))))
+         (minutes (and matched
+                       (match-string 2 trimmed)
+                       (string-to-number (match-string 2 trimmed))))
+         (seconds (+ (* 3600 (or hours 0))
+                     (* 60 (or minutes 0)))))
+    (unless (and matched (> seconds 0))
+      (user-error "Enter time like 15m, 1h, 1h30m, or 3h"))
+    seconds))
+
+(defun mod-jira--submit-worklog (key started seconds comment)
+  "Submit a Jira worklog for KEY with STARTED, SECONDS, and COMMENT."
+  (let* ((config (mod-jira--ensure-base-config))
+         (token (plist-get config :token)))
+    (mod-jira--request-data
+     "POST"
+     (mod-jira--issue-worklog-url key)
+     token
+     `((comment . ,comment)
+       (started . ,started)
+       (timeSpentSeconds . ,seconds))
+     '(201))))
+
+(defun mod-jira--transitions (key)
+  "Return available transitions for Jira issue KEY."
+  (let* ((config (mod-jira--ensure-base-config))
+         (token (plist-get config :token))
+         (payload (mod-jira--request-json
+                   (mod-jira--issue-transitions-url key)
+                   token)))
+    (alist-get 'transitions payload)))
+
+(defun mod-jira-add-comment (comment)
+  "Add COMMENT to the Jira issue at point after confirmation."
+  (interactive (list (read-from-minibuffer "Jira comment: ")))
+  (when (string-empty-p (string-trim comment))
+    (user-error "Comment text cannot be empty"))
+  (let ((key (mod-jira--current-issue-key)))
+    (unless (mod-jira--confirm "Add comment to" key)
+      (user-error "Comment canceled"))
+    (let* ((config (mod-jira--ensure-base-config))
+           (token (plist-get config :token)))
+      (mod-jira--request-data
+       "POST"
+       (mod-jira--issue-comment-url key)
+       token
+       `((body . ,comment))
+       '(201))
+      (mod-jira-refresh-issue)
+      (message "Added Jira comment to %s" key))))
+
+(defun mod-jira-transition-issue ()
+  "Transition the Jira issue at point after prompting for a workflow transition."
+  (interactive)
+  (let* ((key (mod-jira--current-issue-key))
+         (transitions (mod-jira--transitions key)))
+    (unless transitions
+      (user-error "No Jira transitions available for %s" key))
+    (let* ((names (mapcar (lambda (transition)
+                            (alist-get 'name transition))
+                          transitions))
+           (choice (completing-read "Jira transition: " names nil t))
+           (transition
+            (seq-find (lambda (item)
+                        (string= (alist-get 'name item) choice))
+                      transitions))
+           (transition-id (alist-get 'id transition)))
+      (unless transition-id
+        (user-error "Could not resolve Jira transition %s" choice))
+      (unless (mod-jira--confirm (format "Apply transition %s to" choice) key)
+        (user-error "Transition canceled"))
+      (let* ((config (mod-jira--ensure-base-config))
+             (token (plist-get config :token)))
+        (mod-jira--request-data
+         "POST"
+         (mod-jira--issue-transitions-url key)
+         token
+         `((transition . ((id . ,transition-id))))
+         '(204))
+        (mod-jira-refresh-issue)
+        (message "Transitioned Jira issue %s to %s" key choice)))))
+
+(defun mod-jira--clock-lines-in-subtree ()
+  "Return closed CLOCK entries inside the current Jira issue subtree."
+  (save-excursion
+    (mod-jira--goto-issue-heading)
+    (let ((subtree-end (save-excursion
+                         (org-end-of-subtree t t)))
+          (entries '()))
+      (forward-line 1)
+      (while (re-search-forward
+              "^[ \t]*CLOCK: \\(\\[[^]]+\\]\\)--\\(\\[[^]]+\\]\\)\\(?: =>\\s-*\\([0-9]+:[0-9][0-9]\\)\\)?"
+              subtree-end
+              t)
+        (let* ((clock-pos (line-beginning-position))
+               (start-text (match-string 1))
+               (end-text (match-string 2))
+               (duration-text (match-string 3))
+               (start-time (org-time-string-to-time start-text))
+               (end-time (org-time-string-to-time end-text))
+               (seconds (max 0 (round (float-time (time-subtract end-time start-time)))))
+               (marker-pos (save-excursion
+                             (forward-line 1)
+                             (when (looking-at
+                                    (format "^[ \t]*%s\\s-*\\(.+\\)$"
+                                            (regexp-quote mod-jira-worklog-marker-prefix)))
+                               (line-beginning-position))))
+               (marker-id (save-excursion
+                            (forward-line 1)
+                            (when (looking-at
+                                   (format "^[ \t]*%s\\s-*\\(.+\\)$"
+                                           (regexp-quote mod-jira-worklog-marker-prefix)))
+                              (match-string 1))))
+               (summary (format "%s -> %s (%s)"
+                                start-text
+                                end-text
+                                (or duration-text
+                                    (format "%d:%02d"
+                                            (/ seconds 3600)
+                                            (/ (% seconds 3600) 60))))))
+          (push (list :pos clock-pos
+                      :start start-time
+                      :start-text start-text
+                      :end end-time
+                      :end-text end-text
+                      :seconds seconds
+                      :summary summary
+                      :submitted marker-id
+                      :marker-pos marker-pos)
+                entries)))
+      (nreverse entries))))
+
+(defun mod-jira--select-worklog-clock ()
+  "Return one unsubmited Jira CLOCK entry from the current subtree."
+  (let* ((entries (seq-filter (lambda (entry)
+                                (not (plist-get entry :submitted)))
+                              (mod-jira--clock-lines-in-subtree))))
+    (unless entries
+      (user-error "No unsubmitted CLOCK entry found here; clock time first"))
+    (if (= (length entries) 1)
+        (car entries)
+      (let* ((choices (mapcar (lambda (entry)
+                                (cons (plist-get entry :summary) entry))
+                              entries))
+             (choice (completing-read "Worklog CLOCK: " (mapcar #'car choices) nil t)))
+        (alist-get choice choices nil nil #'string=)))))
+
+(defun mod-jira--mark-clock-submitted (entry worklog-id)
+  "Mark CLOCK ENTRY as submitted with WORKLOG-ID."
+  (save-excursion
+    (goto-char (plist-get entry :pos))
+    (forward-line 1)
+    (let ((line (format "%s %s\n" mod-jira-worklog-marker-prefix worklog-id)))
+      (if (and (plist-get entry :marker-pos)
+               (looking-at
+                (format "^[ \t]*%s\\s-*\\(.+\\)$"
+                        (regexp-quote mod-jira-worklog-marker-prefix))))
+          (progn
+            (delete-region (line-beginning-position) (line-end-position))
+            (insert (string-trim-right line)))
+        (insert line)))))
+
+(defun mod-jira-log-work (comment)
+  "Submit one CLOCK entry under the Jira issue at point as a Jira worklog."
+  (interactive (list (read-from-minibuffer "Worklog comment: ")))
+  (let* ((key (mod-jira--current-issue-key))
+         (entry (mod-jira--select-worklog-clock))
+         (seconds (plist-get entry :seconds))
+         (started (format-time-string "%Y-%m-%dT%H:%M:%S.000%z"
+                                      (plist-get entry :start))))
+    (unless (> seconds 0)
+      (user-error "Selected CLOCK entry has no positive duration"))
+    (unless (mod-jira--confirm
+             (format "Submit %s of work to" (plist-get entry :summary))
+             key)
+      (user-error "Worklog canceled"))
+    (let* ((payload
+            (mod-jira--submit-worklog key started seconds comment))
+           (worklog-id (or (alist-get 'id payload) "submitted")))
+      (mod-jira--mark-clock-submitted entry worklog-id)
+      (save-buffer)
+      (mod-jira-refresh-issue)
+      (message "Submitted Jira worklog for %s" key))))
+
+(defun mod-jira-log-work-manual (time-spent comment started-input)
+  "Submit a manual Jira worklog at point.
+TIME-SPENT is a Jira-style duration string, COMMENT describes the work, and
+STARTED-INPUT is a date/time string understood by `org-read-date'."
+  (interactive
+   (list
+    (read-string "Time spent (e.g. 15m, 1h30m): ")
+    (read-from-minibuffer "Worklog comment: ")
+    (org-read-date nil nil nil "Worklog start: "
+                   nil
+                   (format-time-string "%Y-%m-%d %H:%M"))))
+  (let* ((key (mod-jira--current-issue-key))
+         (seconds (mod-jira--parse-time-spent time-spent))
+         (started-time (org-read-date nil t started-input))
+         (started (format-time-string "%Y-%m-%dT%H:%M:%S.000%z" started-time)))
+    (when (string-empty-p (string-trim comment))
+      (user-error "Worklog comment cannot be empty"))
+    (unless (mod-jira--confirm
+             (format "Submit %s of manual work to" time-spent)
+             key)
+      (user-error "Manual worklog canceled"))
+    (mod-jira--submit-worklog key started seconds comment)
+    (mod-jira-refresh-issue)
+    (message "Submitted manual Jira worklog for %s" key)))
+
 (defun mod-jira-refresh-issue ()
   "Refresh only the Jira issue subtree at point."
   (interactive)
@@ -605,6 +887,17 @@
   (if-let* ((url (mod-jira--issue-url-at-point)))
       (browse-url url)
     (user-error "No Jira issue metadata found at point")))
+
+(defun mod-jira-open-file ()
+  "Open the configured Jira Org file, preferring the notes context when available."
+  (interactive)
+  (let ((file (mod-jira--ensure-org-file)))
+    (if (fboundp 'mod-context-notes-visit-marker)
+        (let ((marker
+               (with-current-buffer (find-file-noselect file)
+                 (copy-marker (point-min)))))
+          (mod-context-notes-visit-marker marker))
+      (find-file file))))
 
 (provide 'mod-jira)
 

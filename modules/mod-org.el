@@ -2,6 +2,7 @@
 
 (require 'org)
 (require 'org-agenda)
+(require 'org-clock)
 
 (declare-function xref-push-marker-stack "xref")
 
@@ -37,6 +38,16 @@
 
 (defvar mod-org-return-fallback-command #'ignore
   "Fallback command used when `RET' is pressed away from an Org link.")
+
+(defun mod-org-clock-heading ()
+  "Return a modeline heading for the current Org clock.
+When the clocked heading has a `JIRA_KEY' property, show only that key.
+Otherwise fall back to the normal Org heading text."
+  (or (org-entry-get (point) "JIRA_KEY")
+      (if (org-before-first-heading-p)
+          "???"
+        (org-link-display-format
+         (org-no-properties (org-get-heading t t t t))))))
 
 (defun mod-org-main-file ()
   "Return the full path to the primary Org notes file."
@@ -110,6 +121,7 @@
 
 (setq org-directory mod-org-directory
       org-default-notes-file (mod-org-main-file)
+      org-clock-heading-function #'mod-org-clock-heading
       org-log-into-drawer "LOGBOOK"
       org-log-done 'time
       org-return-follows-link t
@@ -160,6 +172,7 @@
                  (org-agenda-skip-function #'mod-org--agenda-skip-triage)))))))
 
 (mod-org-refresh-agenda-files)
+(org-clock-load)
 
 (defun mod-org-open-notes ()
   "Open the primary Org notes file."
