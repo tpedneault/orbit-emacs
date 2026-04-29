@@ -1,5 +1,7 @@
 ;;; mod-git.el --- Git foundation -*- lexical-binding: t; -*-
 
+(require 'subr-x)
+
 ;; Magit requires a newer `transient' than the one available in this Emacs.
 (use-package transient
   :ensure t
@@ -31,6 +33,88 @@
   "Start Magit blame for the current file."
   (interactive)
   (call-interactively #'magit-blame-addition))
+
+(defun mod-git--repository-root ()
+  "Return the current Git repository root, or signal a clear error."
+  (let* ((default-directory (or (and buffer-file-name
+                                     (file-name-directory buffer-file-name))
+                                default-directory))
+         (root (string-trim
+                (with-output-to-string
+                  (with-current-buffer standard-output
+                    (unless (zerop (process-file "git" nil t nil "rev-parse" "--show-toplevel"))
+                      (user-error "Not in a Git repository")))))))
+    (unless (and root (not (string-empty-p root)))
+      (user-error "Not in a Git repository"))
+    root))
+
+(defun mod-git--default-revision ()
+  "Return the current Git revision name for prompting."
+  (let ((default-directory (mod-git--repository-root)))
+    (string-trim
+     (with-output-to-string
+       (with-current-buffer standard-output
+         (unless (zerop (process-file "git" nil t nil "rev-parse" "--abbrev-ref" "HEAD"))
+           (user-error "Could not determine current Git revision")))))))
+
+(defun mod-git--relative-file-at-point (root)
+  "Return the current buffer file relative to ROOT, when practical."
+  (when (and buffer-file-name
+             (string-prefix-p (file-truename root)
+                              (file-truename buffer-file-name)))
+    (file-relative-name buffer-file-name root)))
+
+(defun mod-git--files-in-revision (revision root)
+  "Return the tracked file list for REVISION under ROOT."
+  (let ((default-directory root))
+    (split-string
+     (with-output-to-string
+       (with-current-buffer standard-output
+         (unless (zerop (process-file "git" nil t nil "ls-tree" "-r" "--name-only" revision))
+           (user-error "Could not list files for Git revision: %s" revision))))
+     "\n"
+     t)))
+
+(defun mod-git--read-revision-file (revision root)
+  "Prompt for a file from REVISION under ROOT."
+  (let* ((files (mod-git--files-in-revision revision root))
+         (default-file (mod-git--relative-file-at-point root)))
+    (unless files
+      (user-error "No files found for Git revision: %s" revision))
+    (completing-read
+     (format "File in %s: " revision)
+     files
+     nil
+     t
+     nil
+     nil
+     default-file)))
+
+(defun mod-git-find-file-from-revision (revision path)
+  "Open PATH from Git REVISION in a read-only buffer."
+  (interactive
+   (let* ((root (mod-git--repository-root))
+          (revision (read-string "Git revision: " (mod-git--default-revision))))
+     (list revision
+           (mod-git--read-revision-file revision root))))
+  (let* ((root (mod-git--repository-root))
+         (default-directory root)
+         (buffer-name (format "*git:%s:%s*" revision path))
+         (buffer (get-buffer-create buffer-name)))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (unless (zerop (process-file "git" nil t nil "show" (format "%s:%s" revision path)))
+          (user-error "Could not open %s from Git revision %s" path revision))
+        (setq-local default-directory root)
+        (setq-local buffer-file-name (expand-file-name path root))
+        (set-auto-mode)
+        (setq-local buffer-file-name nil)
+        (setq-local mode-line-process nil)
+        (setq-local buffer-read-only t)
+        (view-mode 1)
+        (set-buffer-modified-p nil)))
+    (pop-to-buffer buffer)))
 
 (provide 'mod-git)
 

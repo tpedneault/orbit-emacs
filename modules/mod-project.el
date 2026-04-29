@@ -20,6 +20,27 @@
   (interactive)
   (consult-ripgrep (mod-project-root)))
 
+(defun mod-project-replace (from to)
+  "Query-replace regexp FROM with TO across the current project."
+  (interactive
+   (let ((query-replace-read-from-regexp-default 'find-tag-default-as-regexp))
+     (pcase-let ((`(,from ,to)
+                  (query-replace-read-args "Project query replace (regexp)" t t)))
+       (list from to))))
+  (let ((default-directory (mod-project-root)))
+    (project-query-replace-regexp from to)))
+
+(defun mod-project-add (directory)
+  "Remember DIRECTORY as a known project using the built-in project list."
+  (interactive "DProject directory: ")
+  (let* ((expanded (expand-file-name directory))
+         (default-directory expanded)
+         (project (project-current nil expanded)))
+    (unless project
+      (user-error "Not a recognized project: %s" expanded))
+    (project-remember-project project)
+    (message "Added project: %s" (project-root project))))
+
 (defun mod-project-forget ()
   "Forget a known project from the built-in project list."
   (interactive)

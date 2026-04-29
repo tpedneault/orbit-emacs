@@ -24,13 +24,16 @@
    - =SPC SPC= is the quickest file entry point: project file finder in a project, =find-file= otherwise
    - =SPC .= is the quick buffer switcher
 3. Search with =SPC /= or =SPC p s=.
-4. Use =SPC x f= when you want a dedicated file-management workspace.
+4. Refactor across the current project with =SPC p R=.
+   - replacements stay query-based so each change is reviewable
+5. Use =SPC x f= when you want a dedicated file-management workspace.
    - Dired stays in =files/...=
    - opening a file there moves you into the matching =edit/...= context
-5. Use =SPC x g= or =SPC g g= for Git work.
+6. Use =SPC x g= or =SPC g g= for Git work.
    - first =SPC x g= initializes the Git context
    - later calls just switch back to it
-6. Use the utility bay for transient support:
+7. Inspect a file from another revision with =SPC g f f= when you want to compare without touching the working tree.
+8. Use the utility bay for transient support:
    - =SPC o s= shell
    - =SPC o m= messages
    - =SPC o c= compilation
@@ -84,6 +87,7 @@
 
 * Small Habits That Help
 
+- Use =SPC p a= to remember a project directory so it appears in later project selection.
 - Use =SPC p d= to prune stale projects.
 - Use =SPC f c= for config access instead of hunting through the repo.
 - Put machine-specific overrides in the user-local =.orbit-emacs.d/= layer, not in the repo config.

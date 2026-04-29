@@ -54,9 +54,11 @@
 
 | Key       | Action                   | Notes                |
 |-----------+--------------------------+----------------------|
+| =SPC p a= | =mod-project-add=        | remember project     |
 | =SPC p d= | =mod-project-forget=     | forget known project |
 | =SPC p p= | =mod-project-switch=    | switch to =edit/<project>= |
 | =SPC p f= | =project-find-file=      | find project file    |
+| =SPC p R= | =mod-project-replace=    | project query replace |
 | =SPC p s= | =mod-project-search=     | project ripgrep      |
 
 * =SPC w= Windows
@@ -79,6 +81,7 @@
 
 | Key       | Action            | Notes          |
 |-----------+-------------------+----------------|
+| =SPC g f f= | =mod-git-find-file-from-revision= | open file from revision |
 | =SPC g g= | =mod-git-status=  | Magit status   |
 | =SPC g l= | =mod-git-log=     | repo log       |
 | =SPC g b= | =mod-git-blame=   | file blame     |
