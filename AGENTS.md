@@ -24,6 +24,7 @@ Only implement:
 - Magit foundation
 - Dired/file management refinement
 - Org/agenda basics
+- Python scripting support (minimal, Eglot-based)
 
 Keep all implementations minimal and consistent with the existing architecture. Do not expand scope beyond what is listed.
 
@@ -31,7 +32,7 @@ Keep all implementations minimal and consistent with the existing architecture. 
 
 ## Do NOT add yet
 
-- LSP / DAP
+- General LSP / DAP (except minimal Python support via Eglot)
 - utility multiplexer implementation
 - advanced Vim plugins (surround, commentary, etc.)
 - Dirvish (use Dired only for now)
@@ -39,6 +40,30 @@ Keep all implementations minimal and consistent with the existing architecture. 
 - dashboard/startup UI packages
 - context templates beyond minimal stubs
 - multiple session profiles or automatic session restore
+
+Only Python may use Eglot.
+- no lsp-mode
+- no global LSP enablement
+
+---
+
+## Python Support Exception
+
+Python support is allowed as a focused development feature.
+
+- Eglot is permitted only for Python
+- keep it minimal and opt-in via python-mode hook or equivalent
+- integrate with existing completion (Corfu + CAPF)
+- do not introduce heavy frameworks or abstractions
+- debugging is allowed using debugpy with a minimal Emacs interface (for example dape or equivalent)
+- no dap-mode unless explicitly approved later
+- keep virtualenv handling simple and local
+- no automatic environment management frameworks
+- no impact on Tcl workflow
+- no global LSP activation
+- no architectural changes
+- no additional UI layers
+- follow existing keybinding conventions under SPC m
 
 ---
 

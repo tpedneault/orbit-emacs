@@ -17,6 +17,7 @@
 (require 'mod-org)
 (require 'mod-jira)
 (require 'mod-project)
+(require 'mod-python)
 (require 'mod-tcl)
 (require 'mod-tcl-docs)
 (require 'mod-context)

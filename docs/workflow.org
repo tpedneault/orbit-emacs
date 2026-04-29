@@ -65,8 +65,32 @@
 2. Rebuild Tcl =TAGS= with =SPC m r= after symbol changes.
 3. Jump with =SPC m g= or search with =SPC m s=.
 4. Lint with =SPC m l= and format with =SPC m f=.
-5. Revisit command output with =SPC m e=.
-6. Use =SPC m d d= or =SPC m d s= when you need project docs.
+
+* Python Loop
+
+1. Open a Python project with =SPC x e= or =SPC p p=.
+2. For uv projects, run =uv sync= so the project has =.venv/=.
+3. Install Python dev tools into that environment:
+   - =uv add --dev basedpyright=
+   - =uv add --dev debugpy=
+   - =uv add --dev ruff=
+4. Open a Python file and let Eglot attach when =basedpyright= or =pyright= is available.
+5. Navigate with =SPC m g d= and =SPC m g r=.
+6. Rename with =SPC m e r= and view docs with =SPC m e h=.
+7. Format with =SPC m f b=.
+8. Run the current file with =SPC m r f= or module with =SPC m r m=.
+9. Start debugging with =SPC m d d=.
+10. After the session starts, prefer the short keys:
+   - =b= breakpoint
+   - =n= next
+   - =i= step in
+   - =o= step out
+   - =c= continue
+   - =p= pause
+   - =r= restart
+   - =q= quit
+   - =R= repl
+   - =I= info
 
 * Suggested Context Pattern
 

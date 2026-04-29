@@ -11,6 +11,7 @@
 (declare-function mod-core-move-line-or-region-up "mod-core")
 (declare-function mod-core-open-at-point "mod-core")
 (declare-function mod-core-recentf-open "mod-core")
+(declare-function mod-git-find-file-from-revision "mod-git")
 (declare-function mod-jira-open-issue "mod-jira")
 (declare-function mod-jira-add-comment "mod-jira")
 (declare-function mod-jira-import-issue "mod-jira")
@@ -20,6 +21,32 @@
 (declare-function mod-jira-transition-issue "mod-jira")
 (declare-function mod-jira-refresh-issue "mod-jira")
 (declare-function mod-jira-sync "mod-jira")
+(declare-function mod-python-debug-file "mod-python")
+(declare-function mod-python-eglot "mod-python")
+(declare-function mod-python-eglot-reconnect "mod-python")
+(declare-function mod-python-debug-restart "mod-python")
+(declare-function mod-python-format-buffer "mod-python")
+(declare-function mod-python-run-file "mod-python")
+(declare-function mod-python-run-module "mod-python")
+(declare-function mod-python-show-docs "mod-python")
+(declare-function dape-breakpoint-expression "dape")
+(declare-function dape-breakpoint-function "dape")
+(declare-function dape-breakpoint-log "dape")
+(declare-function dape-breakpoint-remove-all "dape")
+(declare-function dape-breakpoint-remove-at-point "dape")
+(declare-function dape-breakpoint-toggle "dape")
+(declare-function dape-continue "dape")
+(declare-function dape-info "dape")
+(declare-function dape-kill "dape")
+(declare-function dape-next "dape")
+(declare-function dape-pause "dape")
+(declare-function dape-repl "dape")
+(declare-function dape-restart "dape")
+(declare-function dape-step-in "dape")
+(declare-function dape-step-out "dape")
+(declare-function dape-watch-dwim "dape")
+(declare-function mod-project-add "mod-project")
+(declare-function mod-project-replace "mod-project")
 (declare-function er/expand-region "expand-region")
 
 (defconst mod-keys-config-directory
@@ -305,6 +332,62 @@
      "v" '(mod-tcl-validate-tooling :which-key "validate tools")
      "r" '(mod-tcl-rebuild-tags :which-key "rebuild TAGS")
      "e" '(mod-tcl-show-output :which-key "tool output")))
+
+  (with-eval-after-load 'python
+    (general-define-key
+     :states '(normal visual motion emacs)
+     :keymaps '(python-mode-map python-ts-mode-map)
+     :prefix "SPC m"
+     "e" '(:ignore t :which-key "eglot")
+     "e s" '(mod-python-eglot :which-key "start")
+     "e R" '(mod-python-eglot-reconnect :which-key "reconnect")
+     "e r" '(eglot-rename :which-key "rename")
+     "e h" '(mod-python-show-docs :which-key "docs")
+     "f" '(:ignore t :which-key "format")
+     "f b" '(mod-python-format-buffer :which-key "buffer")
+     "g" '(:ignore t :which-key "goto")
+     "g d" '(xref-find-definitions :which-key "definition")
+     "g r" '(xref-find-references :which-key "references")
+     "r" '(:ignore t :which-key "run")
+     "r f" '(mod-python-run-file :which-key "file")
+     "r m" '(mod-python-run-module :which-key "module")
+     "d" '(:ignore t :which-key "debug")
+     "d d" '(mod-python-debug-file :which-key "debug file")
+     "d b" '(dape-breakpoint-toggle :which-key "toggle breakpoint")
+     "d x" '(dape-breakpoint-remove-at-point :which-key "remove breakpoint")
+     "d X" '(dape-breakpoint-remove-all :which-key "remove all breakpoints")
+     "d e" '(dape-breakpoint-expression :which-key "expression breakpoint")
+     "d l" '(dape-breakpoint-log :which-key "log breakpoint")
+     "d f" '(dape-breakpoint-function :which-key "function breakpoint")
+     "d w" '(dape-watch-dwim :which-key "watch dwim")
+     "d c" '(dape-continue :which-key "continue")
+     "d p" '(dape-pause :which-key "pause")
+     "d n" '(dape-next :which-key "next")
+     "d i" '(dape-step-in :which-key "step in")
+     "d o" '(dape-step-out :which-key "step out")
+     "d r" '(mod-python-debug-restart :which-key "restart")
+     "d q" '(dape-kill :which-key "quit")
+     "d R" '(dape-repl :which-key "repl")
+     "d I" '(dape-info :which-key "info")))
+
+  (with-eval-after-load 'dape
+    (general-define-key
+     :states '(normal motion emacs)
+     :keymaps '(dape-repl-mode-map
+                dape-info-parent-mode-map
+                dape-shell-mode-map)
+     "c" #'dape-continue
+     "n" #'dape-next
+     "i" #'dape-step-in
+     "o" #'dape-step-out
+     "p" #'dape-pause
+     "r" #'dape-restart
+     "q" #'dape-kill
+     "b" #'dape-breakpoint-toggle
+     "x" #'dape-breakpoint-remove-at-point
+     "w" #'dape-watch-dwim
+     "R" #'dape-repl
+     "I" #'dape-info))
 
   (with-eval-after-load 'org-agenda
     (define-key org-agenda-mode-map (kbd "j") #'org-agenda-next-line)

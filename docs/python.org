@@ -1,0 +1,265 @@
+#+title: python workflow
+
+* Overview
+
+orbit-emacs provides minimal Python support using:
+- built-in =python.el=
+- Eglot for Python only
+- Corfu + CAPF for completion
+- Dape + debugpy for debugging
+- =uv= for project-local run workflows when available
+
+This stays buffer-local and project-local where practical.
+
+* Setup
+
+Install these external tools:
+- =uv=
+- =basedpyright= or =pyright=
+- =debugpy=
+- =ruff= or =black=
+- =python3=
+
+Examples:
+- =brew install uv=
+- =pip install uv=
+- =pip install basedpyright=
+- =pip install pyright=
+- =pip install debugpy=
+- =pip install ruff=
+- =pip install black=
+
+* Minimum Project Configuration
+
+For the smoothest Python workflow, keep these files near the project root:
+- =pyproject.toml=
+- =uv.lock= if you use =uv=
+- =.venv/= or =venv/= for the local interpreter environment
+
+Minimal uv project setup:
+
+#+begin_src sh
+cd /path/to/project
+uv init
+uv sync
+uv add --dev basedpyright debugpy ruff
+#+end_src
+
+That gives orbit-emacs what it expects for:
+- Eglot language server lookup
+- run commands through =uv run=
+- Dape debugging through the project virtualenv Python
+- formatting through =ruff=
+
+* Project Environment
+
+When a project root contains =.venv/= or =venv/=:
+- orbit-emacs uses that environment's Python interpreter for =python.el= commands
+- PATH is adjusted buffer-locally so Eglot and tool commands can see the local environment first
+
+No global environment manager is enabled.
+
+For =uv= projects:
+- a project is treated as uv-managed when =uv= is installed and the root contains =pyproject.toml=, =uv.lock=, =.venv/=, or =venv/=
+- run commands use =uv run python ...=
+- debugging uses the project =.venv/bin/python= or =venv/bin/python= when available
+
+Recommended setup:
+- =uv sync=
+- =uv add --dev basedpyright=
+- =uv add --dev debugpy=
+- =uv add --dev ruff=
+
+If =uv= is missing:
+- run and debug commands fall back gracefully to the detected =python3= / =python=
+- Eglot still works if =basedpyright= or =pyright= is on PATH or inside the local environment
+
+* Keybindings
+
+| Key         | Action                  | Notes                  |
+|-------------+-------------------------+------------------------|
+| =SPC m e s= | start Eglot             | Python only            |
+| =SPC m e R= | reconnect Eglot         | Python only            |
+| =SPC m e r= | rename symbol           | =eglot-rename=         |
+| =SPC m e h= | show docs               | symbol docs / hover    |
+| =SPC m f b= | format buffer           | prefers =ruff=, then =black= |
+| =SPC m g d= | go to definition        | xref / Eglot           |
+| =SPC m g r= | find references         | xref / Eglot           |
+| =SPC m r f= | run current file        | prompts for args       |
+| =SPC m r m= | run module              | prompts for module and args |
+| =SPC m d d= | debug current file      | Dape + debugpy         |
+| =SPC m d b= | toggle breakpoint       | at point               |
+| =SPC m d x= | remove breakpoint       | at point               |
+| =SPC m d X= | remove all breakpoints  | current session        |
+| =SPC m d e= | expression breakpoint   | prompt                 |
+| =SPC m d l= | log breakpoint          | prompt                 |
+| =SPC m d f= | function breakpoint     | prompt                 |
+| =SPC m d w= | watch dwim              | symbol/expression      |
+| =SPC m d c= | continue                | active session         |
+| =SPC m d p= | pause                   | active session         |
+| =SPC m d n= | next                    | step over              |
+| =SPC m d i= | step in                 | active session         |
+| =SPC m d o= | step out                | active session         |
+| =SPC m d r= | restart                 | restart or relaunch    |
+| =SPC m d q= | quit                    | kill debug session     |
+| =SPC m d R= | repl                    | debugger repl          |
+| =SPC m d I= | info                    | debugger info buffers  |
+
+* Running
+
+=SPC m r f= prompts for script arguments.
+
+In a uv project:
+- =uv run python path/to/file.py ARGS...=
+
+Outside a uv project:
+- =python path/to/file.py ARGS...=
+
+=SPC m r m= prompts for a module name and arguments.
+
+In a uv project:
+- =uv run python -m MODULE ARGS...=
+
+Outside a uv project:
+- =python -m MODULE ARGS...=
+
+Argument input uses shell-like splitting with =split-string-and-unquote=.
+- empty input means no arguments
+- the last run arguments are remembered buffer-locally
+
+* Debugging
+
+=SPC m d d= prompts for debug arguments and starts a Dape =debugpy= launch for the current file.
+
+The debug launch uses:
+- current file as =:program=
+- project root or file directory as =:cwd=
+- prompted arguments as =:args=
+- project =.venv/bin/python3= or =venv/bin/python3= when available
+- otherwise the first available =python3= / =python=
+
+The rest of =SPC m d= is a focused Dape workflow:
+- breakpoints with =b= / =x= / =X=
+- control flow with =c= / =p= / =n= / =i= / =o= / =r=
+- watches with =w=
+- debugger buffers with =R= (REPL) and =I= (info)
+
+Once a debug session is active, orbit-emacs also enables short single-key controls:
+- in Python source buffers
+- in Dape REPL / info buffers
+
+Fast in-session keys:
+- =c= continue
+- =n= next
+- =i= step in
+- =o= step out
+- =p= pause
+- =r= restart active session, or launch current file if no session exists yet
+- =q= quit
+- =b= toggle breakpoint
+- =x= remove breakpoint at point
+- =w= watch expression
+- =R= debugger REPL
+- =I= debugger info
+
+Use =SPC m d= to discover commands.
+Use the single keys above once you are actively debugging.
+
+The debug session uses:
+- the project virtualenv Python when =.venv/= or =venv/= exists
+- otherwise the first available =python3= / =python=
+
+=debugpy= must be installed in that interpreter environment.
+
+For uv projects:
+- =uv add --dev debugpy=
+
+If =debugpy= is missing from the selected interpreter, Dape will fail with a clear message.
+
+* Typical uv Debug Flow
+
+1. Ensure the project has:
+   - =pyproject.toml=
+   - =.venv/= from =uv sync=
+   - =debugpy= installed in that environment
+2. Open a Python file in the project.
+3. Set a breakpoint with =SPC m d b= or, once a session is active, just =b=.
+4. Launch with =SPC m d d=.
+5. Enter any script arguments when prompted.
+6. After the session starts, use the short keys:
+   - =n= step over
+   - =i= step in
+   - =o= step out
+   - =c= continue
+   - =p= pause
+   - =r= restart
+   - =q= quit
+7. Open debugger support buffers as needed:
+   - =R= REPL
+   - =I= info
+   - =w= watch
+
+* Dape Buffer Behavior
+
+Which-Key is mainly useful before a session starts.
+
+During active debugging:
+- prefer =SPC m d= for discovery
+- prefer the short single-key controls for repeated stepping
+- the short keys are enabled in Python source buffers during active sessions
+- the same short keys are available in Dape REPL / info / shell buffers
+
+This avoids depending on a large Which-Key popup in the debugger window layout.
+
+* launch.json Notes
+
+Dape does not read VS Code =launch.json= directly.
+Translate the important fields manually:
+
+VS Code:
+
+#+begin_src json
+{
+  "program": "${workspaceFolder}/script.py",
+  "args": ["--foo", "bar"],
+  "cwd": "${workspaceFolder}"
+}
+#+end_src
+
+Equivalent Dape shape:
+
+#+begin_src emacs-lisp
+(let ((config (copy-tree (alist-get 'debugpy dape-configs))))
+  (setq config (plist-put config 'command
+                          (expand-file-name ".venv/bin/python3"
+                                            (mod-python-project-root))))
+  (setq config (plist-put config :program
+                          (expand-file-name "script.py"
+                                            (mod-python-project-root))))
+  (setq config (plist-put config :args ["--foo" "bar"]))
+  (setq config (plist-put config :cwd (mod-python-project-root)))
+  (dape config))
+#+end_src
+
+Project-local =.dir-locals.el= can carry the same idea:
+
+#+begin_src emacs-lisp
+((python-mode . ((eval . (setq-local dape-configs
+                                     '((debugpy
+                                        command ".venv/bin/python"
+                                        :program "script.py"
+                                        :args ["--foo" "bar"]
+                                        :cwd ".")))))))
+#+end_src
+
+This is intentionally manual:
+- orbit-emacs does not parse =launch.json=
+- Dape configs should stay small and explicit
+- uv projects usually only need the project virtualenv Python, file/module path, args, and cwd
+
+* Notes
+
+- Eglot is only started for Python buffers.
+- Tcl tooling is unchanged.
+- Completion continues to flow through CAPF and Corfu.
+- No =launch.json= parser is added.

@@ -26,6 +26,7 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 - [[file:contexts.org][contexts]]
 - [[file:org.org][org workflow]]
 - [[file:jira.org][jira sync]]
+- [[file:python.org][python workflow]]
 - [[file:vim.org][vim quick reference]]
 - [[file:vim-training.org][vim training]]
 - [[file:tcl.org][tcl workflow]]
@@ -45,6 +46,32 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 - Vim layer: Evil, surround, commentary, expand-region, argument text objects, and multiple cursors.
 - Utility bay: one reusable bottom window for shell, messages, help, and compilation.
 - Editing helpers: smart paired delimiters and quiet symbol-at-point highlighting in programming buffers.
+
+* Python Quickstart
+
+- Open a Python project with =SPC x e= or =SPC p p=.
+- For uv projects, create the local environment with =uv sync=.
+- Install the usual Python dev tools into that environment:
+  - =uv add --dev basedpyright debugpy ruff=
+- Open a Python file and let Eglot attach.
+- Use:
+  - =SPC m f b= to format
+  - =SPC m g d= / =SPC m g r= to navigate
+  - =SPC m r f= to run the current file
+  - =SPC m r m= to run a module
+  - =SPC m d d= to start debugging
+- During an active debug session, prefer the short keys:
+  - =b= breakpoint
+  - =n= next
+  - =i= step in
+  - =o= step out
+  - =c= continue
+  - =p= pause
+  - =r= restart
+  - =q= quit
+  - =R= repl
+  - =I= info
+- See [[file:python.org][python workflow]] for the full uv, Eglot, Dape, and launch.json translation notes.
 
 * Editing Basics
 

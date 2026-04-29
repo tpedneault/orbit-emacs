@@ -245,11 +245,51 @@
 | =SPC m d d= | =mod-tcl-docs-manual=    | project docs manual |
 | =SPC m d s= | =mod-tcl-docs-search=    | search docs         |
 | =SPC m d p= | =mod-tcl-docs-at-point=  | docs at point       |
-| =SPC m d r= | =mod-tcl-docs-regenerate= | regenerate XML     |
-| =zf=        | =evil-vimish-fold/create= | create manual fold |
-| =za=        | =evil-toggle-fold=       | toggle fold         |
-| =zo=        | =evil-open-fold=         | open fold           |
-| =zc=        | =evil-close-fold=        | close fold          |
-| =zd=        | =evil-vimish-fold/delete= | delete fold        |
-| =RET=       | follow docs link         | docs buffers only   |
-| =q=         | back in docs             | docs buffers only   |
+
+** Python Buffer
+
+| Key         | Action                    | Notes                    |
+|-------------+---------------------------+--------------------------|
+| =SPC m e s= | =mod-python-eglot=        | start Eglot              |
+| =SPC m e R= | =mod-python-eglot-reconnect= | reconnect Eglot      |
+| =SPC m e r= | =eglot-rename=            | rename symbol            |
+| =SPC m e h= | =mod-python-show-docs=    | show docs / hover        |
+| =SPC m f b= | =mod-python-format-buffer= | format buffer           |
+| =SPC m g d= | =xref-find-definitions=   | go to definition         |
+| =SPC m g r= | =xref-find-references=    | find references          |
+| =SPC m r f= | =mod-python-run-file=     | run current file         |
+| =SPC m r m= | =mod-python-run-module=   | run module               |
+| =SPC m d d= | =mod-python-debug-file=   | debug current file       |
+| =SPC m d b= | =dape-breakpoint-toggle=  | toggle breakpoint       |
+| =SPC m d x= | =dape-breakpoint-remove-at-point= | remove breakpoint |
+| =SPC m d X= | =dape-breakpoint-remove-all= | remove all breakpoints |
+| =SPC m d e= | =dape-breakpoint-expression= | expression breakpoint |
+| =SPC m d l= | =dape-breakpoint-log=     | log breakpoint          |
+| =SPC m d f= | =dape-breakpoint-function= | function breakpoint    |
+| =SPC m d w= | =dape-watch-dwim=         | watch expression        |
+| =SPC m d c= | =dape-continue=           | continue                |
+| =SPC m d p= | =dape-pause=              | pause                   |
+| =SPC m d n= | =dape-next=               | step over               |
+| =SPC m d i= | =dape-step-in=            | step in                 |
+| =SPC m d o= | =dape-step-out=           | step out                |
+| =SPC m d r= | =mod-python-debug-restart= | restart or relaunch    |
+| =SPC m d q= | =dape-kill=               | quit debug session      |
+| =SPC m d R= | =dape-repl=               | debugger REPL           |
+| =SPC m d I= | =dape-info=               | debugger info buffers   |
+
+Active Python debug session single-key controls:
+
+| Key | Action | Notes |
+|-----+--------+-------|
+| =b= | =dape-breakpoint-toggle= | source / Dape buffers |
+| =x= | =dape-breakpoint-remove-at-point= | source buffers |
+| =c= | =dape-continue= | continue |
+| =n= | =dape-next= | step over |
+| =i= | =dape-step-in= | step in |
+| =o= | =dape-step-out= | step out |
+| =p= | =dape-pause= | pause |
+| =r= | =mod-python-debug-restart= | restart or relaunch |
+| =q= | =dape-kill= | quit session |
+| =w= | =dape-watch-dwim= | watch expression |
+| =R= | =dape-repl= | debugger REPL |
+| =I= | =dape-info= | debugger info |
