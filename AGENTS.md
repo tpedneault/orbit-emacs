@@ -25,6 +25,7 @@ Only implement:
 - Dired/file management refinement
 - Org/agenda basics
 - Python scripting support (minimal, Eglot-based)
+- search/refactor workflow refinement
 
 Keep all implementations minimal and consistent with the existing architecture. Do not expand scope beyond what is listed.
 

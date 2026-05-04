@@ -6,7 +6,7 @@
 |-----------+----------------------------+------------------------|
 | =SPC SPC= | =mod-keys-find-file-dwim=  | project file finder in project, =find-file= otherwise |
 | =SPC .=   | =consult-buffer=           | fast buffer switch     |
-| =SPC /=   | =mod-project-search=       | ripgrep in project     |
+| =SPC /=   | =mod-search-project=       | ripgrep in project     |
 | =SPC :=   | =execute-extended-command= | =M-x=                  |
 | =SPC ,=   | local leader               | same target as =SPC m= |
 | =SPC v=   | =er/expand-region=         | grow selection         |
@@ -60,6 +60,17 @@
 | =SPC p f= | =project-find-file=      | find project file    |
 | =SPC p R= | =mod-project-replace=    | project query replace |
 | =SPC p s= | =mod-project-search=     | project ripgrep      |
+
+* =SPC s= Search
+
+| Key       | Action                         | Notes                              |
+|-----------+--------------------------------+------------------------------------|
+| =SPC s s= | =mod-search-project=           | live ripgrep in project or =default-directory= |
+| =SPC s b= | =mod-search-buffer=            | search current buffer              |
+| =SPC s f= | =mod-search-project-files=     | find file by name                  |
+| =SPC s d= | =mod-search-directory=         | live ripgrep in current directory  |
+| =SPC s r= | =mod-search-project-replace-query= | safe regexp query replace      |
+| =SPC s R= | =mod-search-project-replace-all= | preview ripgrep matches, confirm root/search/replacement/glob/file count, then replace all |
 
 * =SPC w= Windows
 
@@ -237,10 +248,11 @@
 | =SPC m f=   | =mod-tcl-format-file=    | format current file |
 | =SPC m F=   | =mod-tcl-fold-definitions= | fold definitions  |
 | =SPC m TAB= | =mod-tcl-toggle-fold=    | toggle fold at point |
+| =SPC m r r= | =mod-tcl-rename-local-symbol= | rename local variable in surrounding proc |
+| =SPC m r t= | =mod-tcl-rebuild-tags=   | rebuild project TAGS |
 | =SPC m g=   | =mod-tcl-find-tag=       | jump to definition  |
 | =SPC m s=   | =mod-tcl-search-symbols= | search Tcl symbols  |
 | =SPC m v=   | =mod-tcl-validate-tooling= | validate tools    |
-| =SPC m r=   | =mod-tcl-rebuild-tags=   | rebuild project TAGS |
 | =SPC m e=   | =mod-tcl-show-output=    | Tcl tool output     |
 | =SPC m d d= | =mod-tcl-docs-manual=    | project docs manual |
 | =SPC m d s= | =mod-tcl-docs-search=    | search docs         |

@@ -5,6 +5,8 @@
 (declare-function consult-ripgrep "consult")
 (declare-function mod-context-open-project-editor "mod-context")
 (declare-function mod-context--directory-name "mod-context")
+(declare-function mod-search-project "mod-search")
+(declare-function mod-search-project-replace-query "mod-search")
 
 (defun mod-project-current ()
   "Return the current project or signal a user-facing error."
@@ -18,7 +20,9 @@
 (defun mod-project-search ()
   "Search the current project with `consult-ripgrep'."
   (interactive)
-  (consult-ripgrep (mod-project-root)))
+  (if (fboundp 'mod-search-project)
+      (mod-search-project)
+    (consult-ripgrep (mod-project-root))))
 
 (defun mod-project-replace (from to)
   "Query-replace regexp FROM with TO across the current project."
@@ -27,8 +31,10 @@
      (pcase-let ((`(,from ,to)
                   (query-replace-read-args "Project query replace (regexp)" t t)))
        (list from to))))
-  (let ((default-directory (mod-project-root)))
-    (project-query-replace-regexp from to)))
+  (if (fboundp 'mod-search-project-replace-query)
+      (mod-search-project-replace-query from to)
+    (let ((default-directory (mod-project-root)))
+      (project-query-replace-regexp from to))))
 
 (defun mod-project-add (directory)
   "Remember DIRECTORY as a known project using the built-in project list."

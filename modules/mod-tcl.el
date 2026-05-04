@@ -9,10 +9,6 @@
 
 (declare-function mod-tcl-docs-doxygen-config-file "mod-tcl-docs")
 (declare-function mod-snippets-setup-completion "mod-snippets")
-(declare-function evil-vimish-fold-mode "evil-vimish-fold")
-(declare-function vimish-fold "vimish-fold")
-(declare-function vimish-fold-mode "vimish-fold")
-(declare-function vimish-fold-toggle "vimish-fold")
 
 (defgroup mod-tcl nil
   "Minimal Tcl workflow helpers."
@@ -107,19 +103,13 @@
     (hl-line-mode (if (mod-tcl-enable-hl-line-p) 1 -1))))
 
 (defun mod-tcl-enable-manual-folding ()
-  "Enable stable manual folding for Tcl buffers."
-  (when (fboundp 'vimish-fold-mode)
-    (vimish-fold-mode 1))
-  (when (fboundp 'evil-vimish-fold-mode)
-    (evil-vimish-fold-mode 1)))
+  "Enable hideshow folding for Tcl buffers."
+  (hs-minor-mode 1))
 
 (defun mod-tcl-toggle-fold ()
-  "Toggle a manual fold at point."
+  "Toggle the hideshow fold at point."
   (interactive)
-  (condition-case nil
-      (vimish-fold-toggle)
-    (error
-     (message "No manual fold at point"))))
+  (hs-toggle-hiding))
 
 (defun mod-tcl--definition-start-line-p ()
   "Return non-nil when the current line starts a top-level Tcl definition."
@@ -163,41 +153,37 @@ definition cannot be parsed safely."
           (error nil))))))
 
 (defun mod-tcl--definition-folded-p (beg end)
-  "Return non-nil when a vimish fold already covers BEG..END."
-  (cl-some
-   (lambda (overlay)
-     (and (memq (overlay-get overlay 'type)
-                '(vimish-fold--folded vimish-fold--unfolded))
-          (<= (overlay-start overlay) beg)
-          (>= (overlay-end overlay) end)))
-   (overlays-in beg end)))
+  "Return non-nil when a hideshow fold already covers BEG..END."
+  (cl-some (lambda (ov)
+             (and (overlay-get ov 'hs)
+                  (<= (overlay-start ov) beg)
+                  (>= (overlay-end ov) end)))
+           (overlays-in beg end)))
 
 (defun mod-tcl-fold-definitions ()
   "Fold top-level Tcl proc and namespace definitions in the current buffer."
   (interactive)
   (unless (derived-mode-p 'tcl-mode)
     (user-error "Current buffer is not in tcl-mode"))
-  (unless (fboundp 'vimish-fold)
-    (user-error "vimish-fold is not available"))
-  (unless (bound-and-true-p vimish-fold-mode)
-    (vimish-fold-mode 1))
+  (unless (bound-and-true-p hs-minor-mode)
+    (hs-minor-mode 1))
   (let ((folds-created 0))
     (save-excursion
       (goto-char (point-min))
       (while (< (point) (point-max))
-        (let ((line-start (line-beginning-position)))
-          (cond
-           ((mod-tcl--definition-start-line-p)
+        (if (mod-tcl--definition-start-line-p)
             (let ((next-pos (save-excursion (forward-line 1) (point))))
-              (when-let* ((bounds (mod-tcl--definition-bounds)))
-                (pcase-let ((`(,beg . ,end) bounds))
-                  (unless (mod-tcl--definition-folded-p beg end)
-                    (vimish-fold beg end)
-                    (setq folds-created (1+ folds-created)))
-                  (setq next-pos (min (point-max) (1+ end)))))
-              (goto-char (max next-pos (save-excursion (forward-line 1) (point))))))
-           (t
-            (forward-line 1))))))
+              (when-let* ((bounds (mod-tcl--definition-bounds))
+                          (beg (car bounds))
+                          (end (cdr bounds)))
+                (unless (mod-tcl--definition-folded-p beg end)
+                  (when-let ((brace-pos (mod-tcl--definition-brace-position)))
+                    (goto-char brace-pos)
+                    (hs-hide-block)
+                    (cl-incf folds-created)))
+                (setq next-pos (min (point-max) (1+ end))))
+              (goto-char (max next-pos (save-excursion (forward-line 1) (point)))))
+          (forward-line 1))))
     (message "Folded %d Tcl definitions" folds-created)))
 
 (defun mod-tcl--maybe-auto-fold-definitions ()
@@ -205,6 +191,150 @@ definition cannot be parsed safely."
   (when orbit-user-tcl-auto-fold-definitions
     (ignore-errors
       (mod-tcl-fold-definitions))))
+
+(defconst mod-tcl--local-rename-bare-commands
+  '("append" "foreach" "incr" "lappend" "set" "variable")
+  "Tcl commands whose bare variable argument can be renamed locally.")
+
+(defun mod-tcl--proc-context ()
+  "Return proc context at point, or nil outside a Tcl proc body.
+The result is a plist containing `:name', `:body-start', and `:body-end'.
+Searches backward so procs indented inside namespace eval blocks are found."
+  (save-excursion
+    (let ((origin (point)))
+      (catch 'found
+        (while (re-search-backward
+                "^[[:blank:]]*proc[[:blank:]]"
+                nil t)
+          (when (looking-at
+                 "^[[:blank:]]*proc[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)")
+            (let ((name (match-string-no-properties 1)))
+              (save-excursion
+                (goto-char (match-end 1))
+                (skip-chars-forward " \t\n\r")
+                (condition-case nil
+                    (progn
+                      (forward-sexp 1)
+                      (skip-chars-forward " \t\n\r")
+                      (when (eq (char-after) ?{)
+                        (let* ((body-open (point))
+                               (body-close (scan-sexps body-open 1)))
+                          (when (and body-close
+                                     (< body-open origin)
+                                     (< origin body-close))
+                            (throw 'found
+                                   (list :name name
+                                         :body-start (1+ body-open)
+                                         :body-end (1- body-close)))))))
+                  (error nil))))))))))
+
+(defun mod-tcl--symbol-name-at-point ()
+  "Return a normalized Tcl variable name at point."
+  (let ((line-start (line-beginning-position))
+        (line-end (line-end-position))
+        (point-pos (point))
+        (patterns '("\\${\\([[:alnum:]_:]+\\)}"
+                    "\\$\\([[:alnum:]_:]+\\)([^)\n]*)"
+                    "\\$\\([[:alnum:]_:]+\\)"
+                    "\\_<\\([[:alnum:]_:]+\\)\\_>"))
+        symbol)
+    (save-excursion
+      (dolist (pattern patterns)
+        (unless symbol
+          (goto-char line-start)
+          (while (and (not symbol)
+                      (re-search-forward pattern line-end t))
+            (when (<= (match-beginning 0) point-pos (match-end 0))
+              (setq symbol (match-string-no-properties 1)))))))
+    (or symbol
+        (when-let* ((thing (thing-at-point 'symbol t)))
+          (replace-regexp-in-string "(.*\\'" "" thing))
+        (user-error "No Tcl variable at point"))))
+
+(defun mod-tcl--rename-in-text (old-name new-name text)
+  "Return a cons (NEW-TEXT . COUNT) with OLD-NAME renamed to NEW-NAME in TEXT.
+Operates on the string TEXT directly — no buffer modification during search.
+Patterns run in order so earlier passes consume their forms before later ones."
+  (let* ((q (regexp-quote old-name))
+         (cmds (regexp-opt mod-tcl--local-rename-bare-commands 'words))
+         (n 0)
+         ;; 1. ${old} → ${new}
+         (s (replace-regexp-in-string
+             (format "\\${%s}" q)
+             (lambda (_) (cl-incf n) (format "${%s}" new-name))
+             text t))
+         ;; 2. $old(idx) → $new(idx)  — must run before bare $old
+         (s (replace-regexp-in-string
+             (format "\\$%s(\\([^)\n]*\\))" q)
+             (lambda (_)
+               (cl-incf n)
+               (format "$%s(%s)" new-name (match-string 1)))
+             s t))
+         ;; 3. $old at symbol boundary → $new
+         ;;    Runs after steps 1-2 so ${old} and $old(idx) are already gone.
+         (s (replace-regexp-in-string
+             (format "\\$%s\\_>" q)
+             (lambda (_) (cl-incf n) (format "$%s" new-name))
+             s t))
+         ;; 4. cmd old → cmd new (bare variable argument: set, variable, incr …)
+         ;;    m is exactly "CMD WHITESPACE OLD_NAME" (\_> is zero-width, so
+         ;;    nothing trails the match).  Old-name is therefore always the
+         ;;    last (length old-name) characters of m — no match-data needed.
+         (s (replace-regexp-in-string
+             (format "%s[[:blank:]\n]+\\(%s\\)\\_>" cmds q)
+             (lambda (m)
+               (cl-incf n)
+               (concat (substring m 0 (- (length m) (length old-name))) new-name))
+             s t)))
+    (cons s n)))
+
+(defun mod-tcl--rename-diff-lines (old-text new-text base-line)
+  "Return ((LINE-NUM OLD-LINE NEW-LINE) ...) for lines that differ.
+BASE-LINE is the 1-based buffer line number of the first line of the text."
+  (let* ((old-lines (split-string old-text "\n"))
+         (new-lines (split-string new-text "\n"))
+         (line base-line)
+         changes)
+    (cl-mapcar (lambda (old new)
+                 (unless (string= old new)
+                   (push (list line old new) changes))
+                 (cl-incf line))
+               old-lines new-lines)
+    (nreverse changes)))
+
+(defconst mod-tcl--rename-preview-buffer "*Tcl Rename Preview*"
+  "Buffer used to display rename change previews.")
+
+(defun mod-tcl--show-rename-preview (old-name new-name scope matches diff-lines)
+  "Render a diff preview for renaming OLD-NAME to NEW-NAME and display it.
+SCOPE is a description of the rename region, MATCHES the replacement count,
+and DIFF-LINES a list of (LINE-NUM OLD NEW) from `mod-tcl--rename-diff-lines'.
+Returns the preview buffer."
+  (let ((buf (get-buffer-create mod-tcl--rename-preview-buffer)))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (propertize
+                 (format "Rename '%s' → '%s'   scope: %s   matches: %d\n\n"
+                         old-name new-name scope matches)
+                 'face 'bold))
+        (let* ((max-line (apply #'max (mapcar #'car diff-lines)))
+               (w (length (number-to-string max-line))))
+          (dolist (entry diff-lines)
+            (pcase-let ((`(,line ,old ,new) entry))
+              (insert (propertize
+                       (format (format "  %%%dd  - %%s\n" w) line old)
+                       'face 'diff-removed))
+              (insert (propertize
+                       (format (format "  %%%ds  + %%s\n" w) "" new)
+                       'face 'diff-added)))))
+        (goto-char (point-min)))
+      (special-mode))
+    (display-buffer
+     buf
+     `((display-buffer-at-bottom)
+       (window-height . ,(min 20 (+ (* 2 (length diff-lines)) 4)))))
+    buf))
 
 (defun mod-tcl--program-path (override fallback-name)
   "Return OVERRIDE or a resolved FALLBACK-NAME path, or nil."
@@ -763,6 +893,66 @@ Return non-nil when a project definition was found."
   (or (thing-at-point 'symbol t)
       (user-error "No symbol at point")))
 
+(defun mod-tcl-rename-local-symbol (new-name &optional old-name)
+  "Rename OLD-NAME to NEW-NAME in the surrounding proc body, or the entire buffer.
+When point is inside a Tcl proc the rename is limited to that proc body.
+When no enclosing proc is found the rename covers the entire buffer.
+A diff preview is shown before the user confirms."
+  (interactive
+   (let* ((old-name (mod-tcl--symbol-name-at-point))
+          (new-name (read-string
+                     (format "Rename Tcl variable %s to: " old-name)
+                     nil nil old-name)))
+     (list new-name old-name)))
+  (unless (derived-mode-p 'tcl-mode)
+    (user-error "Current buffer is not in tcl-mode"))
+  (let* ((old-name (or old-name (mod-tcl--symbol-name-at-point)))
+         (context (or (mod-tcl--proc-context)
+                      (list :name nil
+                            :body-start (point-min)
+                            :body-end (point-max))))
+         (scope (if (plist-get context :name)
+                    (format "proc %s" (plist-get context :name))
+                  "entire buffer")))
+    (when (or (string-empty-p new-name)
+              (string= new-name old-name))
+      (user-error "New Tcl variable name must differ from %s" old-name))
+    (unless (string-match-p "\\`[[:alpha:]_][[:alnum:]_:]*\\'" new-name)
+      (user-error "Not a valid Tcl variable name: %s" new-name))
+    (let* ((beg (plist-get context :body-start))
+           (end (plist-get context :body-end))
+           (original (buffer-substring-no-properties beg end))
+           (result (mod-tcl--rename-in-text old-name new-name original))
+           (new-text (car result))
+           (matches (cdr result)))
+      (if (= matches 0)
+          (message "No Tcl variable matches for '%s' in %s" old-name scope)
+        (let* ((base-line (line-number-at-pos beg))
+               (diff-lines (mod-tcl--rename-diff-lines original new-text base-line))
+               (preview-buf (mod-tcl--show-rename-preview
+                             old-name new-name scope matches diff-lines)))
+          (unwind-protect
+              (when (yes-or-no-p
+                     (format "Apply %d rename(s) of '%s' → '%s'? "
+                             matches old-name new-name))
+                (barf-if-buffer-read-only)
+                ;; Apply line-by-line (bottom-to-top) so overlays on
+                ;; unchanged lines — including any hideshow folds — survive.
+                (atomic-change-group
+                  (let ((inhibit-read-only t))
+                    (dolist (entry (reverse diff-lines))
+                      (pcase-let ((`(,line ,_old ,new) entry))
+                        (save-excursion
+                          (goto-char (point-min))
+                          (forward-line (1- line))
+                          (delete-region (point) (line-end-position))
+                          (insert new))))))
+                (message "Renamed %d occurrence(s) of '%s' in %s"
+                         matches old-name scope))
+            (when (buffer-live-p preview-buf)
+              (delete-windows-on preview-buf)
+              (kill-buffer preview-buf))))))))
+
 (defun mod-tcl--fallback-tag-name (symbol)
   "Return the unqualified fallback tag name for SYMBOL."
   (car (last (split-string symbol "::" t))))
@@ -825,6 +1015,9 @@ Return non-nil when a project definition was found."
 (defalias 'mod-tcl-show-output #'mod-tcl--display-output-buffer)
 
 (with-eval-after-load 'tcl
+  ;; Tell hideshow how to find Tcl blocks (brace-delimited, # comments).
+  (add-to-list 'hs-special-modes-alist
+               '(tcl-mode "{" "}" "#" nil nil))
   (add-hook 'tcl-mode-hook #'mod-tcl--configure-editing-defaults)
   (add-hook 'tcl-mode-hook #'mod-tcl-enable-manual-folding)
   (add-hook 'tcl-mode-hook #'mod-tcl--maybe-auto-fold-definitions)

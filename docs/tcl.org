@@ -31,7 +31,8 @@ In =tcl-mode=:
 | =SPC m f=   | format current file    | runs =tclfmt=              |
 | =SPC m F=   | fold definitions       | top-level proc/namespace   |
 | =SPC m TAB= | toggle fold            | manual fold at point       |
-| =SPC m r=   | rebuild TAGS           | project-local =TAGS=       |
+| =SPC m r r= | rename local variable  | proc-body Tcl refactor     |
+| =SPC m r t= | rebuild TAGS           | project-local =TAGS=       |
 | =SPC m g=   | jump to definition     | uses project =TAGS=        |
 | =SPC m s=   | search Tcl symbols     | project symbols            |
 | =SPC m v=   | validate Tcl tooling   | diagnostics report         |
@@ -120,6 +121,41 @@ The Tcl tooling diagnostic command =SPC m v= reports:
 - Doxygen program
 - Doxygen config file
 - Doxygen XML directory and =index.xml=
+
+* Local Variable Rename
+
+=SPC m r r= renames a Tcl local variable only inside the surrounding =proc=
+body. This is a lightweight Tcl-specific refactor helper; it does not use LSP
+or tree-sitter.
+
+Supported forms:
+- bare variable names in common command positions:
+  - =set oldName ...=
+  - =incr oldName=
+  - =lappend oldName ...=
+  - =append oldName ...=
+  - =foreach oldName ...=
+- variable references:
+  - =$oldName=
+  - =${oldName}=
+  - =$oldName(index)=
+
+Behavior:
+- point can be on =oldName=, =$oldName=, =${oldName}=, or =$oldName(index)=
+- the command normalizes that to the bare variable name
+- when inside a proc, replacements are limited to that proc body
+- when not inside a proc (top-level scripts, sourced files), replacements cover the entire buffer
+- the confirmation prompt always shows the active scope: =proc NAME= or =entire buffer=
+- confirmation happens before editing
+- the edit is grouped as one undo step
+
+Limitations:
+- this is intentionally conservative
+- when scoped to a proc, it does not rename outside the detected =proc=
+- it does not currently rename comments
+- bare-name renames are only recognized in the common command forms listed above
+- bare names inside arbitrary strings are not renamed
+- dollar-style references inside strings are renamed because they are clear Tcl variable references
 
 * Tcl Docs
 
@@ -211,9 +247,11 @@ missing symbols in the XML output.
 
 * Test Steps
 
-1. Open a Tcl project and run =SPC m r=.
+1. Open a Tcl project and run =SPC m r t=.
 2. Put point on a known proc and use =SPC m g=.
 3. Run =SPC m s= and confirm qualified names such as =ait::session::current_step= appear once.
 4. Confirm top-level names such as =assert= still appear in symbol search.
-5. Run =SPC m l= and =SPC m f= on the current file.
-6. Run =SPC m d r=, then use =SPC m d s= or =SPC m d p=.
+5. In a proc body, put point on =oldName= or =$oldName= and run =SPC m r r=.
+6. Confirm =set oldName=, =$oldName=, =${oldName}=, and =$oldName(index)= rename only inside that proc.
+7. Run =SPC m l= and =SPC m f= on the current file.
+8. Run =SPC m d r=, then use =SPC m d s= or =SPC m d p=.

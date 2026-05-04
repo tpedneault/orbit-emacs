@@ -97,9 +97,10 @@ buffers and no file-visiting buffers inside ROOT."
            (lambda ()
              (let ((default-directory expanded))
                (mod-dired-here)))))
-      (let ((default-directory (or (mod-context--project-root-for-file expanded)
-                                   (file-name-directory expanded))))
-        (persp-switch (mod-context--edit-context-name-for-file expanded))
+      (let* ((root (mod-context--project-root-for-file expanded))
+             (default-directory (or root (file-name-directory expanded))))
+        (when root
+          (persp-switch (mod-context--edit-context-name root)))
         (find-file expanded)))))
 
 (defun mod-context--read-known-project-root ()

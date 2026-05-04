@@ -43,23 +43,44 @@
   :config
   (global-evil-mc-mode 1))
 
-(use-package vimish-fold
-  :ensure t
-  :init
-  (setq vimish-fold-dir mod-core-vimish-fold-directory)
-  :commands (vimish-fold-mode
-             vimish-fold-toggle
-             vimish-fold
-             vimish-fold-unfold
-             vimish-fold-refold
-             vimish-fold-delete))
+;; When j/k deposits point inside a folded (invisible overlay) region, jump to
+;; the near edge of the fold so the cursor skips it in one press.
+;;
+;; We use :after advice on evil-next-line / evil-previous-line rather than
+;; post-command-hook because Evil's evil-adjust-cursor runs in post-command-hook
+;; and can override a goto-char made there.  Advice runs as part of the command
+;; itself, so our repositioning is the final position Evil sees when it later
+;; runs its own post-command adjustments.
+;;
+;; hideshow sets 'invisible to the symbol 'hs on its fold overlays; checking
+;; (overlay-get o 'invisible) returns a truthy value for those.  overlays-in
+;; is used (rather than overlays-at) for the forward direction so that landing
+;; on the fold header line — before the overlay actually starts — is also caught.
 
-(use-package evil-vimish-fold
-  :ensure t
-  :after (evil vimish-fold)
-  :commands (evil-vimish-fold-mode
-             evil-vimish-fold/create
-             evil-vimish-fold/delete))
+(defun mod-evil--skip-fold-forward (&rest _)
+  "After `evil-next-line', jump past any invisible fold overlay at point.
+Uses `overlays-in' over the whole current line rather than `overlays-at'
+at point, because when the cursor lands at the start of the fold header
+line the overlay begins later on that same line and `overlays-at' misses it."
+  (when (evil-normal-state-p)
+    (when-let ((ov (cl-find-if (lambda (o) (overlay-get o 'invisible))
+                               (overlays-in (line-beginning-position)
+                                            (1+ (line-end-position))))))
+      ;; overlay-end is often the \n of the last hidden line; jumping there
+      ;; would leave Evil's adjust-cursor to back us one char into the fold.
+      ;; Advance one more step when at EOL to land on the next visible line.
+      (goto-char (overlay-end ov))
+      (when (eolp) (forward-line 1)))))
+
+(defun mod-evil--skip-fold-backward (&rest _)
+  "After `evil-previous-line', jump before any invisible fold overlay at point."
+  (when (evil-normal-state-p)
+    (when-let ((ov (cl-find-if (lambda (o) (overlay-get o 'invisible))
+                               (overlays-at (point)))))
+      (goto-char (max (point-min) (1- (overlay-start ov)))))))
+
+(advice-add 'evil-next-line     :after #'mod-evil--skip-fold-forward)
+(advice-add 'evil-previous-line :after #'mod-evil--skip-fold-backward)
 
 (provide 'mod-evil)
 

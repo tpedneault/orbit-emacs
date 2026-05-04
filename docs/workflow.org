@@ -23,9 +23,18 @@
 2. Find files with =SPC .= or =SPC p f=.
    - =SPC SPC= is the quickest file entry point: project file finder in a project, =find-file= otherwise
    - =SPC .= is the quick buffer switcher
-3. Search with =SPC /= or =SPC p s=.
-4. Refactor across the current project with =SPC p R=.
-   - replacements stay query-based so each change is reviewable
+3. Search with =SPC /=, =SPC s s=, or =SPC p s=.
+   - =SPC s b= searches the current buffer
+   - =SPC s f= jumps to files by name
+   - =SPC s d= searches the current directory
+4. Refactor across the current project with:
+   - =SPC s r= for safe regexp query replace
+   - =SPC s R= for preview + explicit-confirmation regexp replace-all
+   - =SPC p R= when you want the older project replace entry point
+   - =SPC s R= prompts for an optional file glob
+   - examples: empty, =*.el=, =src/**/*.py=, =tests/**/*.tcl=
+   - the replace-all confirmation shows the root, search regexp, replacement text, glob filter, and candidate file count before changing anything
+   - if ripgrep finds zero candidate files, the command exits cleanly without editing buffers
 5. Use =SPC x f= when you want a dedicated file-management workspace.
    - Dired stays in =files/...=
    - opening a file there moves you into the matching =edit/...= context
@@ -62,9 +71,10 @@
 * Tcl Loop
 
 1. Open the project in an editing context with =SPC x e=.
-2. Rebuild Tcl =TAGS= with =SPC m r= after symbol changes.
+2. Rebuild Tcl =TAGS= with =SPC m r t= after symbol changes.
 3. Jump with =SPC m g= or search with =SPC m s=.
-4. Lint with =SPC m l= and format with =SPC m f=.
+4. Use =SPC m r r= for proc-local variable rename when you want a conservative Tcl refactor.
+5. Lint with =SPC m l= and format with =SPC m f=.
 
 * Python Loop
 

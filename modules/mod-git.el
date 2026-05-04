@@ -17,7 +17,21 @@
                    "docs/AUTHORS.md"
                    "LICENSE"
                    ("git-hooks" "git-hooks/*")))
-  :commands (magit-status magit-log-current magit-blame-addition))
+  :commands (magit-status magit-log-current magit-blame-addition
+             magit-dispatch magit-file-dispatch magit-diff
+             magit-log-buffer-file magit-file-stage magit-file-unstage)
+  :config
+  (setq magit-diff-refine-hunk t           ; word-level diff in selected hunk
+        magit-save-repository-buffers nil  ; don't auto-save before git ops (avoids triggering formatters)
+        magit-revision-insert-related-refs nil)) ; faster commit view
+
+(with-eval-after-load 'git-commit
+  (setq git-commit-summary-max-length 50)  ; enforce 50-char subject line
+  (add-hook 'git-commit-setup-hook
+            (lambda ()
+              (setq fill-column 72)         ; wrap body at 72 chars
+              (when (fboundp 'evil-insert-state)
+                (evil-insert-state)))))
 
 (defun mod-git-status ()
   "Open Magit status for the current repository."
@@ -33,6 +47,30 @@
   "Start Magit blame for the current file."
   (interactive)
   (call-interactively #'magit-blame-addition))
+
+(defun mod-git-log-file ()
+  "Open a Magit log for the current buffer's file."
+  (interactive)
+  (call-interactively #'magit-log-buffer-file))
+
+(defun mod-git-stage-file ()
+  "Stage the current file via Magit."
+  (interactive)
+  (call-interactively #'magit-file-stage))
+
+(defun mod-git-unstage-file ()
+  "Unstage the current file via Magit."
+  (interactive)
+  (call-interactively #'magit-file-unstage))
+
+(use-package diff-hl
+  :ensure t
+  :demand t
+  :config
+  (global-diff-hl-mode 1)
+  (with-eval-after-load 'magit
+    (add-hook 'magit-pre-refresh-hook  #'diff-hl-magit-pre-refresh)
+    (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh)))
 
 (defun mod-git--repository-root ()
   "Return the current Git repository root, or signal a clear error."
@@ -56,6 +94,24 @@
        (with-current-buffer standard-output
          (unless (zerop (process-file "git" nil t nil "rev-parse" "--abbrev-ref" "HEAD"))
            (user-error "Could not determine current Git revision")))))))
+
+(defun mod-git--list-branches (root)
+  "Return all local and remote branch names for the repo at ROOT."
+  (let ((default-directory root)
+        (raw (with-output-to-string
+               (with-current-buffer standard-output
+                 (process-file "git" nil t nil
+                               "branch" "-a" "--format=%(refname:short)")))))
+    (cl-remove-if #'string-empty-p (split-string raw "\n"))))
+
+(defun mod-git--read-revision (root)
+  "Prompt for a Git branch or revision in ROOT using completion."
+  (let* ((branches (mod-git--list-branches root))
+         (default (mod-git--default-revision))
+         (prompt (if default
+                     (format "Git revision (default %s): " default)
+                   "Git revision: ")))
+    (completing-read prompt branches nil nil nil nil default)))
 
 (defun mod-git--relative-file-at-point (root)
   "Return the current buffer file relative to ROOT, when practical."
@@ -94,7 +150,7 @@
   "Open PATH from Git REVISION in a read-only buffer."
   (interactive
    (let* ((root (mod-git--repository-root))
-          (revision (read-string "Git revision: " (mod-git--default-revision))))
+          (revision (mod-git--read-revision root)))
      (list revision
            (mod-git--read-revision-file revision root))))
   (let* ((root (mod-git--repository-root))
