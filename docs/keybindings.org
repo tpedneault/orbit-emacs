@@ -221,6 +221,10 @@
 | =SPC m c g= | =org-clock-goto=            | jump to active clock |
 | =SPC m z=   | =org-narrow-to-subtree=     | narrow subtree      |
 | =SPC m Z=   | =widen=                     | widen               |
+| =SPC m m=   | mermaid subgroup            |                     |
+| =SPC m m p= | =mod-mermaid-preview=       | render diagram at point in side window |
+| =SPC m m P= | =mod-mermaid-auto-preview-mode= | toggle auto-preview (re-renders on idle) |
+| =SPC m m e= | =org-babel-execute-src-block= | execute src block and embed result |
 
 ** Agenda Buffer
 
@@ -288,6 +292,15 @@
 | =SPC m d q= | =dape-kill=               | quit debug session      |
 | =SPC m d R= | =dape-repl=               | debugger REPL           |
 | =SPC m d I= | =dape-info=               | debugger info buffers   |
+
+** Mermaid Buffer (=.mmd= files)
+
+| Key         | Action                          | Notes                              |
+|-------------+---------------------------------+------------------------------------|
+| =SPC m p=   | =mod-mermaid-preview=           | render and open side-window preview |
+| =SPC m P=   | =mod-mermaid-auto-preview-mode= | toggle auto-preview on idle        |
+| =SPC m e=   | =mermaid-compile-buffer=        | compile to output file on disk     |
+| =SPC m o=   | =mermaid-open-browser=          | open diagram in browser via mermaid.live |
 
 Active Python debug session single-key controls:
 

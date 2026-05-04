@@ -102,6 +102,34 @@
    - =R= repl
    - =I= info
 
+* Mermaid Loop
+
+** Diagram in an Org file
+
+1. Write a mermaid src block with a =:file= header arg:
+   #+begin_example
+   #+begin_src mermaid :file diagram.svg
+   graph TD
+       A --> B
+   #+end_src
+   #+end_example
+2. Press =SPC m m P= to enable auto-preview — a side window opens on the right.
+3. Edit the diagram source freely; the preview updates ~1 s after each typing pause.
+4. Press =SPC m m e= (=C-c C-c=) to execute the block and embed the rendered SVG inline in the Org buffer.
+5. Toggle inline images with =C-c C-x C-v= to see the result without leaving the buffer.
+
+** Standalone .mmd file
+
+1. Open or create a =diagram.mmd= file.
+2. Press =SPC m P= to enable auto-preview.
+3. Edit with live preview on the right.
+4. Press =SPC m e= to compile a final output file on disk.
+5. Press =SPC m o= to open the diagram in the browser via mermaid.live when you want the interactive online editor.
+
+** HTML export
+
+Exporting an Org file with mermaid src blocks to HTML automatically produces interactive diagrams in the browser via mermaid.js — no static images needed, no extra steps.
+
 * Suggested Context Pattern
 
 - =agenda=: planning and review

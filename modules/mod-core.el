@@ -42,44 +42,95 @@ between same-named files in different directories.")
 (defconst mod-core-user-snippets-directory
   (expand-file-name "snippets/" mod-core-user-directory))
 (defconst mod-core-user-config-template
-  ";;; config.el --- User overrides for orbit-emacs -*- lexical-binding: t; -*-\n\n\
-;; Set any of these to override orbit-emacs defaults.\n\n\
-;; (setq orbit-user-shell \"/bin/zsh\")\n\
-;; (setq orbit-user-font-family \"IBM Plex Mono\")\n\
-;; (setq orbit-user-font-height 140)\n\
-;; (setq orbit-user-org-directory (expand-file-name \"org/\" (getenv \"HOME\")))\n\
-;; (setq orbit-user-snippets-directory (expand-file-name \"snippets/\" (expand-file-name \".orbit-emacs.d/\" (getenv \"HOME\"))))\n\
-;; (setq orbit-user-rg-program \"rg\")\n\
-;; (setq orbit-user-ctags-program \"ctags\")\n\
-;; (setq orbit-user-tclint-program \"tclint\")\n\
-;; (setq orbit-user-tclfmt-program \"tclfmt\")\n\
+  ";;; config.el --- User overrides for orbit-emacs -*- lexical-binding: t; -*-\n\
+;; Uncomment and adjust any setting to override the orbit-emacs default.\n\n\
+;; ─── General ─────────────────────────────────────────────────────────────────\n\n\
+;; Shell used for `shell-file-name' and `explicit-shell-file-name'.\n\
+;; (setq orbit-user-shell \"/bin/zsh\")\n\n\
+;; Default org directory (used by mod-org for agenda, capture, etc.).\n\
+;; (setq orbit-user-org-directory (expand-file-name \"org/\" (getenv \"HOME\")))\n\n\
+;; Directory containing your personal YASnippet snippets.\n\
+;; (setq orbit-user-snippets-directory\n\
+;;       (expand-file-name \"snippets/\" (expand-file-name \".orbit-emacs.d/\" (getenv \"HOME\"))))\n\n\
+;; ─── Fonts ───────────────────────────────────────────────────────────────────\n\n\
+;; Monospace font used for the default and fixed-pitch faces.\n\
+;; (setq orbit-user-font-family \"IBM Plex Mono\")\n\n\
+;; Font height in units of 1/10 pt.  140 = 14 pt.\n\
+;; (setq orbit-user-font-height 140)\n\n\
+;; Font weight for the default and fixed-pitch faces.\n\
+;; Common values: light, regular, medium, semibold, bold, extrabold.\n\
+;; (setq orbit-user-font-weight 'regular)\n\n\
+;; Proportional font used for variable-pitch face (org prose, etc.).\n\
+;; Leave nil to keep everything monospace.\n\
+;; (setq orbit-user-variable-pitch-font \"Inter\")\n\n\
+;; Height for the variable-pitch face.  Use a float (e.g. 1.0) to stay\n\
+;; relative to the default height, or an integer (e.g. 150) for absolute.\n\
+;; (setq orbit-user-variable-pitch-height 1.0)\n\n\
+;; Weight for the variable-pitch face.\n\
+;; (setq orbit-user-variable-pitch-weight 'regular)\n\n\
+;; ─── Editor defaults ─────────────────────────────────────────────────────────\n\n\
+;; Show a vertical line at this column in all buffers.\n\
 ;; (setq orbit-user-enable-fill-column-indicator t)\n\
-;; (setq orbit-user-fill-column 120)\n\
-;; (setq orbit-user-tcl-indent-width 3)\n\
-;; (setq orbit-user-tcl-fill-column 120)\n\
-;; (setq orbit-user-tcl-use-tabs nil)\n\
-;; (setq orbit-user-enable-whitespace t)\n\
-;; (setq orbit-user-enable-hl-line t)\n\
+;; (setq orbit-user-fill-column 120)\n\n\
+;; Highlight trailing whitespace and tabs in all buffers.\n\
+;; (setq orbit-user-enable-whitespace t)\n\n\
+;; Highlight the current line in all buffers.\n\
+;; (setq orbit-user-enable-hl-line t)\n\n\
+;; ─── Tools ───────────────────────────────────────────────────────────────────\n\n\
+;; Ripgrep binary used for project-wide search.\n\
+;; (setq orbit-user-rg-program \"rg\")\n\n\
+;; Universal Ctags binary used for tag generation.\n\
+;; (setq orbit-user-ctags-program \"ctags\")\n\n\
+;; ─── TCL ─────────────────────────────────────────────────────────────────────\n\n\
+;; External TCL linter and formatter binaries.\n\
+;; (setq orbit-user-tclint-program \"tclint\")\n\
+;; (setq orbit-user-tclfmt-program \"tclfmt\")\n\n\
+;; Indentation width for TCL source files.\n\
+;; (setq orbit-user-tcl-indent-width 3)\n\n\
+;; Fill column for TCL source files.\n\
+;; (setq orbit-user-tcl-fill-column 120)\n\n\
+;; Use hard tabs instead of spaces in TCL files.\n\
+;; (setq orbit-user-tcl-use-tabs nil)\n\n\
+;; Per-language overrides — set to t, nil, or 'inherit to follow the global.\n\
 ;; (setq orbit-user-tcl-enable-fill-column-indicator 'inherit)\n\
 ;; (setq orbit-user-tcl-enable-whitespace 'inherit)\n\
-;; (setq orbit-user-tcl-enable-hl-line 'inherit)\n\
-;; (setq orbit-user-tcl-auto-fold-definitions nil)\n\
-;; (setq orbit-user-tcl-known-symbols-file \"/path/to/tcl-known-symbols.txt\")\n\
-;; (setq orbit-user-tcl-doxygen-xml-directory nil)\n\
+;; (setq orbit-user-tcl-enable-hl-line 'inherit)\n\n\
+;; Auto-fold proc/namespace definitions on file open.\n\
+;; (setq orbit-user-tcl-auto-fold-definitions nil)\n\n\
+;; Path to a plain-text file of known TCL symbols (one per line).\n\
+;; (setq orbit-user-tcl-known-symbols-file \"/path/to/tcl-known-symbols.txt\")\n\n\
+;; Directory containing Doxygen XML output for TCL API docs.\n\
+;; (setq orbit-user-tcl-doxygen-xml-directory nil)\n\n\
+;; Doxygen binary and config file used by mod-tcl-docs.\n\
 ;; (setq orbit-user-doxygen-program \"doxygen\")\n\
-;; (setq orbit-user-doxygen-config-file nil)\n\
-;; (setq orbit-user-jira-base-url \"https://jira.example.com\")\n\
-;; (setq orbit-user-jira-api-prefix \"/rest/api/2\")\n\
-;; (setq orbit-user-jira-project-key \"PROJ\")\n\
-;; (setq orbit-user-jira-username \"thomas\")\n\
-;; (setq orbit-user-jira-jql nil)\n\
-;; (setq orbit-user-jira-org-file (expand-file-name \"jira.org\" (expand-file-name \"org/\" (getenv \"HOME\"))))\n\
-;; (setq orbit-user-jira-token-command \"security find-generic-password -a jira -s orbit-jira-pat -w\")\n\
+;; (setq orbit-user-doxygen-config-file nil)\n\n\
+;; ─── Jira ────────────────────────────────────────────────────────────────────\n\n\
+;; Base URL for your Jira instance.\n\
+;; (setq orbit-user-jira-base-url \"https://jira.example.com\")\n\n\
+;; REST API prefix (v2 default; change to \"/rest/api/3\" for Jira Cloud).\n\
+;; (setq orbit-user-jira-api-prefix \"/rest/api/2\")\n\n\
+;; Jira project key used as the default for queries.\n\
+;; (setq orbit-user-jira-project-key \"PROJ\")\n\n\
+;; Your Jira login username (usually email on Cloud).\n\
+;; (setq orbit-user-jira-username \"thomas\")\n\n\
+;; JQL query string used for the default issue list (nil = use project key).\n\
+;; (setq orbit-user-jira-jql nil)\n\n\
+;; Org file where synced Jira issues are stored.\n\
+;; (setq orbit-user-jira-org-file\n\
+;;       (expand-file-name \"jira.org\" (expand-file-name \"org/\" (getenv \"HOME\"))))\n\n\
+;; Shell command that prints your Jira Personal Access Token on stdout.\n\
+;; (setq orbit-user-jira-token-command\n\
+;;       \"security find-generic-password -a jira -s orbit-jira-pat -w\")\n\n\
+;; Environment variable to read the PAT from (alternative to token-command).\n\
 ;; (setq orbit-user-jira-pat-env \"JIRA_PAT\")\n")
 
 (defvar orbit-user-shell nil)
 (defvar orbit-user-font-family nil)
 (defvar orbit-user-font-height nil)
+(defvar orbit-user-font-weight nil)
+(defvar orbit-user-variable-pitch-font nil)
+(defvar orbit-user-variable-pitch-height nil)
+(defvar orbit-user-variable-pitch-weight nil)
 (defvar orbit-user-org-directory nil)
 (defvar orbit-user-snippets-directory nil)
 (defvar orbit-user-rg-program nil)

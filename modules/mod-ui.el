@@ -147,7 +147,11 @@
    " "))
 
 (defun mod-ui-apply-frame-defaults (&optional frame)
-  "Apply minimal UI defaults to FRAME or the current frame."
+  "Apply minimal UI defaults to FRAME or the current frame.
+Sets the default (monospace) face from `orbit-user-font-*' variables,
+mirrors it onto fixed-pitch so org tables stay aligned, and optionally
+configures variable-pitch for prose when `orbit-user-variable-pitch-font'
+is set."
   (with-selected-frame (or frame (selected-frame))
     (when (fboundp 'menu-bar-mode)
       (menu-bar-mode -1))
@@ -156,9 +160,26 @@
     (when (fboundp 'scroll-bar-mode)
       (scroll-bar-mode -1))
     (when (display-graphic-p)
-      (set-face-attribute 'default frame
-                          :family (mod-ui-font-family)
-                          :height (or (mod-ui-font-height) 'unspecified)))))
+      (let* ((mono-family (mod-ui-font-family))
+             (mono-height (or (mod-ui-font-height) 'unspecified))
+             (mono-weight orbit-user-font-weight)
+             (default-attrs `(:family ,mono-family
+                              :height ,mono-height
+                              ,@(when mono-weight `(:weight ,mono-weight))))
+             (fixed-attrs  `(:family ,mono-family
+                              :height 1.0
+                              ,@(when mono-weight `(:weight ,mono-weight)))))
+        ;; Primary editing font
+        (apply #'set-face-attribute 'default frame default-attrs)
+        ;; fixed-pitch mirrors the monospace font so org tables / code blocks stay aligned
+        (apply #'set-face-attribute 'fixed-pitch frame fixed-attrs)
+        ;; variable-pitch for org prose when mixed-pitch-mode is in use
+        (when orbit-user-variable-pitch-font
+          (apply #'set-face-attribute 'variable-pitch frame
+                 `(:family ,orbit-user-variable-pitch-font
+                   :height ,(or orbit-user-variable-pitch-height 1.0)
+                   ,@(when orbit-user-variable-pitch-weight
+                       `(:weight ,orbit-user-variable-pitch-weight)))))))))
 
 (defun mod-ui--frame-default-height (&optional frame)
   "Return the current default face height for FRAME."

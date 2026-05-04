@@ -97,14 +97,91 @@ It contains:
 - =config.el=
 - =snippets/=
 
-Use it for machine-specific or personal overrides, for example:
-- font family / font height
-- Org directory
-- shell or tool paths
-- personal snippets
+Use it for machine-specific or personal overrides.  Open it with =SPC f c u= and uncomment any setting you want to change.  All settings are documented with comments inside the file.
+
+Settings available by section:
+
+*General*
+- =orbit-user-shell= — shell binary (e.g. =/bin/zsh=)
+- =orbit-user-org-directory= — root Org directory
+- =orbit-user-snippets-directory= — personal YASnippet snippets
+
+*Fonts*
+- =orbit-user-font-family= — monospace font (default and fixed-pitch faces)
+- =orbit-user-font-height= — height in 1/10 pt units (140 = 14 pt)
+- =orbit-user-font-weight= — weight symbol: =light=, =regular=, =medium=, =semibold=, =bold=
+- =orbit-user-variable-pitch-font= — proportional font for org prose (leave nil to stay monospace)
+- =orbit-user-variable-pitch-height= — height for variable-pitch; float (=1.0=) or absolute integer
+- =orbit-user-variable-pitch-weight= — weight for variable-pitch face
+
+When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically kept in sync, so org tables and code blocks stay aligned even when =mixed-pitch-mode= is active.
+
+*Editor defaults*
+- =orbit-user-enable-fill-column-indicator= / =orbit-user-fill-column=
+- =orbit-user-enable-whitespace=
+- =orbit-user-enable-hl-line=
+
+*Tools* — =orbit-user-rg-program=, =orbit-user-ctags-program=
+
+*TCL* — indent width, fill column, tabs, per-language display overrides, doxygen, linter and formatter paths
+
+*Jira* — base URL, project key, username, JQL, org file, PAT source
 
 Useful keys:
 - =SPC f c u=: open user config
 - =SPC f c U=: open user dir
 - =SPC f c S=: open user snippets
 - =SPC f c s r=: reload snippets
+
+* Mermaid Diagrams
+
+orbit-emacs ships built-in support for Mermaid diagrams via =mod-mermaid=.
+
+** Requirements
+
+Install the Mermaid CLI before use:
+
+#+begin_src sh
+npm install -g @mermaid-js/mermaid-cli
+mmdc --version
+#+end_src
+
+** Org workflow
+
+Write a diagram inside a src block with a =:file= header arg:
+
+#+begin_example
+#+begin_src mermaid :file diagram.svg
+graph TD
+    A --> B --> C
+#+end_src
+#+end_example
+
+- =SPC m m e= — execute the block and embed the rendered SVG inline
+- =SPC m m p= — render the block at point and open a live side-window preview
+- =SPC m m P= — toggle auto-preview mode (re-renders ~1 s after each edit pause)
+
+SVG is recommended over PNG — it scales cleanly at any zoom level.
+
+** .mmd workflow
+
+Create or open a =diagram.mmd= file to get =mermaid-mode= with syntax highlighting.
+
+- =SPC m p= — render and open side-window preview
+- =SPC m P= — toggle auto-preview mode
+- =SPC m e= — compile to a file on disk
+- =SPC m o= — open in the browser via mermaid.live
+
+** HTML export
+
+When an Org file containing mermaid src blocks is exported to HTML, the blocks are automatically converted to interactive =<div class="mermaid">= elements backed by the mermaid.js CDN.  No static image files are needed and diagrams render natively in the browser.
+
+** Theme
+
+The default render theme is =redux-color=.  Change it at any time:
+
+#+begin_src emacs-lisp
+(setq mod-mermaid-theme "dark")
+#+end_src
+
+Valid built-in names: =default=, =forest=, =dark=, =neutral=, =base=, =redux=, =redux-color=, =redux-dark=, =redux-dark-color=.
