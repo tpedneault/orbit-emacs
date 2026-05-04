@@ -30,7 +30,8 @@ In =tcl-mode=:
 | =SPC m l=   | lint current file      | runs =tclint=              |
 | =SPC m f=   | format current file    | runs =tclfmt=              |
 | =SPC m F=   | fold definitions       | top-level proc/namespace   |
-| =SPC m TAB= | toggle fold            | manual fold at point       |
+| =SPC m D=   | fold doxygen comments  | all =##= comment blocks    |
+| =SPC m TAB= | toggle fold            | fold at point              |
 | =SPC m r r= | rename local variable  | proc-body Tcl refactor     |
 | =SPC m r t= | rebuild TAGS           | project-local =TAGS=       |
 | =SPC m g=   | jump to definition     | uses project =TAGS=        |
@@ -113,6 +114,7 @@ User config can also override Tcl editing defaults with:
 - =orbit-user-tcl-enable-whitespace= where ='inherit= falls back to the global setting
 - =orbit-user-tcl-enable-hl-line= where ='inherit= falls back to the global setting
 - =orbit-user-tcl-auto-fold-definitions= to fold top-level definitions on buffer open
+- =orbit-user-tcl-auto-fold-doxygen-comments= to fold Doxygen comment blocks on buffer open
 
 The Tcl tooling diagnostic command =SPC m v= reports:
 - =tclint=
@@ -185,23 +187,36 @@ If the XML directory or =index.xml= is missing, regenerate docs with =SPC m d r=
 
 * Folding
 
-- folding is manual and powered by =vimish-fold=
-- use visual selection plus =zf= to create a fold around a verbose Doxygen block
-- =SPC m F= folds top-level =proc= and =namespace eval= blocks conservatively
-- =SPC m TAB= or =za= toggles a fold at point
-- =zo= opens a fold
-- =zc= closes a fold
-- =zd= deletes a fold
+Folding is powered by =hs-minor-mode= (hideshow), which is enabled automatically in every Tcl buffer.
 
-Why manual only:
-- the earlier comment-scanning fold experiment was intentionally removed
-- no fold-all comment scanner is used now because stability matters more than automation
+** Definition folding
+
+- =SPC m F= folds all top-level =proc= and =namespace eval= blocks in the buffer
+- =SPC m TAB= toggles the hideshow fold at point
+- set =orbit-user-tcl-auto-fold-definitions t= to fold definitions automatically when a file opens
 
 Definition folding limits:
 - only top-level =proc NAME ARGS {= and =namespace eval NAME {= lines are considered
-- comments are not folded
 - control blocks like =if=, =foreach=, =while=, and =switch= are ignored
 - if a block cannot be matched safely with balanced-brace movement, it is skipped
+
+** Doxygen comment folding
+
+- =SPC m D= folds all Doxygen comment blocks in the buffer
+- set =orbit-user-tcl-auto-fold-doxygen-comments t= to fold them automatically when a file opens
+
+A Doxygen block is a run of consecutive comment lines where the first line starts with =##= (the standard Doxygen marker for Tcl).  Subsequent lines start with =#=.  Example:
+
+#+begin_src tcl
+## Return the current session step.
+## @param session The session handle.
+## @return Step identifier string.
+proc current_step {session} {
+    ...
+}
+#+end_src
+
+The =##= line triggers detection; the block ends at the first non-comment line.  Blocks already folded are skipped.
 
 * Doxyfile Requirements
 

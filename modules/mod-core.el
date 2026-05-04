@@ -97,6 +97,8 @@ between same-named files in different directories.")
 ;; (setq orbit-user-tcl-enable-hl-line 'inherit)\n\n\
 ;; Auto-fold proc/namespace definitions on file open.\n\
 ;; (setq orbit-user-tcl-auto-fold-definitions nil)\n\n\
+;; Auto-fold Doxygen comment blocks (## ...) on file open.\n\
+;; (setq orbit-user-tcl-auto-fold-doxygen-comments nil)\n\n\
 ;; Path to a plain-text file of known TCL symbols (one per line).\n\
 ;; (setq orbit-user-tcl-known-symbols-file \"/path/to/tcl-known-symbols.txt\")\n\n\
 ;; Directory containing Doxygen XML output for TCL API docs.\n\
@@ -148,6 +150,7 @@ between same-named files in different directories.")
 (defvar orbit-user-tcl-enable-whitespace 'inherit)
 (defvar orbit-user-tcl-enable-hl-line 'inherit)
 (defvar orbit-user-tcl-auto-fold-definitions nil)
+(defvar orbit-user-tcl-auto-fold-doxygen-comments nil)
 (defvar orbit-user-tcl-known-symbols-file nil)
 (defvar orbit-user-tcl-doxygen-xml-directory nil)
 (defvar orbit-user-doxygen-program nil)

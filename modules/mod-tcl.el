@@ -192,6 +192,54 @@ definition cannot be parsed safely."
     (ignore-errors
       (mod-tcl-fold-definitions))))
 
+(defun mod-tcl--doxygen-block-end (start)
+  "Return the position after the last line of the Doxygen comment block at START.
+START must be the beginning of a line matching '^[[:blank:]]*##'.
+Advances past all subsequent lines beginning with optional whitespace
+followed by '#' and returns the position of the first non-comment line,
+or nil when the line at START is not a Doxygen block start."
+  (save-excursion
+    (goto-char start)
+    (when (looking-at "^[[:blank:]]*##")
+      (forward-line 1)
+      (while (and (< (point) (point-max))
+                  (looking-at "^[[:blank:]]*#"))
+        (forward-line 1))
+      (point))))
+
+(defun mod-tcl-fold-doxygen-comments ()
+  "Fold Doxygen comment blocks in the current Tcl buffer.
+A Doxygen block is a run of lines where the first line starts with
+optional whitespace followed by '##', and all subsequent lines start
+with optional whitespace followed by '#'.  Each such block is folded
+with a hideshow overlay.  Blocks that are already folded are skipped."
+  (interactive)
+  (unless (derived-mode-p 'tcl-mode)
+    (user-error "Current buffer is not in tcl-mode"))
+  (unless (bound-and-true-p hs-minor-mode)
+    (hs-minor-mode 1))
+  (let ((folds-created 0))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^[[:blank:]]*##" nil t)
+        (let* ((beg (line-beginning-position))
+               (end (mod-tcl--doxygen-block-end beg)))
+          (when end
+            (unless (cl-some (lambda (ov) (overlay-get ov 'hs))
+                             (overlays-in beg end))
+              (save-excursion
+                (goto-char beg)
+                (hs-hide-block))
+              (cl-incf folds-created)))
+          (goto-char (or end (line-end-position))))))
+    (message "Folded %d Doxygen comment blocks" folds-created)))
+
+(defun mod-tcl--maybe-auto-fold-doxygen-comments ()
+  "Fold Doxygen comment blocks when configured to do so."
+  (when orbit-user-tcl-auto-fold-doxygen-comments
+    (ignore-errors
+      (mod-tcl-fold-doxygen-comments))))
+
 (defconst mod-tcl--local-rename-bare-commands
   '("append" "foreach" "incr" "lappend" "set" "variable")
   "Tcl commands whose bare variable argument can be renamed locally.")
@@ -1021,6 +1069,7 @@ A diff preview is shown before the user confirms."
   (add-hook 'tcl-mode-hook #'mod-tcl--configure-editing-defaults)
   (add-hook 'tcl-mode-hook #'mod-tcl-enable-manual-folding)
   (add-hook 'tcl-mode-hook #'mod-tcl--maybe-auto-fold-definitions)
+  (add-hook 'tcl-mode-hook #'mod-tcl--maybe-auto-fold-doxygen-comments)
   (add-hook 'tcl-mode-hook #'mod-tcl-setup-completion)
   (add-hook 'tcl-mode-hook #'mod-tcl--enable-symbol-highlighting))
 
