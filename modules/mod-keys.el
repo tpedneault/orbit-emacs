@@ -73,6 +73,11 @@
 (declare-function consult-mark "consult" (&optional markers))
 (declare-function consult-outline "consult" (&optional level))
 (declare-function evil-show-jumps "evil-jumps")
+(declare-function mod-mermaid-preview "mod-mermaid")
+(declare-function mod-mermaid-auto-preview-mode "mod-mermaid")
+(declare-function mermaid-compile-buffer "mermaid-mode")
+(declare-function mermaid-open-browser "mermaid-mode")
+(declare-function org-babel-execute-src-block "ob")
 
 (defconst mod-keys-config-directory
   (file-name-directory
@@ -356,7 +361,11 @@
      "d" '(org-deadline :which-key "deadline")
      "r" '(org-refile :which-key "refile")
      "a" '(org-archive-subtree :which-key "archive")
-     "P" '(org-priority :which-key "priority")))
+     "P" '(org-priority :which-key "priority")
+     "m" '(:ignore t :which-key "mermaid")
+     "m p" '(mod-mermaid-preview :which-key "preview")
+     "m P" '(mod-mermaid-auto-preview-mode :which-key "auto preview")
+     "m e" '(org-babel-execute-src-block :which-key "execute block")))
 
   (with-eval-after-load 'tcl
     (general-define-key
@@ -416,6 +425,16 @@
      "d q" '(dape-kill :which-key "quit")
      "d R" '(dape-repl :which-key "repl")
      "d I" '(dape-info :which-key "info")))
+
+  (with-eval-after-load 'mermaid-mode
+    (general-define-key
+     :states '(normal visual motion emacs)
+     :keymaps 'mermaid-mode-map
+     :prefix "SPC m"
+     "p" '(mod-mermaid-preview :which-key "preview")
+     "P" '(mod-mermaid-auto-preview-mode :which-key "auto preview")
+     "e" '(mermaid-compile-buffer :which-key "compile")
+     "o" '(mermaid-open-browser :which-key "open in browser")))
 
   (with-eval-after-load 'dape
     (general-define-key

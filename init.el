@@ -15,6 +15,7 @@
 (require 'mod-completion)
 (require 'mod-snippets)
 (require 'mod-org)
+(require 'mod-mermaid)
 (require 'mod-jira)
 (require 'mod-project)
 (require 'mod-search)
