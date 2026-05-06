@@ -43,7 +43,8 @@
    - later calls just switch back to it
 7. Inspect a file from another revision with =SPC g f f= when you want to compare without touching the working tree.
 8. Use the utility bay for transient support:
-   - =SPC o s= shell
+   - =SPC o s= eat shell (opens or reuses the default shell)
+   - =SPC o S= new named eat shell
    - =SPC o m= messages
    - =SPC o c= compilation
 7. For small editing moves:
@@ -129,6 +130,47 @@
 ** HTML export
 
 Exporting an Org file with mermaid src blocks to HTML automatically produces interactive diagrams in the browser via mermaid.js — no static images needed, no extra steps.
+
+* Shell Workflow
+
+Orbit Emacs uses =eat= (Emulate A Terminal) as the in-Emacs terminal.  It is
+pure Emacs Lisp — no native libraries required — and works on macOS, Linux,
+and Windows.
+
+** Basic use
+
+- =SPC o s= opens (or reuses) the default eat shell docked in the utility bay.
+- =SPC o S= opens a new named eat shell.  You are prompted for a name;
+  the buffer is called =*eat:NAME*=.
+
+** Input modes
+
+Eat starts in Emacs mode (normal key behavior).  Two input modes are available:
+
+| Key         | Mode             | Effect                                      |
+|-------------+------------------+---------------------------------------------|
+| =C-c C-j=   | semi-char mode   | most keys go to the terminal                |
+| =C-c C-k=   | emacs mode       | back to normal Emacs / Evil key behavior    |
+
+In Evil normal state you can scroll the terminal output freely.
+Press =C-c C-j= when you need to type into the shell.
+
+** Shell selection
+
+The shell is chosen from (first match wins):
+1. =orbit-user-shell= — set this in your user config
+2. On Windows: =pwsh= (PowerShell 7+) or =powershell= (5.1) on PATH
+3. On Unix/macOS: =$SHELL= environment variable
+
+Set in user config for Windows:
+#+begin_src emacs-lisp
+(setq orbit-user-shell "pwsh")
+#+end_src
+
+** Multiple shells
+
+Open additional shells with =SPC o S= and give each a distinct name.
+The default shell (=*eat*=) is always available via =SPC o s=.
 
 * Suggested Context Pattern
 

@@ -174,6 +174,17 @@ Otherwise fall back to the normal Org heading text."
 (mod-org-refresh-agenda-files)
 (org-clock-load)
 
+;; org-babel: enable code block execution for common languages.
+;; Security: always prompt before evaluating any block.
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (python     . t)
+   (shell      . t)))
+
+(setq org-confirm-babel-evaluate t
+      org-babel-python-command "python3")
+
 (defun mod-org-open-notes ()
   "Open the primary Org notes file."
   (interactive)

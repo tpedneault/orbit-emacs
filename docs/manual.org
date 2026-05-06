@@ -25,6 +25,7 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 - [[file:workflow.org][workflow]]
 - [[file:contexts.org][contexts]]
 - [[file:org.org][org workflow]]
+- [[file:roam.org][org-roam knowledge base]]
 - [[file:jira.org][jira sync]]
 - [[file:python.org][python workflow]]
 - [[file:vim.org][vim quick reference]]
@@ -125,6 +126,8 @@ When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically ke
 
 *TCL* — indent width, fill column, tabs, per-language display overrides, doxygen, linter and formatter paths
 
+*org-roam* — =orbit-user-roam-directory= — roam node directory (defaults to =roam/= inside the org dir)
+
 *Jira* — base URL, project key, username, JQL, org file, PAT source
 
 Useful keys:
@@ -132,6 +135,42 @@ Useful keys:
 - =SPC f c U=: open user dir
 - =SPC f c S=: open user snippets
 - =SPC f c s r=: reload snippets
+
+* Markdown
+
+Orbit Emacs ships =markdown-mode= for editing =.md= and =.markdown= files.
+GitHub-Flavored Markdown (=gfm-mode=) is the default for =.md= files.
+
+** Features
+
+- Syntax highlighting, including fenced code blocks rendered in their native mode.
+- Header scaling — headings appear at proportional visual sizes.
+- URL hiding — link text is shown; the URL is hidden to reduce clutter.
+- =pandoc= is used as the preview / export backend when available on PATH;
+  falls back to =multimarkdown= or =markdown= automatically.
+
+** Local leader (=SPC m= in markdown buffers)
+
+| Key       | Action                | Notes                                  |
+|-----------+-----------------------+----------------------------------------|
+| =SPC m p= | preview in browser    | requires =pandoc= or =multimarkdown=   |
+| =SPC m e= | export to HTML file   | writes a =.html= file next to the source |
+| =SPC m t= | toggle GFM checkbox   | =- [ ]= ↔ =- [x]=                     |
+| =SPC m i= | insert image link     |                                        |
+| =SPC m l= | insert hyperlink      |                                        |
+
+** External tool
+
+Install =pandoc= for the best preview and export experience:
+
+#+begin_src sh
+# macOS
+brew install pandoc
+# Windows
+winget install JohnMacFarlane.Pandoc
+#+end_src
+
+Without pandoc, markdown-mode falls back to =multimarkdown= or =markdown= if either is on PATH.  Preview and export still work but output quality may differ.
 
 * Mermaid Diagrams
 

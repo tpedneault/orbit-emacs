@@ -172,6 +172,50 @@
         (set-buffer-modified-p nil)))
     (pop-to-buffer buffer)))
 
+;; ─── git-timemachine ──────────────────────────────────────────────────────────
+
+(use-package git-timemachine
+  :ensure t
+  :defer t
+  :config
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal git-timemachine-mode-map
+      "p" #'git-timemachine-show-previous-revision
+      "n" #'git-timemachine-show-next-revision
+      "q" #'git-timemachine-quit
+      "b" #'git-timemachine-blame
+      "?" #'git-timemachine-help)))
+
+;; ─── forge (GitLab MR / issue browsing) ───────────────────────────────────────
+
+;; ghub is a required dependency of forge that Elpaca does not resolve
+;; transitively — declare it explicitly so it is built first.
+(use-package ghub
+  :ensure t
+  :defer t)
+
+(use-package forge
+  :ensure t
+  :after magit
+  :config
+  (when orbit-user-forge-gitlab-host
+    (add-to-list 'forge-alist
+                 (list orbit-user-forge-gitlab-host
+                       (concat orbit-user-forge-gitlab-host "/api/v4")
+                       orbit-user-forge-gitlab-host
+                       'forge-gitlab-repository))
+    ;; Show up to 60 open topics; hide closed ones by default.
+    (setq forge-topic-list-limit '(60 . 0))))
+
+;; ─── magit-delta (syntax-highlighted diffs) ───────────────────────────────────
+
+(use-package magit-delta
+  :ensure t
+  :after magit
+  :config
+  (when (executable-find (or orbit-user-delta-program "delta"))
+    (magit-delta-mode 1)))
+
 (provide 'mod-git)
 
 ;;; mod-git.el ends here

@@ -85,6 +85,24 @@ between same-named files in different directories.")
 (defvar orbit-user-jira-token-command nil)
 (defvar orbit-user-jira-pat-env nil)
 
+(defvar orbit-user-roam-directory nil
+  "Directory for org-roam nodes.
+Defaults to roam/ inside the org directory when nil.")
+
+(defvar orbit-user-forge-gitlab-host nil
+  "Hostname of the self-hosted GitLab instance used by forge.
+Example: \"gitlab.example.com\".
+Also requires an entry in ~/.authinfo:
+  machine gitlab.example.com login USERNAME^forge password YOUR_PAT")
+
+(defvar orbit-user-forge-gitlab-username nil
+  "GitLab username for forge display purposes.
+Credentials are read from ~/.authinfo, not from this variable.")
+
+(defvar orbit-user-delta-program nil
+  "Path to the delta diff-highlight tool.
+Leave nil to locate delta on PATH automatically.")
+
 (defvar mod-core-recentf-history nil
   "Minibuffer history for recent file selection.")
 

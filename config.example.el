@@ -85,6 +85,27 @@
 (setq orbit-user-doxygen-program nil)
 (setq orbit-user-doxygen-config-file nil)
 
+;; ─── Git — forge and magit-delta ────────────────────────────────────────────
+
+;; Hostname of the self-hosted GitLab instance for forge MR / issue browsing.
+;; Example: "gitlab.example.com"
+;; Also add an authinfo entry:
+;;   machine gitlab.example.com login USERNAME^forge password YOUR_GITLAB_PAT
+(setq orbit-user-forge-gitlab-host nil)
+
+;; GitLab username (display only; credentials come from ~/.authinfo).
+(setq orbit-user-forge-gitlab-username nil)
+
+;; Path to the delta diff-highlight tool.
+;; Leave nil to locate delta on PATH (installed via `brew install git-delta').
+(setq orbit-user-delta-program nil)
+
+;; ─── org-roam knowledge base ────────────────────────────────────────────────
+
+;; Directory for org-roam nodes.
+;; Leave nil to default to roam/ inside orbit-user-org-directory (or ~/org/).
+(setq orbit-user-roam-directory nil)
+
 ;; ─── Jira integration ───────────────────────────────────────────────────────
 
 ;; Read-only and explicit-write Jira workflows use these settings.

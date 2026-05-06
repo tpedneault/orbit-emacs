@@ -1,0 +1,85 @@
+#+title: org-roam workflow
+
+* org-roam
+
+Orbit Emacs ships org-roam as an optional second-brain layer on top of the
+existing org infrastructure.  It adds backlinks, node discovery, and
+structured daily notes to your Org directory.
+
+There is no graph visualization server.  The backlinks buffer is the primary
+discovery surface.
+
+* Setup
+
+Set the roam directory in your user config:
+
+#+begin_src emacs-lisp
+(setq orbit-user-roam-directory "~/org/roam/")
+#+end_src
+
+Leave it nil to default to =roam/= inside the org directory
+(=orbit-user-org-directory= or =~/org/=).
+
+The SQLite database is maintained automatically via =org-roam-db-autosync-mode=.
+
+* Commands
+
+| Key           | Action                        | Notes                        |
+|---------------+-------------------------------+------------------------------|
+| =SPC n r f=   | find or create a node         | =org-roam-node-find=         |
+| =SPC n r i=   | insert a link to a node       | =org-roam-node-insert=       |
+| =SPC n r b=   | toggle backlinks panel        | =org-roam-buffer-toggle=     |
+| =SPC n r d=   | open today's daily note       | =org-roam-dailies-goto-today= |
+| =SPC n r D=   | pick a date's daily note      | =org-roam-dailies-find-date= |
+| =SPC n r c=   | capture to a node             | =org-roam-capture=           |
+| =SPC n r s=   | force DB resync               | =org-roam-db-sync=           |
+
+* Nodes
+
+A roam node is any Org file or heading with a =:ID:= property.  Nodes link to
+each other with standard Org links.  Backlinks are maintained in the SQLite
+database and shown in the =*org-roam*= side buffer.
+
+Workflow:
+1. Press =SPC n r f= to find or create a node.
+2. Write content and insert links with =SPC n r i=.
+3. Toggle the backlinks buffer with =SPC n r b= to see what links into the current node.
+
+* Daily Notes
+
+Daily notes are stored in =daily/= inside the roam directory.
+
+- =SPC n r d= opens (or creates) today's note.
+- =SPC n r D= opens a calendar picker for any date.
+
+Daily notes are distinct from the =journal.org= capture target; use =SPC n j j=
+for quick journal entries and daily notes for structured day pages with backlinks.
+
+* Capture Templates
+
+The default template creates a plain org file under the roam directory:
+
+#+begin_src org
+  #+title: My Node Title
+
+  Node content here.
+#+end_src
+
+Customize =org-roam-capture-templates= in =mod-roam.el= if you need additional
+templates (literature notes, meeting notes, project notes, etc.).
+
+* DB Sync
+
+=org-roam-db-autosync-mode= keeps the database in sync when files are saved.
+
+If the database becomes inconsistent (missing nodes, stale backlinks), run a
+manual resync:
+- =SPC n r s= — resync the entire roam directory
+
+* Troubleshooting
+
+- Backlinks missing: run =SPC n r s= to force a full DB resync.
+- Node not found: confirm the file lives under =orbit-user-roam-directory= and
+  has an =:ID:= property (added automatically by capture templates).
+- Daily note date wrong: the date follows the system clock at the time you run
+  =SPC n r d=.

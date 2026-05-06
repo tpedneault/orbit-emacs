@@ -225,6 +225,60 @@ In a normal Org buffer:
 2. Press =RET= on a file link.
 3. Return with =SPC h b=.
 
+* org-babel — Code Block Execution
+
+Orbit Emacs enables org-babel for three languages:
+
+| Language    | Block header          |
+|-------------+-----------------------|
+| Emacs Lisp  | =#+begin_src emacs-lisp= |
+| Python      | =#+begin_src python=  |
+| Shell       | =#+begin_src shell=   |
+
+** Running a block
+
+Place point inside (or on the header line of) a src block and press =C-c C-c=.
+A confirmation prompt appears before any block executes — this is intentional
+and cannot be skipped.  Confirm with =y=.
+
+Results appear immediately below the block as a =#+RESULTS:= section.
+
+Example:
+
+#+begin_example
+#+begin_src python
+print("hello from org-babel")
+#+end_src
+
+#+RESULTS:
+: hello from org-babel
+#+end_example
+
+** Shell blocks
+
+Shell blocks use the system shell (=sh= / =bash= / =zsh= depending on PATH):
+
+#+begin_example
+#+begin_src shell
+ls -1 ~/org/
+#+end_src
+#+end_example
+
+** Python
+
+Python blocks use =python3= by default.  To use a project virtualenv, activate
+it in a shell block before running Python blocks, or set:
+
+#+begin_src emacs-lisp
+(setq org-babel-python-command "/path/to/.venv/bin/python")
+#+end_src
+
+** Security
+
+=org-confirm-babel-evaluate= is =t=.  This means every block requires
+explicit confirmation before executing.  Do not lower this setting when opening
+org files from untrusted sources.
+
 * Jira
 
 The Jira integration is read-only in this first pass.
