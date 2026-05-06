@@ -63,7 +63,7 @@ Uses `overlays-in' over the whole current line rather than `overlays-at'
 at point, because when the cursor lands at the start of the fold header
 line the overlay begins later on that same line and `overlays-at' misses it."
   (when (evil-normal-state-p)
-    (when-let ((ov (cl-find-if (lambda (o) (overlay-get o 'invisible))
+    (when-let* ((ov (cl-find-if (lambda (o) (overlay-get o 'invisible))
                                (overlays-in (line-beginning-position)
                                             (1+ (line-end-position))))))
       ;; overlay-end is often the \n of the last hidden line; jumping there
@@ -75,7 +75,7 @@ line the overlay begins later on that same line and `overlays-at' misses it."
 (defun mod-evil--skip-fold-backward (&rest _)
   "After `evil-previous-line', jump before any invisible fold overlay at point."
   (when (evil-normal-state-p)
-    (when-let ((ov (cl-find-if (lambda (o) (overlay-get o 'invisible))
+    (when-let* ((ov (cl-find-if (lambda (o) (overlay-get o 'invisible))
                                (overlays-at (point)))))
       (goto-char (max (point-min) (1- (overlay-start ov)))))))
 

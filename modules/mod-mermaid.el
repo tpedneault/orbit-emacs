@@ -8,7 +8,7 @@
   :ensure t
   :after org
   :config
-  (when-let ((mmdc (executable-find "mmdc")))
+  (when-let* ((mmdc (executable-find "mmdc")))
     (setq ob-mermaid-cli-path mmdc))
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -23,7 +23,7 @@
   :ensure t
   :mode "\\.mmd\\'"
   :config
-  (when-let ((mmdc (executable-find "mmdc")))
+  (when-let* ((mmdc (executable-find "mmdc")))
     (setq mermaid-mmdc-location mmdc))
   (setq mermaid-output-format ".svg"))
 

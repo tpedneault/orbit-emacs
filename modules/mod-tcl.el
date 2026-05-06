@@ -177,7 +177,7 @@ definition cannot be parsed safely."
                           (beg (car bounds))
                           (end (cdr bounds)))
                 (unless (mod-tcl--definition-folded-p beg end)
-                  (when-let ((brace-pos (mod-tcl--definition-brace-position)))
+                  (when-let* ((brace-pos (mod-tcl--definition-brace-position)))
                     (goto-char brace-pos)
                     (hs-hide-block)
                     (cl-incf folds-created)))
