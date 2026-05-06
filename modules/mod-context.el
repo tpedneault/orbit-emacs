@@ -2,6 +2,8 @@
 
 (require 'project)
 
+(declare-function mod-roam-directory "mod-roam")
+
 (use-package perspective
   :ensure t
   :demand t
@@ -33,6 +35,9 @@
 
 (defconst mod-context-loose-edit-context-name "edit/loose"
   "Dedicated edit context name for files outside recognized projects.")
+
+(defconst mod-context-roam-edit-context-name "edit/org-roam"
+  "Dedicated edit context name for Org-roam files.")
 
 (defun mod-context--files-context-name (root)
   "Return the files context name for ROOT."
@@ -73,11 +78,22 @@ buffers and no file-visiting buffers inside ROOT."
   (let ((default-directory (file-name-directory file)))
     (mod-context--project-root)))
 
+(defun mod-context--roam-file-p (file)
+  "Return non-nil when FILE lives under `mod-roam-directory'."
+  (when file
+    (string-prefix-p (file-truename (file-name-as-directory (mod-roam-directory)))
+                     (file-truename file))))
+
 (defun mod-context--edit-context-name-for-file (file)
   "Return the edit context name appropriate for FILE."
-  (if-let* ((root (mod-context--project-root-for-file file)))
-      (mod-context--edit-context-name root)
-    mod-context-loose-edit-context-name))
+  (let ((project-root (mod-context--project-root-for-file file)))
+    (cond
+     ((mod-context--roam-file-p file)
+      mod-context-roam-edit-context-name)
+     (project-root
+      (mod-context--edit-context-name project-root))
+     (t
+      mod-context-loose-edit-context-name))))
 
 (defun mod-context--files-context-name-for-directory (dir)
   "Return the files context name appropriate for DIR."
@@ -98,10 +114,27 @@ buffers and no file-visiting buffers inside ROOT."
              (let ((default-directory expanded))
                (mod-dired-here)))))
       (let* ((root (mod-context--project-root-for-file expanded))
+             (context-name (mod-context--edit-context-name-for-file expanded))
              (default-directory (or root (file-name-directory expanded))))
-        (when root
-          (persp-switch (mod-context--edit-context-name root)))
+        (when context-name
+          (persp-switch context-name))
         (find-file expanded)))))
+
+(defun mod-context--move-current-buffer-to-roam-context ()
+  "Move the current Org-roam buffer into `edit/org-roam'."
+  (when (and buffer-file-name
+             (mod-context--roam-file-p buffer-file-name))
+    (let ((buffer (current-buffer))
+          (point (point))
+          (window-start (window-start)))
+      (mod-context--switch-or-create mod-context-roam-edit-context-name)
+      (switch-to-buffer buffer)
+      (goto-char point)
+      (set-window-start (selected-window) window-start))))
+
+(defun mod-context--org-roam-open-advice (&rest _)
+  "Route the current Org-roam file into `edit/org-roam'."
+  (mod-context--move-current-buffer-to-roam-context))
 
 (defun mod-context--read-known-project-root ()
   "Prompt for one of the known project roots."
@@ -225,6 +258,14 @@ arguments."
     (apply orig-fun args)))
 
 (advice-add 'dired-find-file :around #'mod-context-dired-find-file-advice)
+
+(with-eval-after-load 'org-roam
+  (dolist (fn '(org-roam-node-find
+                org-roam-node-visit
+                org-roam-capture
+                org-roam-dailies-goto-today
+                org-roam-dailies-find-date))
+    (advice-add fn :after #'mod-context--org-roam-open-advice)))
 
 (defun mod-context-notes ()
   "Switch to the notes context."

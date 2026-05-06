@@ -31,9 +31,10 @@
 (defun orbit-startup--append-log (format-string &rest args)
   "Append a formatted line to `orbit-startup-log-file'."
   (make-directory orbit-startup-var-directory t)
-  (with-temp-buffer
-    (insert (apply #'format format-string args) "\n")
-    (append-to-file (point-min) (point-max) orbit-startup-log-file)))
+  (let ((create-lockfiles nil))
+    (with-temp-buffer
+      (insert (apply #'format format-string args) "\n")
+      (write-region (point-min) (point-max) orbit-startup-log-file 'append 'silent))))
 
 (defun orbit-startup--trace-require (orig feature &rest args)
   "Advice ORIG around `require' to log slow FEATURE loads."

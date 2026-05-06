@@ -38,6 +38,7 @@
 5. Use =SPC x f= when you want a dedicated file-management workspace.
    - Dired stays in =files/...=
    - opening a file there moves you into the matching =edit/...= context
+   - Org-roam files are treated specially and open in =edit/org-roam=
 6. Use =SPC x g= or =SPC g g= for Git work.
    - first =SPC x g= initializes the Git context
    - later calls just switch back to it
@@ -68,6 +69,12 @@
 7. Log time either by:
    - clocking with =SPC m c i= / =SPC m c o= and submitting with =SPC n j w=
    - or using =SPC n j W= for a manual worklog entry
+
+* Roam Loop
+
+1. Open notes with =SPC n r f= or create one with =SPC n r c=.
+2. Org-roam files open in =edit/org-roam= even if the roam directory lives inside another project tree.
+3. Use that context as the dedicated space for linked-note editing instead of mixing roam files into =edit/<project>=.
 
 * Tcl Loop
 

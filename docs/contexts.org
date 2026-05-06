@@ -50,6 +50,7 @@ Key: =SPC x f=
 - Opens built-in Dired at the relevant root.
 - Dired stays in the =files/...= context.
 - Opening a project file there hands the file off to =edit/<project>=.
+- Opening an Org-roam file there hands the file off to =edit/org-roam=.
 - Opening a loose file there hands the file off to =edit/loose=.
 - Opening a directory stays inside =files/...=.
 
@@ -57,13 +58,19 @@ Example:
 1. =SPC x f=
 2. move to a file in Dired
 3. open it with =l= or =RET=
-4. the file opens in =edit/<project>= or =edit/loose= while Dired remains in =files/<project-or-dir>=
+4. the file opens in =edit/<project>=, =edit/org-roam=, or =edit/loose= while Dired remains in =files/<project-or-dir>=
 
 ** =edit/loose=
 
 - Non-project files open here instead of polluting =main=.
 - Existing project file behavior stays unchanged and still uses =edit/<project>=.
 - Loose directories still belong in =files/<directory>= rather than =edit/loose=.
+
+** =edit/org-roam=
+
+- Org-roam files open here instead of borrowing whatever project they happen to live under.
+- This keeps knowledge-base editing separate from normal project editing.
+- Common Org-roam entry points like node find, capture, and dailies also route here.
 
 ** =notes=
 
