@@ -465,27 +465,36 @@ Falls back through `mod-theme-mono-font-candidates' when no override is set."
 (defvar mod-theme--current nil
   "The currently active Orbit theme symbol (orbit-dark or orbit-light).")
 
-(defun mod-theme-load (theme)
+(defun mod-theme-load (theme &optional apply-fonts)
   "Load THEME (orbit-dark or orbit-light), disabling any other active theme.
-Applies the font stack and refreshes the modeline for all frames."
+When APPLY-FONTS is non-nil, also apply the font stack immediately.
+During startup this is deferred to `window-setup-hook' to avoid blocking on
+Windows (where `find-font' scans the system font list synchronously)."
   (mapc #'disable-theme custom-enabled-themes)
   (enable-theme theme)
   (setq mod-theme--current theme)
-  (mod-theme-apply-font-stack)
+  (when apply-fonts
+    (mod-theme-apply-font-stack))
   (force-mode-line-update t))
 
 (defun mod-theme-toggle ()
   "Toggle between orbit-dark and orbit-light."
   (interactive)
   (mod-theme-load
-   (if (eq mod-theme--current 'orbit-dark) 'orbit-light 'orbit-dark))
+   (if (eq mod-theme--current 'orbit-dark) 'orbit-light 'orbit-dark)
+   'apply-fonts)
   (message "Theme: %s" mod-theme--current))
 
-;; Re-apply font stack when a new GUI frame is created.
+;;; Re-apply font stack when a new GUI frame is created (e.g. emacsclient --create-frame).
 (add-hook 'after-make-frame-functions #'mod-theme-apply-font-stack)
 
 ;; Apply the initial theme now (both defthemes are already defined above).
+;; Font stack is NOT applied here — deferred below to avoid blocking on Windows.
 (mod-theme-load (or orbit-user-orbit-theme 'orbit-dark))
+
+;; Defer font stack application until after the first frame is fully ready.
+;; This prevents `find-font' from blocking the GUI on Windows during startup.
+(add-hook 'window-setup-hook #'mod-theme-apply-font-stack)
 
 (provide 'mod-theme)
 
