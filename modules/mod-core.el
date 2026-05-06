@@ -120,6 +120,25 @@ Requires a patched Nerd Font installed (e.g. JetBrainsMono Nerd Font Mono).")
        (or (display-graphic-p)
            (daemonp))))
 
+(defun mod-core-import-shell-environment ()
+  "Import PATH-like variables from the user's login shell.
+If shell startup output or shell-specific JSON formatting breaks
+`exec-path-from-shell', keep startup going and show a clear warning instead of
+aborting init."
+  (when (mod-core-gui-shell-environment-p)
+    (setq exec-path-from-shell-arguments '("-l"))
+    (condition-case err
+        (exec-path-from-shell-copy-envs '("PATH" "MANPATH"))
+      (error
+       (display-warning
+        'mod-core
+        (concat
+         "Shell environment import failed; orbit-emacs will continue with the "
+         "current PATH. Check shell startup output or set orbit-user-shell. "
+         "Original error: "
+         (error-message-string err))
+        :warning)))))
+
 (defun mod-core-ensure-user-files ()
   "Ensure the user-local orbit-emacs files exist."
   (make-directory mod-core-user-directory t)
@@ -393,9 +412,7 @@ Requires a patched Nerd Font installed (e.g. JetBrainsMono Nerd Font Mono).")
     (add-hook 'after-init-hook #'elpaca-process-queues)
     (eval `(elpaca ,elpaca-order))
     (elpaca exec-path-from-shell
-      (when (mod-core-gui-shell-environment-p)
-        (setq exec-path-from-shell-arguments '("-l"))
-        (exec-path-from-shell-copy-envs '("PATH" "MANPATH"))))
+      (mod-core-import-shell-environment))
     (elpaca elpaca-use-package
       (elpaca-use-package-mode))
     (setq elpaca-use-package-by-default t)))
