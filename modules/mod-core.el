@@ -360,12 +360,8 @@ aborting init."
 (require 'package)
 
 (setq package-user-dir mod-core-package-directory
-      package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
-                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")
-                         ("melpa" . "https://melpa.org/packages/"))
-      package-archive-priorities '(("melpa" . 30)
-                                   ("nongnu" . 20)
-                                   ("gnu" . 10)))
+      package-archives '(("melpa" . "https://melpa.org/packages/"))
+      package-archive-priorities '(("melpa" . 30)))
 
 (when (boundp 'package-gnupghome-dir)
   (setq package-gnupghome-dir mod-core-package-gnupg-directory))
