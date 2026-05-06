@@ -120,3 +120,12 @@
 (setq orbit-user-jira-token-command nil)
 (setq orbit-user-jira-pat-env nil)
 
+;; ─── Visual design ──────────────────────────────────────────────────────────
+
+;; Initial theme: 'orbit-dark (deep navy, default) or 'orbit-light (warm cream).
+;; Toggle at runtime with SPC t T.
+(setq orbit-user-orbit-theme 'orbit-dark)
+
+;; Set to t if you have a Nerd Font installed (e.g. JetBrainsMono Nerd Font).
+;; Enables filled powerline arrow glyphs (\xe0b0 / \xe0b2) in the modeline.
+(setq orbit-user-nerd-fonts nil)

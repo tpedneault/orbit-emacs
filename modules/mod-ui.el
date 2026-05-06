@@ -7,12 +7,7 @@
 
 (declare-function persp-current-name "perspective")
 (declare-function battery "battery")
-
-(defconst mod-ui-default-font "IBM Plex Mono"
-  "Default fixed-pitch font family for the UI.")
-
-(defconst mod-ui-default-theme 'modus-vivendi
-  "Default built-in theme for the UI.")
+(declare-function mod-theme-apply-font-stack "mod-theme")
 
 (defconst mod-ui-recentf-save-file
   (expand-file-name "recentf" mod-core-var-directory)
@@ -30,36 +25,25 @@
 (defvar-local mod-ui--whitespace-visible nil
   "Buffer-local state used by `mod-ui-toggle-whitespace'.")
 
-(defun mod-ui-font-family ()
-  "Return the preferred UI font family."
-  (or orbit-user-font-family mod-ui-default-font))
-
-(defun mod-ui-font-height ()
-  "Return the preferred UI font height, or nil."
-  orbit-user-font-height)
+;;; ─── Modeline data helpers ────────────────────────────────────────────────────
 
 (defun mod-ui-context-name ()
   "Return the current Perspective context name, or nil."
   (when (bound-and-true-p persp-mode)
     (ignore-errors (persp-current-name))))
 
-(defun mod-ui-context-modeline ()
-  "Return the current context in bracket form for the modeline."
-  (when-let* ((name (mod-ui-context-name)))
-    (format "[%s]" name)))
-
 (defun mod-ui-evil-state-modeline ()
-  "Return a short Evil state indicator for the modeline."
+  "Return a short Evil state indicator string."
   (when (bound-and-true-p evil-local-mode)
     (pcase evil-state
-      ('normal "N")
-      ('insert "I")
-      ('visual "V")
-      ('replace "R")
-      ('motion "M")
+      ('normal   "N")
+      ('insert   "I")
+      ('visual   "V")
+      ('replace  "R")
+      ('motion   "M")
       ('operator "O")
-      ('emacs "E")
-      (_ "-"))))
+      ('emacs    "E")
+      (_         "-"))))
 
 (defun mod-ui-buffer-status-modeline ()
   "Return a compact buffer status indicator."
@@ -75,10 +59,6 @@
       (unless (string-empty-p value)
         value))))
 
-(defun mod-ui-buffer-name-modeline ()
-  "Return the current buffer name for the modeline."
-  (propertize (buffer-name) 'face 'mode-line-buffer-id))
-
 (defun mod-ui-major-mode-modeline ()
   "Return the current major mode name for the modeline."
   (or (mod-ui--segment-string mode-name)
@@ -87,12 +67,12 @@
 (defun mod-ui-vc-branch-modeline ()
   "Return the current Git branch when available."
   (when-let* ((file buffer-file-name)
-              (backend (vc-backend file))
-              ((eq backend 'Git))
-              (raw vc-mode))
-    (let ((branch (string-trim (substring-no-properties raw))))
-      (setq branch (replace-regexp-in-string "\\`Git[:-]?" "" branch))
-      (setq branch (replace-regexp-in-string "\\`[-:[:space:]]+" "" branch))
+              (raw  (and (bound-and-true-p vc-mode)
+                         (stringp vc-mode)
+                         vc-mode)))
+    (let ((branch (string-trim
+                   (replace-regexp-in-string "^ Git[:-]?" ""
+                     (substring-no-properties raw)))))
       (unless (string-empty-p branch)
         branch))))
 
@@ -103,19 +83,6 @@
       (when (and data (not (equal "N/A" (battery-format "%B" data))))
         (string-trim (battery-format "%p%%" data))))))
 
-(defun mod-ui-org-clock-modeline ()
-  "Return the active Org clock string for the modeline, when present."
-  (when (and (fboundp 'org-clocking-p)
-             (org-clocking-p)
-             (boundp 'org-clock-heading)
-             (fboundp 'org-clock-get-clocked-time)
-             (fboundp 'org-duration-from-minutes))
-    (propertize
-     (format "[%s] %s"
-             org-clock-heading
-             (org-duration-from-minutes (org-clock-get-clocked-time)))
-     'face 'org-mode-line-clock)))
-
 (defun mod-ui-window-width ()
   "Return the width of the selected window."
   (window-total-width (selected-window)))
@@ -124,34 +91,159 @@
   "Return non-nil when the selected window is at least WIDTH columns wide."
   (>= (mod-ui-window-width) width))
 
-(defun mod-ui-right-segment ()
-  "Return the compact right side of the modeline."
-  (string-join
-   (delq nil
-         (list (and (mod-ui-wide-enough-p 100) (mod-ui-vc-branch-modeline))
-               (mod-ui-org-clock-modeline)
-               (mod-ui--segment-string "%l:%c")
-               (and (mod-ui-wide-enough-p 85) (mod-ui-battery-modeline))
-               (and (bound-and-true-p display-time-mode) (format-time-string "%H:%M"))))
-   "  "))
+;;; ─── Powerline modeline ───────────────────────────────────────────────────────
 
-(defun mod-ui-left-segment ()
-  "Return the compact left side of the modeline."
-  (string-join
-   (delq nil
-         (list (mod-ui-evil-state-modeline)
-               (mod-ui-context-modeline)
-               (mod-ui-buffer-name-modeline)
-               (mod-ui-buffer-status-modeline)
-               (and (mod-ui-wide-enough-p 70) (mod-ui-major-mode-modeline))))
-   " "))
+(defun mod-ui--powerline-sep-char ()
+  "Return the right-pointing powerline separator character."
+  (if (bound-and-true-p orbit-user-nerd-fonts)
+      "\xe0b0"
+    "▶"))
+
+(defun mod-ui-evil-state-face ()
+  "Return the modeline face name for the current evil state."
+  (pcase (and (bound-and-true-p evil-local-mode) evil-state)
+    ('normal  'orbit-modeline-evil-normal)
+    ('insert  'orbit-modeline-evil-insert)
+    ('visual  'orbit-modeline-evil-visual)
+    ('replace 'orbit-modeline-evil-replace)
+    ('emacs   'orbit-modeline-evil-emacs)
+    ('motion  'orbit-modeline-evil-motion)
+    (_        'orbit-modeline-evil-normal)))
+
+(defun mod-ui--ml-seg (text face)
+  "Return TEXT propertized with FACE for the powerline modeline."
+  (propertize text 'face face))
+
+(defun mod-ui--ml-sep (left-face right-face)
+  "Return a powerline separator arrow from LEFT-FACE to RIGHT-FACE.
+The arrow takes its foreground from LEFT-FACE's background and its
+background from RIGHT-FACE's background, creating a chevron effect."
+  (let ((fg (or (face-background left-face nil t) "unspecified"))
+        (bg (or (face-background right-face nil t) "unspecified")))
+    (propertize (mod-ui--powerline-sep-char)
+                'face (list :foreground fg :background bg))))
+
+(defun mod-ui-powerline-left ()
+  "Return the powerline left segment string for the mode line."
+  (let* ((state-face  (mod-ui-evil-state-face))
+         (body-face   'orbit-modeline-context)
+         (mode-face   'orbit-modeline-mode)
+         ;; Components
+         (state-label (or (mod-ui-evil-state-modeline) "N"))
+         (ctx         (mod-ui-context-name))
+         (bname       (buffer-name))
+         (bstatus     (mod-ui-buffer-status-modeline))
+         (mmode       (when (mod-ui-wide-enough-p 70)
+                        (mod-ui-major-mode-modeline)))
+         ;; Segments
+         (evil-seg    (mod-ui--ml-seg (format " %s " state-label) state-face))
+         (arrow       (mod-ui--ml-sep state-face body-face))
+         (ctx-seg     (when ctx
+                        (mod-ui--ml-seg (format " %s " ctx) body-face)))
+         (buf-text    (if (string-empty-p bstatus)
+                          (format " %s " bname)
+                        (format " %s %s " bname bstatus)))
+         (buf-seg     (mod-ui--ml-seg buf-text 'orbit-modeline-buffer))
+         (mode-seg    (when mmode
+                        (mod-ui--ml-seg (format " %s " mmode) mode-face))))
+    (concat evil-seg arrow
+            (or ctx-seg "")
+            buf-seg
+            (or mode-seg ""))))
+
+(defun mod-ui-powerline-right ()
+  "Return the powerline right segment string for the mode line."
+  (let* ((face    'orbit-modeline-right)
+         (branch  (and (mod-ui-wide-enough-p 100) (mod-ui-vc-branch-modeline)))
+         (clock   (when (and (fboundp 'org-clocking-p) (org-clocking-p)
+                             (boundp 'org-clock-heading)
+                             (fboundp 'org-clock-get-clocked-time)
+                             (fboundp 'org-duration-from-minutes))
+                    (format "[%s] %s"
+                            org-clock-heading
+                            (org-duration-from-minutes
+                             (org-clock-get-clocked-time)))))
+         (pos     (format-mode-line "%l:%c"))
+         (batt    (and (mod-ui-wide-enough-p 85) (mod-ui-battery-modeline)))
+         (time    (and (bound-and-true-p display-time-mode)
+                       (format-time-string "%H:%M")))
+         (parts   (delq nil (list branch clock pos batt time))))
+    (when parts
+      (mod-ui--ml-seg (concat "  " (string-join parts "  ") "  ") face))))
+
+(defun mod-ui-powerline-format ()
+  "Return the complete powerline format string for the current buffer."
+  (condition-case err
+      (let* ((lhs       (mod-ui-powerline-left))
+             (rhs       (or (mod-ui-powerline-right) ""))
+             (rhs-width (string-width rhs))
+             ;; Fill space: same background as the body segments
+             (fill      (propertize " "
+                                    'display `(space :align-to (- right ,rhs-width))
+                                    'face 'orbit-modeline-context)))
+        (concat lhs fill rhs))
+    (error
+     ;; Surface the error in the modeline rather than going fully blank.
+     (propertize (format "  %s  [modeline error: %s] "
+                         (buffer-name)
+                         (error-message-string err))
+                 'face 'error))))
+
+;;; ─── Header line ──────────────────────────────────────────────────────────────
+
+(defun mod-ui-header-path ()
+  "Return the buffer path relative to the project root, or the buffer name."
+  (cond
+   (buffer-file-name
+    (let* ((proj (and (fboundp 'project-current) (project-current)))
+           (root (and proj (fboundp 'project-root) (project-root proj))))
+      (if root
+          (file-relative-name buffer-file-name root)
+        (abbreviate-file-name buffer-file-name))))
+   ((derived-mode-p 'dired-mode)
+    (abbreviate-file-name default-directory))
+   (t (buffer-name))))
+
+(defun mod-ui-header-clock-string ()
+  "Return the active Org clock string for the header line, or nil."
+  (when (and (fboundp 'org-clocking-p)
+             (org-clocking-p)
+             (boundp 'org-clock-heading)
+             (fboundp 'org-clock-get-clocked-time)
+             (fboundp 'org-duration-from-minutes))
+    (format "⏱ %s  %s"
+            org-clock-heading
+            (org-duration-from-minutes (org-clock-get-clocked-time)))))
+
+(defun mod-ui-header-line-format ()
+  "Return the orbit header line format list for the current buffer."
+  (let* ((ctx       (mod-ui-context-name))
+         (path      (mod-ui-header-path))
+         (clock-str (mod-ui-header-clock-string))
+         (lhs       (concat
+                     (propertize (concat "  ◉ " (or ctx "—"))
+                                 'face 'orbit-header-context)
+                     (propertize "  ›  " 'face 'orbit-header-sep)
+                     (propertize path 'face 'orbit-header-path)))
+         (rhs       (when clock-str
+                      (propertize (concat "  " clock-str "  ")
+                                  'face 'orbit-header-clock)))
+         (rhs-width (if rhs (string-width rhs) 0))
+         (fill      (propertize " "
+                                'display `(space :align-to (- right ,rhs-width))
+                                'face 'orbit-header-path)))
+    (list lhs fill (or rhs ""))))
+
+(defun mod-ui--enable-header-line ()
+  "Enable the orbit global header line in the current buffer."
+  (setq-local header-line-format '(:eval (mod-ui-header-line-format))))
+
+;;; ─── Frame defaults ───────────────────────────────────────────────────────────
 
 (defun mod-ui-apply-frame-defaults (&optional frame)
-  "Apply minimal UI defaults to FRAME or the current frame.
-Sets the default (monospace) face from `orbit-user-font-*' variables,
-mirrors it onto fixed-pitch so org tables stay aligned, and optionally
-configures variable-pitch for prose when `orbit-user-variable-pitch-font'
-is set."
+  "Apply minimal UI chrome defaults to FRAME or the current frame.
+Hides menu bar, tool bar, and scroll bars.  Font configuration is
+handled by `mod-theme-apply-font-stack' in mod-theme.el."
   (with-selected-frame (or frame (selected-frame))
     (when (fboundp 'menu-bar-mode)
       (menu-bar-mode -1))
@@ -159,34 +251,18 @@ is set."
       (tool-bar-mode -1))
     (when (fboundp 'scroll-bar-mode)
       (scroll-bar-mode -1))
-    (when (display-graphic-p)
-      (let* ((mono-family (mod-ui-font-family))
-             (mono-height (or (mod-ui-font-height) 'unspecified))
-             (mono-weight orbit-user-font-weight)
-             (default-attrs `(:family ,mono-family
-                              :height ,mono-height
-                              ,@(when mono-weight `(:weight ,mono-weight))))
-             (fixed-attrs  `(:family ,mono-family
-                              :height 1.0
-                              ,@(when mono-weight `(:weight ,mono-weight)))))
-        ;; Primary editing font
-        (apply #'set-face-attribute 'default frame default-attrs)
-        ;; fixed-pitch mirrors the monospace font so org tables / code blocks stay aligned
-        (apply #'set-face-attribute 'fixed-pitch frame fixed-attrs)
-        ;; variable-pitch for org prose when mixed-pitch-mode is in use
-        (when orbit-user-variable-pitch-font
-          (apply #'set-face-attribute 'variable-pitch frame
-                 `(:family ,orbit-user-variable-pitch-font
-                   :height ,(or orbit-user-variable-pitch-height 1.0)
-                   ,@(when orbit-user-variable-pitch-weight
-                       `(:weight ,orbit-user-variable-pitch-weight)))))))))
+    ;; Delegate font configuration to mod-theme.
+    (when (fboundp 'mod-theme-apply-font-stack)
+      (mod-theme-apply-font-stack frame))))
 
 (defun mod-ui--frame-default-height (&optional frame)
   "Return the current default face height for FRAME."
   (let ((height (face-attribute 'default :height (or frame (selected-frame)) 'default)))
     (if (integerp height)
         height
-      (or (mod-ui-font-height) 140))))
+      (or orbit-user-font-height 140))))
+
+;;; ─── Interactive toggle commands ──────────────────────────────────────────────
 
 (defun mod-ui-toggle-fullscreen ()
   "Toggle the selected frame between fullscreen and normal."
@@ -325,6 +401,8 @@ is set."
     (visual-line-mode 1)
     (message "Line wrapping enabled")))
 
+;;; ─── Initialization ───────────────────────────────────────────────────────────
+
 ;; Keep new GUI frames aligned with the text-first startup defaults.
 (add-to-list 'default-frame-alist '(menu-bar-lines . 0))
 (add-to-list 'default-frame-alist '(tool-bar-lines . 0))
@@ -333,22 +411,18 @@ is set."
 (add-hook 'after-make-frame-functions #'mod-ui-apply-frame-defaults)
 (mod-ui-apply-frame-defaults)
 
-(unless (custom-theme-enabled-p mod-ui-default-theme)
-  (load-theme mod-ui-default-theme t))
+;; ── Powerline modeline ────────────────────────────────────────────────────────
+(setq-default mode-line-format '("%e" (:eval (mod-ui-powerline-format))))
 
-(setq-default mode-line-format
-              '("%e"
-                mode-line-front-space
-                (:eval
-                 (let ((lhs (mod-ui-left-segment))
-                       (rhs (mod-ui-right-segment)))
-                   (concat
-                    lhs
-                    " "
-                    (propertize " " 'display `(space :align-to (- right ,(string-width rhs))))
-                    rhs)))
-                mode-line-end-spaces))
+;; ── Global header line ────────────────────────────────────────────────────────
+(add-hook 'find-file-hook  #'mod-ui--enable-header-line)
+(add-hook 'dired-mode-hook #'mod-ui--enable-header-line)
+(with-eval-after-load 'magit
+  (add-hook 'magit-mode-hook #'mod-ui--enable-header-line))
+(with-eval-after-load 'org-agenda
+  (add-hook 'org-agenda-mode-hook #'mod-ui--enable-header-line))
 
+;; ── Miscellaneous defaults ────────────────────────────────────────────────────
 (setq-default display-line-numbers-type 'relative
               indicate-empty-lines t
               cursor-in-non-selected-windows nil
@@ -386,7 +460,7 @@ is set."
   (add-hook hook (lambda () (display-line-numbers-mode -1))))
 
 (add-hook 'prog-mode-hook #'mod-ui-enable-prog-layout)
-(add-hook 'org-mode-hook #'mod-ui-enable-org-layout)
+(add-hook 'org-mode-hook  #'mod-ui-enable-org-layout)
 
 (provide 'mod-ui)
 

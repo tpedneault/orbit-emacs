@@ -1,0 +1,182 @@
+#+title: visual identity
+
+* Overview
+
+Orbit Emacs ships two bespoke themes — =orbit-dark= and =orbit-light= — plus a
+powerline modeline, a global header line, and a rich home-screen dashboard.
+Every visual element is pure styling; no core feature is altered.
+
+* Themes
+
+| Theme          | Character                        |
+|----------------+----------------------------------|
+| =orbit-dark=   | Deep navy with warm amber accent |
+| =orbit-light=  | Warm cream / paper               |
+
+Toggle at runtime: =SPC t T=
+
+Set the default in your config:
+
+#+begin_src emacs-lisp
+;; 'orbit-dark (default) or 'orbit-light
+(setq orbit-user-orbit-theme 'orbit-dark)
+#+end_src
+
+** Palettes
+
+*** orbit-dark
+
+| Name         | Hex       | Role                             |
+|--------------+-----------+----------------------------------|
+| bg-main      | =#1a1b26= | editor background (deep navy)    |
+| bg-dim       | =#24283b= | modeline / sidebars              |
+| bg-hl        | =#292e42= | hl-line / selection              |
+| fg-main      | =#c0caf5= | primary text                     |
+| fg-dim       | =#787c99= | comments, secondary text         |
+| amber        | =#e0af68= | SIGNATURE accent, normal state   |
+| blue         | =#7aa2f7= | functions, links                 |
+| purple       | =#bb9af7= | keywords, emacs state            |
+| green        | =#9ece6a= | strings                          |
+| red          | =#f7768e= | errors, visual state             |
+| orange       | =#ff9e64= | warnings, replace state          |
+| cyan         | =#7dcfff= | types, insert state              |
+
+*** orbit-light
+
+| Name         | Hex       | Role                             |
+|--------------+-----------+----------------------------------|
+| bg-main      | =#fdf6e3= | warm cream background            |
+| bg-dim       | =#f5ede1= | modeline / sidebars              |
+| fg-main      | =#362015= | warm dark brown primary text     |
+| amber        | =#c68000= | darker gold (contrast on light)  |
+| blue         | =#2b6cb0= | functions, links                 |
+| purple       | =#7c3aed= | keywords                         |
+| green        | =#276749= | strings                          |
+| red          | =#c0392b= | errors                           |
+| cyan         | =#1a7490= | types, insert state              |
+
+* Font Stack
+
+=mod-theme= auto-detects and applies a curated font stack on startup and for
+every new frame.  Override with the standard =orbit-user-font-*= variables.
+
+Monospace candidates (first installed wins):
+
+1. JetBrains Mono
+2. JetBrainsMonoNL Nerd Font Mono
+3. JetBrainsMono Nerd Font Mono
+4. Iosevka
+5. Cascadia Code
+6. IBM Plex Mono
+7. Source Code Pro
+8. Consolas
+9. Menlo
+
+Variable-pitch candidates (used by =variable-pitch-mode= / Org prose):
+
+1. Inter
+2. SF Pro Text
+3. Segoe UI
+4. Source Sans Pro
+5. DejaVu Sans
+
+* Powerline Modeline
+
+The modeline uses colored segments separated by chevron arrows (=▶=).
+
+#+begin_example
+ N ▶ edit/myproject  my-file.el *  Emacs-Lisp          Git:main  42:8  14:05
+ ─────┘ └──────────────────────────────────────────┘   └──────────────────────┘
+ evil    left segments (amber bg → bg-dim)              right segments (bg-dim)
+#+end_example
+
+** Evil state colors
+
+| State   | Background | Indicator |
+|---------+------------+-----------|
+| Normal  | amber      | N         |
+| Insert  | cyan       | I         |
+| Visual  | red        | V         |
+| Replace | orange     | R         |
+| Emacs   | purple     | E         |
+| Motion  | blue       | M         |
+
+** Nerd Fonts separators
+
+With a Nerd Font installed, enable filled arrow glyphs:
+
+#+begin_src emacs-lisp
+(setq orbit-user-nerd-fonts t)
+#+end_src
+
+This uses =\xe0b0= / =\xe0b2= instead of =▶= / =◀=.
+
+* Header Line
+
+A global header line is active in file, Dired, Magit, and org-agenda buffers.
+
+#+begin_example
+  ◉ edit/myproject  ›  src/components/App.tsx              ⏱ ABC-123  1:23
+#+end_example
+
+- Left: =◉= + context name (amber) + =›= separator + relative file path
+- Right: active Org clock heading and elapsed time (only when clocking)
+
+The header line is suppressed in the home buffer, terminal buffers, and the
+minibuffer.
+
+* Home Dashboard
+
+Open with =SPC h h= or =r= to refresh inside the buffer.
+
+#+begin_example
+   ██████  ██████  ██████  ██ ████████
+  ██    ██ ██   ██ ██   ██ ██    ██
+  ██    ██ ██████  ██████  ██    ██
+  ██    ██ ██   ██ ██   ██ ██    ██
+   ██████  ██   ██ ██████  ██    ██
+
+  orbit-emacs  ·  Modal, context-based Emacs for focused work.
+
+  ⏱  ABC-123  Planning sprint review  0:45
+
+  ◈ Recent Projects
+    [1]  myproject           ~/code/myproject
+    [2]  dotfiles            ~/.config
+
+  ◈ Tasks
+    ●  IN-PROGRESS    Fix login page
+    ▷  NEXT           Review PR #42
+    ⋯  WAIT           Deploy staging
+
+  ◈ Quick Start
+    SPC x e  edit context     SPC n a  agenda
+    SPC SPC  switch buffer    SPC n t  inbox task
+    ...
+#+end_example
+
+** Home buffer keys
+
+| Key     | Action                                  |
+|---------+-----------------------------------------|
+| =1= – =9= | Open the corresponding recent project |
+| =r=     | Refresh the dashboard                   |
+| =g=     | Magit status for the project at point   |
+| =q=     | Close the home buffer                   |
+
+* User Config Reference
+
+Add to =~/.orbit-emacs.d/config.el= to customise:
+
+#+begin_src emacs-lisp
+;; Starting theme ('orbit-dark default)
+(setq orbit-user-orbit-theme 'orbit-dark)
+
+;; Nerd Fonts powerline separators
+(setq orbit-user-nerd-fonts nil)
+
+;; Font overrides (auto-detected if nil)
+(setq orbit-user-font-family "JetBrains Mono")
+(setq orbit-user-font-height 140)
+(setq orbit-user-variable-pitch-font "Inter")
+#+end_src

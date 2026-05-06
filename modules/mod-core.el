@@ -103,6 +103,14 @@ Credentials are read from ~/.authinfo, not from this variable.")
   "Path to the delta diff-highlight tool.
 Leave nil to locate delta on PATH automatically.")
 
+(defvar orbit-user-orbit-theme 'orbit-dark
+  "Initial orbit theme.  One of \\='orbit-dark or \\='orbit-light.
+Toggle at runtime with SPC t T.")
+
+(defvar orbit-user-nerd-fonts nil
+  "When non-nil, use Nerd Fonts powerline glyph separators (\\xe0b0 / \\xe0b2).
+Requires a patched Nerd Font installed (e.g. JetBrainsMono Nerd Font Mono).")
+
 (defvar mod-core-recentf-history nil
   "Minibuffer history for recent file selection.")
 

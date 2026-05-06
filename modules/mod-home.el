@@ -1,80 +1,132 @@
-;;; mod-home.el --- Minimal orbit home screen -*- lexical-binding: t; -*-
+;;; mod-home.el --- Orbit home screen via emacs-dashboard -*- lexical-binding: t; -*-
+
+;;; Commentary:
+;; Configures the `dashboard' package as the orbit-emacs home screen.
+;; Projects open in the orbit edit context instead of the default switch fn.
+
+;;; Code:
 
 (require 'cl-lib)
 
-(defconst mod-home-buffer-name "*orbit-home*"
-  "Name of the Orbit home buffer.")
+(declare-function dashboard-open              "dashboard")
+(declare-function dashboard-refresh-buffer    "dashboard")
+(declare-function dashboard-setup-startup-hook "dashboard")
+(declare-function mod-context-open-project-editor "mod-context")
 
-(defconst mod-home-buffer-lines
-  '("   ____  ____  ____  _ _____"
-    "  / __ \\/ __ \\/ __ )(_) ___/"
-    " / / / / /_/ / __  / /\\__ \\ "
-    "/ /_/ / _, _/ /_/ / /___/ / "
-    "\\____/_/ |_/_____/_//____/  "
-    ""
-    "orbit-emacs"
-    "Modal, context-based Emacs for focused work."
-    ""
-    "Start"
-    "  SPC x e  edit context"
-    "  SPC x a  agenda context"
-    "  SPC x o  notes context"
-    "  SPC x s  scratch context"
-    "  SPC q l  load session"
-    ""
-    "Common"
-    "  SPC SPC  switch buffer"
-    "  SPC .    project file"
-    "  SPC /    project search"
-    "  SPC o s  shell"
-    "  SPC n t  capture inbox task"
-    "  SPC n a  agenda dashboard"
-    ""
-    "Contexts"
-    "  One task, one workspace."
-    "  Keep agenda stable, open items in notes."
-    "  Use utility bay for transient support buffers.")
-  "Lines displayed in the Orbit home buffer.")
-
-(defun mod-home--user-buffer-p (buffer)
-  "Return non-nil when BUFFER counts as a real user buffer."
-  (let ((name (buffer-name buffer)))
-    (or (buffer-file-name buffer)
-        (and (not (string-prefix-p " " name))
-             (not (string-prefix-p "*" name))))))
-
-(defun mod-home--empty-startup-p ()
-  "Return non-nil when Emacs started into an otherwise empty state."
-  (and (not noninteractive)
-       (= (length (window-list nil 'no-minibuffer)) 1)
-       (let ((current (window-buffer (selected-window))))
-         (member (buffer-name current) '("*scratch*" "*Messages*")))
-       (not (cl-some #'mod-home--user-buffer-p (buffer-list)))))
-
-(define-derived-mode mod-home-mode special-mode "Orbit-Home"
-  "Major mode for the Orbit home buffer."
-  (setq-local cursor-type nil
-              mode-line-format nil
-              truncate-lines t))
+;;; ─── Entry point ──────────────────────────────────────────────────────────────
 
 (defun mod-home-open ()
-  "Open the Orbit home buffer."
+  "Open the Orbit home dashboard."
   (interactive)
-  (let ((buffer (get-buffer-create mod-home-buffer-name)))
-    (with-current-buffer buffer
-      (let ((inhibit-read-only t))
-        (erase-buffer)
-        (insert (mapconcat #'identity mod-home-buffer-lines "\n"))
-        (goto-char (point-min))
-        (mod-home-mode)))
-    (switch-to-buffer buffer)))
+  (cond
+   ((fboundp 'dashboard-open)           (dashboard-open))
+   ((fboundp 'dashboard-refresh-buffer) (dashboard-refresh-buffer))
+   (t (message "orbit-home: dashboard package is not loaded"))))
 
-(defun mod-home-show-on-empty-startup ()
-  "Show the Orbit home buffer when startup is otherwise empty."
-  (when (mod-home--empty-startup-p)
-    (mod-home-open)))
+;;; ─── Project context integration ─────────────────────────────────────────────
 
-(add-hook 'emacs-startup-hook #'mod-home-show-on-empty-startup)
+(defun mod-home--open-project-in-context (root)
+  "Open project ROOT in the orbit edit context rather than the default handler."
+  (require 'mod-context)
+  (mod-context-open-project-editor
+   (list :root root
+         :name (file-name-nondirectory (directory-file-name root)))))
+
+;;; ─── Dashboard configuration ──────────────────────────────────────────────────
+
+(use-package dashboard
+  :ensure t
+  :demand t
+
+  :init
+  ;; ── Banner ────────────────────────────────────────────────────────────────────
+  (setq dashboard-startup-banner
+        (let ((f (expand-file-name "assets/orbit-banner.txt" user-emacs-directory)))
+          (if (file-exists-p f) f 'ascii))
+
+        dashboard-banner-logo-title
+        "orbit-emacs  ·  Modal, context-based Emacs for focused work."
+
+        ;; ── Layout ───────────────────────────────────────────────────────────────
+        ;; Extra blank lines in the startup list give each section room to breathe.
+        dashboard-startupify-list
+        '(dashboard-insert-banner
+          dashboard-insert-newline
+          dashboard-insert-banner-title
+          dashboard-insert-newline
+          dashboard-insert-init-info
+          dashboard-insert-newline
+          dashboard-insert-newline
+          dashboard-insert-items
+          dashboard-insert-newline
+          dashboard-insert-footer)
+
+        ;; One blank line between sections inside the items block.
+        dashboard-page-separator "\n\n"
+
+        dashboard-center-content              t
+        dashboard-vertically-center-content   nil
+
+        ;; ── Section names ─────────────────────────────────────────────────────────
+        ;; Clean headings: no trailing colons, orbit ◈ prefix.
+        dashboard-item-names
+        '(("Recent Files:"     . "◈  Recent Files")
+          ("Projects:"         . "◈  Projects")
+          ("Agenda for today:" . "◈  Today")
+          ("Bookmarks:"        . "◈  Bookmarks"))
+
+        ;; ── Sections and their sizes ───────────────────────────────────────────────
+        dashboard-projects-backend 'project-el
+        dashboard-items            '((projects . 7)
+                                     (agenda   . 5)
+                                     (recents  . 5))
+
+        ;; Show "project-name  ~/path/to/project" with alignment.
+        dashboard-projects-show-base 'align
+
+        ;; ── Orbit context integration ──────────────────────────────────────────────
+        ;; Open projects in an orbit edit/‹name› context instead of project.el default.
+        dashboard-projects-switch-function #'mod-home--open-project-in-context
+
+        ;; ── Agenda ───────────────────────────────────────────────────────────────────
+        dashboard-week-agenda               nil
+        dashboard-agenda-time-string-format "%m/%d"
+        dashboard-agenda-prefix-format      " %i %-10:c %t "
+
+        ;; ── Misc ──────────────────────────────────────────────────────────────────────
+        ;; No icon packages required.
+        dashboard-display-icons-p     nil
+        dashboard-set-heading-icons   nil
+        dashboard-set-file-icons      nil
+        dashboard-set-navigator       nil
+        dashboard-set-init-info       t
+
+        dashboard-footer-messages
+        '("SPC h h  →  return here  ·  SPC t T  →  toggle theme  ·  SPC x e  →  edit context"))
+
+  :config
+  ;; ── Face aliases ──────────────────────────────────────────────────────────────
+  ;; Map dashboard faces to orbit equivalents so the theme controls all colour.
+  (with-eval-after-load 'mod-theme
+    (custom-set-faces
+     '(dashboard-banner-logo-title ((t (:inherit orbit-home-tagline :weight bold))))
+     '(dashboard-heading            ((t (:inherit orbit-home-section))))
+     '(dashboard-items-face         ((t (:inherit orbit-home-project))))
+     '(dashboard-no-items-face      ((t (:inherit orbit-home-todo))))
+     '(dashboard-footer-face        ((t (:inherit orbit-home-todo))))
+     '(dashboard-text-banner        ((t (:inherit orbit-home-logo))))))
+
+  ;; ── Buffer chrome ─────────────────────────────────────────────────────────────
+  ;; No modeline or header line inside the dashboard; let it fill the window.
+  (add-hook 'dashboard-mode-hook
+            (lambda ()
+              (setq-local mode-line-format   nil
+                          header-line-format nil
+                          cursor-type        nil)))
+
+  ;; ── Startup ───────────────────────────────────────────────────────────────────
+  ;; Sets initial-buffer-choice; ignored by Emacs when files are on the command line.
+  (dashboard-setup-startup-hook))
 
 (provide 'mod-home)
 
