@@ -63,6 +63,13 @@ buffers and no file-visiting buffers inside ROOT."
                      (mod-context--project-file-buffer-p buffer root))
                    buffers))))
 
+(defun mod-context--first-project-buffer (name root)
+  "Return the first live project buffer in context NAME under ROOT."
+  (seq-find (lambda (buffer)
+              (and (buffer-live-p buffer)
+                   (mod-context--project-file-buffer-p buffer root)))
+            (persp-get-buffers name)))
+
 (defun mod-context--open-project-file-in-edit-context (root)
   "Prompt for and open a project file for ROOT in the current edit context."
   (let ((default-directory root))
@@ -216,12 +223,21 @@ select one using the existing project helper."
   (let* ((project (or project (mod-context--select-project)))
          (root (plist-get project :root))
          (name (format "edit/%s" (plist-get project :name)))
+         (source-buffer (current-buffer))
+         (target-buffer (mod-context--first-project-buffer name root))
          (should-prompt (or (not (mod-context--exists-p name))
                             (mod-context--edit-context-empty-p name root))))
     (let ((default-directory root))
       (mod-context--switch-or-create name)
-      (when should-prompt
-        (mod-context--open-project-file-in-edit-context root)))))
+      (if should-prompt
+          (mod-context--open-project-file-in-edit-context root)
+        (when (buffer-live-p target-buffer)
+          (switch-to-buffer target-buffer)))
+      (when (and (buffer-live-p source-buffer)
+                 (buffer-local-value 'buffer-file-name source-buffer)
+                 (not (mod-context--project-file-buffer-p source-buffer root))
+                 (memq source-buffer (persp-get-buffers name)))
+        (persp-forget-buffer source-buffer)))))
 
 (defun mod-context-editor ()
   "Switch to an editing context for a project."
