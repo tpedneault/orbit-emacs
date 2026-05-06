@@ -437,9 +437,14 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
 (setq recentf-save-file        mod-ui-recentf-save-file
       save-place-file         mod-core-save-place-file
       recentf-max-saved-items 200
-      ;; Never auto-clean on mode entry — prevents startup freeze on Windows
-      ;; when recentf tries to stat unreachable network shares / UNC paths.
-      recentf-auto-cleanup    'never
+      ;; Defer recentf cleanup to an idle timer rather than blocking at startup.
+      ;; The default 'mode triggers synchronous file-stat on every recentf path
+      ;; the moment recentf-mode is enabled — this freezes on Windows when any
+      ;; path points to an unreachable network share / UNC mount.
+      recentf-auto-cleanup    60
+      ;; Prevent save-place from checking whether each saved file is still
+      ;; readable at startup — same network-path freeze vector as recentf.
+      save-place-forget-unreadable-files nil
       auto-revert-verbose     nil)
 
 (when (bound-and-true-p global-visual-line-mode)
