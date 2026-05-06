@@ -139,6 +139,25 @@ aborting init."
          (error-message-string err))
         :warning)))))
 
+(defun mod-core--elpaca-melpa-metadata-safe (fetcher)
+  "Call Elpaca MELPA metadata FETCHER safely.
+On restricted or proxied networks, the MELPA archive.json response may be
+truncated or replaced, which causes JSON parsing to abort startup during the
+first package index build.  In that case, continue with package recipes and no
+metadata instead of failing init."
+  (condition-case err
+      (funcall fetcher)
+    (error
+     (display-warning
+      'mod-core
+      (concat
+       "Elpaca could not parse MELPA metadata; continuing without MELPA "
+       "descriptions/date metadata. This is often caused by a proxy, captive "
+       "portal, or truncated archive.json response. Original error: "
+       (error-message-string err))
+      :warning)
+     nil)))
+
 (defun mod-core-ensure-user-files ()
   "Ensure the user-local orbit-emacs files exist."
   (make-directory mod-core-user-directory t)
@@ -409,6 +428,8 @@ aborting init."
               (load (expand-file-name "elpaca-autoloads" repo) nil 'nomessage))
             t)))
   (when bootstrap-ok
+    (when (require 'elpaca-menu-melpa nil t)
+      (advice-add 'elpaca-menu-melpa--metadata :around #'mod-core--elpaca-melpa-metadata-safe))
     (add-hook 'after-init-hook #'elpaca-process-queues)
     (eval `(elpaca ,elpaca-order))
     (elpaca exec-path-from-shell
