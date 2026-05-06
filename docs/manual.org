@@ -197,16 +197,17 @@ graph TD
 #+end_example
 
 - =SPC m m e= — execute the block and embed the rendered SVG inline
-- =SPC m m p= — render the block at point and open a live side-window preview
+- =SPC m m p= — render the block at point and open a live side-window PNG preview
 - =SPC m m P= — toggle auto-preview mode (re-renders ~1 s after each edit pause)
 
-SVG is recommended over PNG — it scales cleanly at any zoom level.
+The live preview uses PNG output for compatibility, while Org block execution can
+still write SVG files to disk when you use a =:file diagram.svg= header.
 
 ** .mmd workflow
 
 Create or open a =diagram.mmd= file to get =mermaid-mode= with syntax highlighting.
 
-- =SPC m p= — render and open side-window preview
+- =SPC m p= — render and open side-window PNG preview
 - =SPC m P= — toggle auto-preview mode
 - =SPC m e= — compile to a file on disk
 - =SPC m o= — open in the browser via mermaid.live

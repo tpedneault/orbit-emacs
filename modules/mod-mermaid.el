@@ -64,11 +64,11 @@ Otherwise: nil."
    (t nil)))
 
 (defun mod-mermaid--render (source callback)
-  "Render mermaid SOURCE to SVG asynchronously and call CALLBACK with the output path.
-CALLBACK receives the path of the generated SVG file.
+  "Render mermaid SOURCE to PNG asynchronously and call CALLBACK with the output path.
+CALLBACK receives the path of the generated PNG file.
 The theme is taken from `mod-mermaid-theme'."
   (let* ((input-file  (make-temp-file "mermaid-in-"  nil ".mmd"))
-         (output-file (make-temp-file "mermaid-out-" nil ".svg"))
+         (output-file (make-temp-file "mermaid-out-" nil ".png"))
          (config-file (make-temp-file "mermaid-cfg-" nil ".json"))
          (mmdc (executable-find "mmdc")))
     (unless mmdc
@@ -88,9 +88,9 @@ The theme is taken from `mod-mermaid-theme'."
                    (ignore-errors (delete-file input-file))
                    (ignore-errors (delete-file config-file)))))))
 
-(defun mod-mermaid--display-svg (svg-path)
-  "Display the SVG at SVG-PATH scaled to fill the preview side window width."
-  (when (file-readable-p svg-path)
+(defun mod-mermaid--display-preview-image (image-path)
+  "Display the preview image at IMAGE-PATH scaled to the side window width."
+  (when (file-readable-p image-path)
     (let* ((buffer (get-buffer-create mod-mermaid--preview-buffer-name))
            ;; Ensure the window exists before reading its width so that
            ;; the image is sized to fit from the very first render.
@@ -107,7 +107,7 @@ The theme is taken from `mod-mermaid-theme'."
       (with-current-buffer buffer
         (let ((inhibit-read-only t))
           (erase-buffer)
-          (insert-image (create-image svg-path 'svg nil
+          (insert-image (create-image image-path nil nil
                                       :width (or fit-width 600)))
           (goto-char (point-min))
           (setq buffer-read-only t))))))
@@ -117,7 +117,7 @@ The theme is taken from `mod-mermaid-theme'."
   (interactive)
   (let ((source (mod-mermaid--source-at-point)))
     (if source
-        (mod-mermaid--render source #'mod-mermaid--display-svg)
+        (mod-mermaid--render source #'mod-mermaid--display-preview-image)
       (user-error "No mermaid source at point (place cursor inside a mermaid src block, or use a .mmd buffer)"))))
 
 (defun mod-mermaid--auto-preview-tick ()
@@ -126,7 +126,7 @@ The theme is taken from `mod-mermaid-theme'."
     (let ((source (mod-mermaid--source-at-point)))
       (when (and source (not (equal source mod-mermaid--last-source)))
         (setq mod-mermaid--last-source source)
-        (mod-mermaid--render source #'mod-mermaid--display-svg)))))
+        (mod-mermaid--render source #'mod-mermaid--display-preview-image)))))
 
 (define-minor-mode mod-mermaid-auto-preview-mode
   "Auto-preview mermaid diagrams in a side window while editing.
