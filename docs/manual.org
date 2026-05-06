@@ -200,7 +200,7 @@ graph TD
 - =SPC m m p= — render the block at point and open a live side-window PNG preview
 - =SPC m m P= — toggle auto-preview mode (re-renders ~1 s after each edit pause)
 
-The live preview uses PNG output for compatibility, while Org block execution can
+The live preview uses higher-resolution PNG output for compatibility, while Org block execution can
 still write SVG files to disk when you use a =:file diagram.svg= header.
 
 ** .mmd workflow
@@ -218,7 +218,7 @@ When an Org file containing mermaid src blocks is exported to HTML, the blocks a
 
 ** Theme
 
-The default render theme is =redux-color=.  Change it at any time:
+The default render theme is =neutral=.  Change it at any time:
 
 #+begin_src emacs-lisp
 (setq mod-mermaid-theme "dark")

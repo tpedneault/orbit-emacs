@@ -43,10 +43,12 @@
 (defconst mod-mermaid--idle-delay 0.7
   "Seconds of idle time before `mod-mermaid-auto-preview-mode' re-renders.")
 
-(defvar mod-mermaid-theme "redux-color"
+(defvar mod-mermaid-theme "neutral"
   "Mermaid theme used for diagram rendering and HTML export.
-Valid built-in names include: default, forest, dark, neutral, base,
-redux, redux-color, redux-dark, redux-dark-color.")
+Valid built-in names include: default, forest, dark, neutral, and base.")
+
+(defvar mod-mermaid-preview-scale 2
+  "Scale factor used for PNG preview rendering.")
 
 (defun mod-mermaid--source-at-point ()
   "Return the mermaid source for the current context, or nil.
@@ -69,24 +71,25 @@ CALLBACK receives the path of the generated PNG file.
 The theme is taken from `mod-mermaid-theme'."
   (let* ((input-file  (make-temp-file "mermaid-in-"  nil ".mmd"))
          (output-file (make-temp-file "mermaid-out-" nil ".png"))
-         (config-file (make-temp-file "mermaid-cfg-" nil ".json"))
          (mmdc (executable-find "mmdc")))
     (unless mmdc
       (user-error "mmdc not found — install with: npm install -g @mermaid-js/mermaid-cli"))
     (write-region source nil input-file nil 'quiet)
-    (write-region (format "{\"theme\":%S}" mod-mermaid-theme)
-                  nil config-file nil 'quiet)
     (make-process
      :name "mod-mermaid-render"
      :buffer nil
-     :command (list mmdc "-i" input-file "-o" output-file "-c" config-file)
+     :command (list mmdc
+                    "-i" input-file
+                    "-o" output-file
+                    "-t" mod-mermaid-theme
+                    "-s" (number-to-string mod-mermaid-preview-scale)
+                    "-b" "transparent")
      :sentinel (lambda (_proc event)
                  (unwind-protect
                      (if (string= (string-trim event) "finished")
                          (funcall callback output-file)
                        (message "mermaid: render failed — %s" (string-trim event)))
-                   (ignore-errors (delete-file input-file))
-                   (ignore-errors (delete-file config-file)))))))
+                   (ignore-errors (delete-file input-file)))))))
 
 (defun mod-mermaid--display-preview-image (image-path)
   "Display the preview image at IMAGE-PATH scaled to the side window width."
