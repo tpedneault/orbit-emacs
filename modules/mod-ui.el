@@ -5,7 +5,10 @@
 (require 'uniquify)
 (require 'whitespace)
 
-(declare-function persp-current-name "perspective")
+(declare-function orbit-context-current-kind "orbit-context" (&optional name))
+(declare-function orbit-context-current-name "orbit-context")
+(declare-function orbit-context-header-label "orbit-context" (&optional name))
+(declare-function orbit-context-modeline-label "orbit-context" (&optional name))
 (declare-function battery "battery")
 (declare-function mod-theme-apply-font-stack "mod-theme")
 
@@ -28,9 +31,48 @@
 ;;; ─── Modeline data helpers ────────────────────────────────────────────────────
 
 (defun mod-ui-context-name ()
-  "Return the current Perspective context name, or nil."
-  (when (bound-and-true-p persp-mode)
-    (ignore-errors (persp-current-name))))
+  "Return the current orbit context name, or nil."
+  (when (fboundp 'orbit-context-current-name)
+    (ignore-errors (orbit-context-current-name))))
+
+(defun mod-ui-context-kind ()
+  "Return the current orbit context kind, or nil."
+  (when (fboundp 'orbit-context-current-kind)
+    (ignore-errors (orbit-context-current-kind))))
+
+(defun mod-ui-context-modeline-label ()
+  "Return the current orbit context label for the modeline."
+  (or (when (fboundp 'orbit-context-modeline-label)
+        (ignore-errors (orbit-context-modeline-label)))
+      (mod-ui-context-name)))
+
+(defun mod-ui-context-header-label ()
+  "Return the current orbit context label for the header line."
+  (or (when (fboundp 'orbit-context-header-label)
+        (ignore-errors (orbit-context-header-label)))
+      (mod-ui-context-name)))
+
+(defun mod-ui-context-modeline-face ()
+  "Return the modeline face to use for the current context kind."
+  (pcase (mod-ui-context-kind)
+    ('edit-project 'orbit-modeline-context-edit)
+    ('git-project 'orbit-modeline-context-git)
+    ('files-root 'orbit-modeline-context-files)
+    ((or 'notes 'agenda) 'orbit-modeline-context-notes)
+    ((or 'edit-roam 'edit-loose) 'orbit-modeline-context-roam)
+    ('scratch 'orbit-modeline-context-scratch)
+    (_ 'orbit-modeline-context)))
+
+(defun mod-ui-context-header-face ()
+  "Return the header-line face to use for the current context kind."
+  (pcase (mod-ui-context-kind)
+    ('edit-project 'orbit-header-context-edit)
+    ('git-project 'orbit-header-context-git)
+    ('files-root 'orbit-header-context-files)
+    ((or 'notes 'agenda) 'orbit-header-context-notes)
+    ((or 'edit-roam 'edit-loose) 'orbit-header-context-roam)
+    ('scratch 'orbit-header-context-scratch)
+    (_ 'orbit-header-context)))
 
 (defun mod-ui-evil-state-modeline ()
   "Return a short Evil state indicator string."
@@ -126,11 +168,11 @@ background from RIGHT-FACE's background, creating a chevron effect."
 (defun mod-ui-powerline-left ()
   "Return the powerline left segment string for the mode line."
   (let* ((state-face  (mod-ui-evil-state-face))
-         (body-face   'orbit-modeline-context)
+         (body-face   (mod-ui-context-modeline-face))
          (mode-face   'orbit-modeline-mode)
          ;; Components
          (state-label (or (mod-ui-evil-state-modeline) "N"))
-         (ctx         (mod-ui-context-name))
+         (ctx         (mod-ui-context-modeline-label))
          (bname       (buffer-name))
          (bstatus     (mod-ui-buffer-status-modeline))
          (mmode       (when (mod-ui-wide-enough-p 70)
@@ -217,12 +259,12 @@ background from RIGHT-FACE's background, creating a chevron effect."
 
 (defun mod-ui-header-line-format ()
   "Return the orbit header line format list for the current buffer."
-  (let* ((ctx       (mod-ui-context-name))
+  (let* ((ctx-label (mod-ui-context-header-label))
          (path      (mod-ui-header-path))
          (clock-str (mod-ui-header-clock-string))
          (lhs       (concat
-                     (propertize (concat "  ◉ " (or ctx "—"))
-                                 'face 'orbit-header-context)
+                     (propertize (concat "  ◉ " (or ctx-label "—"))
+                                 'face (mod-ui-context-header-face))
                      (propertize "  ›  " 'face 'orbit-header-sep)
                      (propertize path 'face 'orbit-header-path)))
          (rhs       (when clock-str

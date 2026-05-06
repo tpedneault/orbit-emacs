@@ -11,7 +11,7 @@
 
 (declare-function mod-org-file "mod-org" (name))
 (declare-function mod-org-refresh-agenda-files "mod-org")
-(declare-function mod-context-notes-visit-marker "mod-context" (marker))
+(declare-function orbit-context-notes-visit-marker "orbit-context" (marker))
 
 (defgroup mod-jira nil
   "Read-only Jira sync into Org."
@@ -892,11 +892,11 @@ STARTED-INPUT is a date/time string understood by `org-read-date'."
   "Open the configured Jira Org file, preferring the notes context when available."
   (interactive)
   (let ((file (mod-jira--ensure-org-file)))
-    (if (fboundp 'mod-context-notes-visit-marker)
+    (if (fboundp 'orbit-context-notes-visit-marker)
         (let ((marker
                (with-current-buffer (find-file-noselect file)
                  (copy-marker (point-min)))))
-          (mod-context-notes-visit-marker marker))
+          (orbit-context-notes-visit-marker marker))
       (find-file file))))
 
 (provide 'mod-jira)

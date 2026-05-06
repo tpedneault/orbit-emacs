@@ -1,7 +1,8 @@
 ;;; init.el --- Main entry point -*- lexical-binding: t; -*-
 
 (let ((config-dir (file-name-directory (or load-file-name buffer-file-name))))
-  (add-to-list 'load-path (expand-file-name "modules" config-dir)))
+  (add-to-list 'load-path (expand-file-name "modules" config-dir))
+  (add-to-list 'load-path (expand-file-name "packages/orbit-context" config-dir)))
 
 (require 'mod-core)
 (require 'mod-theme)
@@ -26,7 +27,7 @@
 (require 'mod-python)
 (require 'mod-tcl)
 (require 'mod-tcl-docs)
-(require 'mod-context)
+(require 'orbit-context)
 (require 'mod-session)
 (when (fboundp 'orbit-startup--finish)
   (orbit-startup--finish))

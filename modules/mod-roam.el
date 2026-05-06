@@ -1,8 +1,6 @@
 ;;; mod-roam.el --- org-roam knowledge base -*- lexical-binding: t; -*-
 
 (declare-function org-roam-db-autosync-mode "org-roam-db")
-(declare-function mod-context-open-path "mod-context")
-
 (defun mod-roam-directory ()
   "Return the org-roam node directory."
   (or orbit-user-roam-directory

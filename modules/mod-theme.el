@@ -35,6 +35,18 @@
   '((t (:inherit mode-line))) "Motion evil-state modeline segment." :group 'orbit-faces)
 (defface orbit-modeline-context
   '((t (:inherit mode-line))) "Context/project segment of the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-context-edit
+  '((t (:inherit orbit-modeline-context :weight bold))) "Project edit context in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-context-git
+  '((t (:inherit orbit-modeline-context :weight bold))) "Git context in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-context-files
+  '((t (:inherit orbit-modeline-context :weight bold))) "Files context in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-context-notes
+  '((t (:inherit orbit-modeline-context :weight bold))) "Notes and agenda context in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-context-roam
+  '((t (:inherit orbit-modeline-context :weight bold))) "Roam and loose edit context in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-context-scratch
+  '((t (:inherit orbit-modeline-context :weight bold))) "Scratch context in the orbit modeline." :group 'orbit-faces)
 (defface orbit-modeline-buffer
   '((t (:inherit mode-line :weight bold))) "Buffer name segment of the orbit modeline." :group 'orbit-faces)
 (defface orbit-modeline-mode
@@ -45,6 +57,18 @@
 ;; Header line
 (defface orbit-header-context
   '((t (:inherit header-line :weight bold))) "Context name in the orbit header line." :group 'orbit-faces)
+(defface orbit-header-context-edit
+  '((t (:inherit orbit-header-context))) "Project edit context in the orbit header line." :group 'orbit-faces)
+(defface orbit-header-context-git
+  '((t (:inherit orbit-header-context))) "Git context in the orbit header line." :group 'orbit-faces)
+(defface orbit-header-context-files
+  '((t (:inherit orbit-header-context))) "Files context in the orbit header line." :group 'orbit-faces)
+(defface orbit-header-context-notes
+  '((t (:inherit orbit-header-context))) "Notes and agenda context in the orbit header line." :group 'orbit-faces)
+(defface orbit-header-context-roam
+  '((t (:inherit orbit-header-context))) "Roam and loose edit context in the orbit header line." :group 'orbit-faces)
+(defface orbit-header-context-scratch
+  '((t (:inherit orbit-header-context))) "Scratch context in the orbit header line." :group 'orbit-faces)
 (defface orbit-header-sep
   '((t (:inherit header-line))) "Separator glyph in the orbit header line." :group 'orbit-faces)
 (defface orbit-header-path
@@ -184,11 +208,23 @@
    `(orbit-modeline-evil-emacs      ((t (:background ,purple  :foreground ,bg-main :weight bold))))
    `(orbit-modeline-evil-motion     ((t (:background ,blue    :foreground ,bg-main :weight bold))))
    `(orbit-modeline-context         ((t (:background ,bg-dim  :foreground ,fg-main))))
+   `(orbit-modeline-context-edit    ((t (:background ,bg-dim  :foreground ,amber  :weight bold))))
+   `(orbit-modeline-context-git     ((t (:background ,bg-dim  :foreground ,green  :weight bold))))
+   `(orbit-modeline-context-files   ((t (:background ,bg-dim  :foreground ,blue   :weight bold))))
+   `(orbit-modeline-context-notes   ((t (:background ,bg-dim  :foreground ,purple :weight bold))))
+   `(orbit-modeline-context-roam    ((t (:background ,bg-dim  :foreground ,cyan   :weight bold))))
+   `(orbit-modeline-context-scratch ((t (:background ,bg-dim  :foreground ,orange :weight bold))))
    `(orbit-modeline-buffer          ((t (:background ,bg-dim  :foreground ,fg-main :weight bold))))
    `(orbit-modeline-mode            ((t (:background ,bg-dim  :foreground ,fg-dim))))
    `(orbit-modeline-right           ((t (:background ,bg-dim  :foreground ,fg-dim))))
    ;; ── Orbit header-line faces ───────────────────────────────────────────────
    `(orbit-header-context           ((t (:foreground ,amber   :weight bold :background ,bg-dark))))
+   `(orbit-header-context-edit      ((t (:foreground ,amber   :weight bold :background ,bg-dark))))
+   `(orbit-header-context-git       ((t (:foreground ,green   :weight bold :background ,bg-dark))))
+   `(orbit-header-context-files     ((t (:foreground ,blue    :weight bold :background ,bg-dark))))
+   `(orbit-header-context-notes     ((t (:foreground ,purple  :weight bold :background ,bg-dark))))
+   `(orbit-header-context-roam      ((t (:foreground ,cyan    :weight bold :background ,bg-dark))))
+   `(orbit-header-context-scratch   ((t (:foreground ,orange  :weight bold :background ,bg-dark))))
    `(orbit-header-sep               ((t (:foreground ,fg-dim  :background ,bg-dark))))
    `(orbit-header-path              ((t (:foreground ,fg-dim  :background ,bg-dark))))
    `(orbit-header-clock             ((t (:foreground ,amber   :slant italic :background ,bg-dark))))
@@ -348,11 +384,23 @@
    `(orbit-modeline-evil-emacs      ((t (:background ,purple  :foreground ,bg-main :weight bold))))
    `(orbit-modeline-evil-motion     ((t (:background ,blue    :foreground ,bg-main :weight bold))))
    `(orbit-modeline-context         ((t (:background ,bg-dim  :foreground ,fg-main))))
+   `(orbit-modeline-context-edit    ((t (:background ,bg-dim  :foreground ,amber  :weight bold))))
+   `(orbit-modeline-context-git     ((t (:background ,bg-dim  :foreground ,green  :weight bold))))
+   `(orbit-modeline-context-files   ((t (:background ,bg-dim  :foreground ,blue   :weight bold))))
+   `(orbit-modeline-context-notes   ((t (:background ,bg-dim  :foreground ,purple :weight bold))))
+   `(orbit-modeline-context-roam    ((t (:background ,bg-dim  :foreground ,cyan   :weight bold))))
+   `(orbit-modeline-context-scratch ((t (:background ,bg-dim  :foreground ,orange :weight bold))))
    `(orbit-modeline-buffer          ((t (:background ,bg-dim  :foreground ,fg-main :weight bold))))
    `(orbit-modeline-mode            ((t (:background ,bg-dim  :foreground ,fg-dim))))
    `(orbit-modeline-right           ((t (:background ,bg-dim  :foreground ,fg-dim))))
    ;; ── Orbit header-line faces ───────────────────────────────────────────────
    `(orbit-header-context           ((t (:foreground ,amber   :weight bold :background ,bg-dark))))
+   `(orbit-header-context-edit      ((t (:foreground ,amber   :weight bold :background ,bg-dark))))
+   `(orbit-header-context-git       ((t (:foreground ,green   :weight bold :background ,bg-dark))))
+   `(orbit-header-context-files     ((t (:foreground ,blue    :weight bold :background ,bg-dark))))
+   `(orbit-header-context-notes     ((t (:foreground ,purple  :weight bold :background ,bg-dark))))
+   `(orbit-header-context-roam      ((t (:foreground ,cyan    :weight bold :background ,bg-dark))))
+   `(orbit-header-context-scratch   ((t (:foreground ,orange  :weight bold :background ,bg-dark))))
    `(orbit-header-sep               ((t (:foreground ,fg-dim  :background ,bg-dark))))
    `(orbit-header-path              ((t (:foreground ,fg-dim  :background ,bg-dark))))
    `(orbit-header-clock             ((t (:foreground ,amber   :slant italic :background ,bg-dark))))

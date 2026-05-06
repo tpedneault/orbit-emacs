@@ -3,8 +3,7 @@
 (require 'project)
 
 (declare-function consult-ripgrep "consult")
-(declare-function mod-context-open-project-editor "mod-context")
-(declare-function mod-context--directory-name "mod-context")
+(declare-function orbit-context-open-project-editor "orbit-context")
 (declare-function mod-search-project "mod-search")
 (declare-function mod-search-project-replace-query "mod-search")
 
@@ -60,8 +59,8 @@
       (user-error "No known projects available"))
     (let* ((root (completing-read "Project: " projects nil t))
            (project (list :root root
-                          :name (mod-context--directory-name root))))
-      (mod-context-open-project-editor project))))
+                          :name (file-name-nondirectory (directory-file-name root)))))
+      (orbit-context-open-project-editor project))))
 
 (setq project-switch-commands
       '((project-find-file "Find file")

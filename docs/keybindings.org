@@ -29,7 +29,7 @@
 | =SPC f c s e= | =yas-visit-snippet-file=  | edit snippet file |
 | =SPC f c s n= | =yas-new-snippet=         | new snippet       |
 | =SPC f c s r= | =yas-reload-all=          | reload snippets   |
-| =SPC f f=   | =mod-context-open-path=     | open file/path in matching context |
+| =SPC f f=   | =orbit-context-open-path=   | open file/path in matching context |
 | =SPC f r=   | =mod-core-recentf-open=     | recent files, current project first when available |
 | =SPC f s=   | =save-buffer=               | save current file |
 | =SPC f y a= | copy absolute file path     | current buffer file |
@@ -135,18 +135,24 @@
 
 | Key       | Action                | Notes                                  |
 |-----------+-----------------------+----------------------------------------|
-| =SPC x x= | =mod-context-switch=  | switch or create by name               |
-| =SPC x n= | =mod-context-new=     | new blank context                      |
-| =SPC x d= | =mod-context-delete=  | delete context                         |
-| =SPC x r= | =mod-context-rename=  | rename context                         |
-| =SPC x [= | =mod-context-previous= | previous context                      |
-| =SPC x ]= | =mod-context-next=    | next context                           |
-| =SPC x e= | =mod-context-editor=  | prompt project if needed; file picker for empty =edit= |
-| =SPC x g= | =mod-context-git=     | prompt project if needed; init once, later switch only |
-| =SPC x f= | =mod-context-files=   | Dired stays here, project files open in =edit/<project>=, loose files in =edit/loose= |
-| =SPC x o= | =mod-context-notes=   | =notes= context                        |
-| =SPC x a= | =mod-context-agenda=  | =agenda= dashboard context             |
-| =SPC x s= | =mod-context-scratch= | =scratch= context                      |
+| =SPC x x= | =orbit-context-switch=  | switch or create by name               |
+| =SPC x .= | =orbit-context-dispatch= | transient context panel               |
+| =SPC x n= | =orbit-context-new=     | new blank context                      |
+| =SPC x d= | =orbit-context-delete=  | delete context                         |
+| =SPC x r= | =orbit-context-rename=  | rename context                         |
+| =SPC x [= | =orbit-context-previous= | previous context                      |
+| =SPC x ]= | =orbit-context-next=    | next context                           |
+| =SPC x e= | =orbit-context-editor=  | prompt project if needed; file picker for empty =edit= |
+| =SPC x g= | =orbit-context-git=     | prompt project if needed; init once, later switch only |
+| =SPC x f= | =orbit-context-files=   | Dired stays here, project files open in =edit/<project>=, loose files in =edit/loose= |
+| =SPC x b= | =orbit-context-borrow-buffer= | borrow an existing buffer into the current context |
+| =SPC x B= | =orbit-context-borrow-file= | open a file side by side in the current context without rehoming it |
+| =SPC x u= | =orbit-context-unborrow-buffer= | forget the current borrowed buffer from this context |
+| =SPC x o= | =orbit-context-notes=   | =notes= context                        |
+| =SPC x a= | =orbit-context-agenda=  | =agenda= dashboard context             |
+| =SPC x s= | =orbit-context-scratch= | =scratch= context                      |
+| =SPC x p= | =orbit-context-project-suite= | ensure/reuse =edit/=, =git/=, and =files/= contexts for a project |
+| =SPC x R= | =orbit-context-related= | jump between related project or notes contexts |
 
 * =SPC h= Help
 

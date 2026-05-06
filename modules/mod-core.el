@@ -5,7 +5,7 @@
 (require 'project)
 (require 'thingatpt)
 
-(declare-function mod-context-open-path "mod-context")
+(declare-function orbit-context-open-path "orbit-context")
 
 (defconst mod-core-config-directory
   (file-name-directory
@@ -190,8 +190,8 @@ aborting init."
 (defun mod-core--open-file-path (path &optional line)
   "Open PATH, optionally moving to LINE."
   (let ((expanded (expand-file-name (substitute-in-file-name path))))
-    (if (fboundp 'mod-context-open-path)
-        (mod-context-open-path expanded)
+    (if (fboundp 'orbit-context-open-path)
+        (orbit-context-open-path expanded)
       (find-file expanded))
     (when line
       (goto-char (point-min))
@@ -336,8 +336,8 @@ aborting init."
       (user-error "No recent files available"))
     (let ((file (completing-read "Recent file: " candidates nil t nil
                                  'mod-core-recentf-history)))
-      (if (fboundp 'mod-context-open-path)
-          (mod-context-open-path file)
+      (if (fboundp 'orbit-context-open-path)
+          (orbit-context-open-path file)
         (find-file file)))))
 
 (defun mod-core-maybe-create-parent-directory ()

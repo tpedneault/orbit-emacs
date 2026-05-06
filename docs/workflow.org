@@ -20,6 +20,8 @@
 
 1. Jump into a project editing context with =SPC x e= or =SPC p p=.
    - both routes open or reuse =edit/<project>= instead of showing the project action menu
+   - =SPC x p= is the wider preset when you want the project's edit, git, and
+     files contexts ready together
 2. Find files with =SPC .= or =SPC p f=.
    - =SPC SPC= is the quickest file entry point: project file finder in a project, =find-file= otherwise
    - =SPC .= is the quick buffer switcher
@@ -39,20 +41,25 @@
    - Dired stays in =files/...=
    - opening a file there moves you into the matching =edit/...= context
    - Org-roam files are treated specially and open in =edit/org-roam=
-6. Use =SPC x g= or =SPC g g= for Git work.
+6. Use =SPC x .= when you want a compact context control panel.
+   - it exposes the openers, buffer movement, cleanup, and related-context jumps
+7. Use =SPC x R= to hop between the related contexts for your current task.
+   - in a project: =edit/=, =git/=, =files/=
+   - in notes work: =agenda=, =notes=, =edit/org-roam=
+8. Use =SPC x g= or =SPC g g= for Git work.
    - first =SPC x g= initializes the Git context
    - later calls just switch back to it
-7. Inspect a file from another revision with =SPC g f f= when you want to compare without touching the working tree.
-8. Use the utility bay for transient support:
+9. Inspect a file from another revision with =SPC g f f= when you want to compare without touching the working tree.
+10. Use the utility bay for transient support:
    - =SPC o s= eat shell (opens or reuses the default shell)
    - =SPC o S= new named eat shell
    - =SPC o m= messages
    - =SPC o c= compilation
-7. For small editing moves:
+11. For small editing moves:
    - =SPC v= expands the current region
    - programming buffers highlight the symbol at point after a short idle pause
    - paired delimiters are handled by =smartparens=
-8. Capture interruptions quickly:
+12. Capture interruptions quickly:
    - =SPC n t= inbox task
    - =SPC n N= quick note
    - =SPC n j j= journal entry
@@ -75,6 +82,8 @@
 1. Open notes with =SPC n r f= or create one with =SPC n r c=.
 2. Org-roam files open in =edit/org-roam= even if the roam directory lives inside another project tree.
 3. Use that context as the dedicated space for linked-note editing instead of mixing roam files into =edit/<project>=.
+4. If you need the whole notes stack back quickly, use the notes suite from
+   =SPC x .= to restore =agenda=, =notes=, and =edit/org-roam= together.
 
 * Tcl Loop
 
@@ -183,6 +192,7 @@ The default shell (=*eat*=) is always available via =SPC o s=.
 
 - =agenda=: planning and review
 - =notes=: note-taking and Org item inspection
+- =edit/org-roam=: linked-note editing
 - =edit/<project>=: coding
 - =git/<project>=: repo review and commits
 - =files/<project>=: deliberate file operations

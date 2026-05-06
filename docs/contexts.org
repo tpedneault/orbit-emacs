@@ -15,10 +15,25 @@ Rules:
 | Key       | Purpose                              |
 |-----------+--------------------------------------|
 | =SPC x x= | switch to an existing context        |
+| =SPC x .= | open the transient context panel     |
 | =SPC x n= | create a blank context               |
 | =SPC x d= | delete a context                     |
 | =SPC x r= | rename current context               |
 | =SPC x [= / =SPC x ]= | move between contexts |
+| =SPC x p= | ensure the project context suite     |
+| =SPC x R= | jump to a related context            |
+| =SPC x b= | borrow an existing buffer into the current context |
+| =SPC x B= | borrow a file into the current context side by side |
+| =SPC x u= | unborrow the current borrowed buffer |
+
+The transient panel on =SPC x .= groups the same workflow under one compact
+surface:
+- Open: edit, git, files, notes, agenda, scratch
+- Move: move, borrow, unborrow, or forget the current buffer
+- Operate: last buffer, bury buffer, find file, recent files
+- Inspect: owned buffers, explain current buffer, describe current context, switch, rename, delete
+- Hygiene: cleanup borrowed buffers from the current context
+- Related: project suite, notes suite, and related-context jump
 
 * Template Contexts
 
@@ -31,6 +46,9 @@ Key: =SPC x e=
 - Switches to or creates =edit/<project-name>=.
 - If the edit context is new or only has scratch-like buffers, it immediately prompts with =project-find-file=.
 - If the edit context already has project files open, it just switches there.
+- If you switch into an existing edit context from somewhere else, it prefers a
+  buffer that already belongs to that edit context instead of dragging the
+  current buffer along.
 
 ** =git/<project>=
 
@@ -40,6 +58,8 @@ Key: =SPC x g=
 - Otherwise you are prompted for a known project.
 - On first use, creates =git/<project-name>=, opens Magit, and starts in a single-purpose window.
 - Later calls only switch back to the existing context.
+- Git contexts prefer Magit and Git support buffers that already belong to that
+  repository.
 
 ** =files/<project-or-dir>=
 
@@ -53,6 +73,8 @@ Key: =SPC x f=
 - Opening an Org-roam file there hands the file off to =edit/org-roam=.
 - Opening a loose file there hands the file off to =edit/loose=.
 - Opening a directory stays inside =files/...=.
+- Loose directory file contexts now track ownership too, so cleanup and context
+  switching behave the same way outside projects as they do inside them.
 
 Example:
 1. =SPC x f=
@@ -78,6 +100,8 @@ Key: =SPC x o=
 
 - Opens the main notes file.
 - Agenda item visits are routed here.
+- Notes visits prefer note buffers already owned by the =notes= context and keep
+  unrelated visible buffers out.
 
 ** =agenda=
 
@@ -100,3 +124,69 @@ Manual session support:
 - =SPC q l= load session
 
 There is no automatic save on exit or restore on startup.
+
+* Buffer Hygiene
+
+Orbit contexts now use destination-owned switching:
+- when switching into a populated context, orbit shows a buffer that already
+  belongs there
+- if the source buffer gets temporarily borrowed during the switch, orbit
+  forgets it from the destination context when it does not belong there
+- empty destinations still run their usual opener flow
+
+Useful commands:
+- =orbit-context-buffers=: switch to a buffer owned by the current context
+- =orbit-context-last-buffer=: jump to the previous owned buffer in the current context
+- =orbit-context-bury-buffer=: bury the current buffer and prefer another owned
+  buffer in the same context
+- =orbit-context-find-file=: open a file rooted in the current context when that
+  context has a root
+- =orbit-context-recent-files=: reopen recent files tracked for the current
+  context
+- =orbit-context-move-buffer=: move the current buffer to another context
+- =orbit-context-borrow-buffer=: show an already-open buffer inside the current
+  context without changing which context owns it
+- =orbit-context-borrow-file=: open a file side by side in the current context
+  for comparison without changing its natural context routing
+- =orbit-context-unborrow-buffer=: remove the current borrowed buffer from the
+  active context without killing it
+- =orbit-context-forget-buffer=: remove the current buffer from the current
+  context without killing it
+- =orbit-context-cleanup=: forget unrelated buffers from the current context after
+  confirmation
+- =orbit-context-explain-current-buffer=: explain how the current buffer relates
+  to the active context
+- =orbit-context-describe-current=: show the current context's kind, root,
+  related contexts, owned/borrowed buffers, layout snapshot, and history
+
+Cleanup is conservative:
+- it never kills buffers
+- it only disassociates them from the current Perspective
+
+Orbit also keeps lightweight per-context history:
+- recent owned buffers
+- recent files
+- layout fallback preferences
+
+That history is used to make:
+- =orbit-context-buffers= show buffers in a more useful order
+- layout restore fall back to the most relevant owned buffer
+- recent-file reopening stay scoped to the current context
+
+* Context Suites
+
+=orbit-context-project-suite= on =SPC x p= ensures the standard project trio and
+lands in the project edit context:
+- =edit/<project>=
+- =git/<project>=
+- =files/<project>=
+
+=orbit-context-notes-suite= is available from the transient panel and ensures:
+- =agenda=
+- =notes=
+- =edit/org-roam=
+
+=orbit-context-related= on =SPC x R= jumps between:
+- =edit/<project>=, =git/<project>=, and =files/<project>= when you are inside
+  a project context
+- =agenda=, =notes=, and =edit/org-roam= when you are inside the notes stack

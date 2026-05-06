@@ -11,7 +11,7 @@
 (declare-function dashboard-open "dashboard")
 (declare-function dashboard-refresh-buffer "dashboard")
 (declare-function dashboard-setup-startup-hook "dashboard")
-(declare-function mod-context-open-project-editor "mod-context")
+(declare-function orbit-context-open-project-editor "orbit-context")
 
 (defconst mod-home-config-directory
   (file-name-directory
@@ -36,8 +36,8 @@
 
 (defun mod-home--open-project-in-context (root)
   "Open project ROOT in the orbit edit context rather than the default handler."
-  (require 'mod-context)
-  (mod-context-open-project-editor
+  (require 'orbit-context)
+  (orbit-context-open-project-editor
    (list :root root
          :name (file-name-nondirectory (directory-file-name root)))))
 

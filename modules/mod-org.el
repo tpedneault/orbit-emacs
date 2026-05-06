@@ -4,6 +4,7 @@
 (require 'org-agenda)
 (require 'org-clock)
 
+(declare-function orbit-context-notes-visit-marker "orbit-context" (marker))
 (declare-function xref-push-marker-stack "xref")
 
 (defgroup mod-org nil
@@ -231,7 +232,7 @@ Otherwise fall back to the normal Org heading text."
 (defun mod-org-agenda-visit ()
   "Visit the selected agenda item in the notes context."
   (interactive)
-  (mod-context-notes-visit-marker (mod-org-agenda--marker-at-point)))
+  (orbit-context-notes-visit-marker (mod-org-agenda--marker-at-point)))
 
 (provide 'mod-org)
 

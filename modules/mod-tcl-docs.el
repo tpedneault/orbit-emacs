@@ -7,6 +7,9 @@
 (require 'xref)
 (require 'xml)
 
+(declare-function orbit-context-open-project-editor "orbit-context" (&optional project))
+(declare-function orbit-context-switch "orbit-context" (&optional name))
+
 (defgroup mod-tcl-docs nil
   "Minimal Tcl Doxygen XML browsing helpers."
   :group 'tools)
@@ -107,21 +110,17 @@ When no explicit override is set, this defaults to
 (defun mod-tcl-docs--edit-context-name ()
   "Return the matching edit context name for the current Tcl docs project."
   (let ((root (mod-tcl-docs--project-root)))
-    (if (fboundp 'mod-context--edit-context-name)
-        (mod-context--edit-context-name root)
-      (format "edit/%s" (file-name-nondirectory (directory-file-name root))))))
+    (format "edit/%s" (file-name-nondirectory (directory-file-name root)))))
 
 (defun mod-tcl-docs--switch-to-edit-context ()
   "Switch to the matching edit context for the current Tcl docs project."
-  (let ((name (mod-tcl-docs--edit-context-name)))
-    (cond
-     ((and (fboundp 'mod-context--switch-or-create)
-           (fboundp 'persp-switch))
-      (mod-context--switch-or-create name))
-     ((fboundp 'persp-switch)
-      (persp-switch name))
-     (t
-      nil))))
+  (if (fboundp 'orbit-context-open-project-editor)
+      (orbit-context-open-project-editor
+       (list :root (mod-tcl-docs--project-root)
+             :name (mod-tcl-docs--project-name)))
+    (let ((name (mod-tcl-docs--edit-context-name)))
+      (when (fboundp 'persp-switch)
+        (persp-switch name)))))
 
 (defun mod-tcl-docs--parse-xml-file (file)
   "Parse FILE into a simple XML tree."
@@ -272,9 +271,8 @@ keep the original MEMBER-NAME."
 (defun mod-tcl-docs--switch-to-manual-context ()
   "Switch to the Tcl documentation context for the current project."
   (cond
-   ((and (fboundp 'mod-context--switch-or-create)
-         (fboundp 'persp-switch))
-    (mod-context--switch-or-create (mod-tcl-docs--docs-context-name)))
+   ((fboundp 'orbit-context-switch)
+    (orbit-context-switch (mod-tcl-docs--docs-context-name)))
    ((fboundp 'persp-switch)
     (persp-switch (mod-tcl-docs--docs-context-name)))
    (t
