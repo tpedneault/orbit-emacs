@@ -1,7 +1,13 @@
 ;;; early-init.el --- Early startup configuration -*- lexical-binding: t; -*-
 
-;; Avoid package.el startup side effects; Elpaca owns package installation.
+;; Avoid package.el startup side effects during early init.
+;; orbit-emacs initializes packages explicitly from `init.el`.
 (setq package-enable-at-startup nil)
+
+;; Emacs 31's native compiler can emit a lot of benign warnings for third-party
+;; packages during install/update.  Keep real init errors visible, but suppress
+;; this noisy warning class so first-run package setup stays readable.
+(add-to-list 'warning-suppress-types '(native-compiler))
 
 ;; Keep startup quiet and lean.
 (setq inhibit-startup-screen t

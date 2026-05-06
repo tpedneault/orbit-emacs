@@ -1,19 +1,39 @@
-;;; mod-home.el --- Minimal orbit home buffer -*- lexical-binding: t; -*-
+;;; mod-home.el --- Home dashboard -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Keeps the startup "home" behavior intentionally simple.
-;; The previous dashboard package integration is disabled to avoid extra GUI
-;; startup work and package-related startup failures.
+;; Keep the startup home surface lightweight while still giving orbit-emacs a
+;; dedicated landing page.
 
 ;;; Code:
 
-(defconst mod-home-buffer-name "*scratch*"
+(declare-function dashboard-open "dashboard")
+(declare-function dashboard-refresh-buffer "dashboard")
+
+(defconst mod-home-buffer-name "*dashboard*"
   "Buffer used as the orbit home surface.")
 
+(use-package dashboard
+  :ensure t
+  :demand t
+  :config
+  (setq dashboard-banner-logo-title "orbit-emacs"
+        dashboard-startup-banner 'official
+        dashboard-set-heading-icons nil
+        dashboard-set-file-icons nil
+        dashboard-center-content t
+        dashboard-items '((recents  . 8)
+                          (projects . 5)
+                          (bookmarks . 5)))
+  (dashboard-setup-startup-hook))
+
 (defun mod-home-open ()
-  "Open the minimal orbit home buffer."
+  "Open or refresh the orbit home dashboard."
   (interactive)
-  (switch-to-buffer (get-buffer-create mod-home-buffer-name)))
+  (if (get-buffer mod-home-buffer-name)
+      (progn
+        (switch-to-buffer mod-home-buffer-name)
+        (dashboard-refresh-buffer))
+    (dashboard-open)))
 
 (setq initial-buffer-choice #'mod-home-open)
 

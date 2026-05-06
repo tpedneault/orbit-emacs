@@ -8,15 +8,8 @@
   :commands (transient-define-prefix))
 
 (use-package magit
-  :ensure (:fetcher github
-           :repo "magit/magit"
-           :depth 1
-           :main-file "lisp/magit.el"
-           :files ("lisp/*.el"
-                   "docs/magit.texi"
-                   "docs/AUTHORS.md"
-                   "LICENSE"
-                   ("git-hooks" "git-hooks/*")))
+  :ensure t
+  :after transient
   :commands (magit-status magit-log-current magit-blame-addition
              magit-dispatch magit-file-dispatch magit-diff
              magit-log-buffer-file magit-file-stage magit-file-unstage)
@@ -188,8 +181,7 @@
 
 ;; ─── forge (GitLab MR / issue browsing) ───────────────────────────────────────
 
-;; ghub is a required dependency of forge that Elpaca does not resolve
-;; transitively — declare it explicitly so it is built first.
+;; Keep ghub explicit so Forge loads after its API layer.
 (use-package ghub
   :ensure t
   :defer t)

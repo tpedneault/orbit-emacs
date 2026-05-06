@@ -173,7 +173,7 @@
   (which-key-mode 1))
 
 (use-package general
-  :ensure (:fetcher github :repo "noctuid/general.el" :main-file "general.el")
+  :ensure t
   :demand t
   :config
   (define-prefix-command 'mod-keys-local-leader-map)

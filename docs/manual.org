@@ -37,7 +37,7 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 
 - Modal: Evil-first editing is the default.
 - Context-based: work lives in named workspaces like =edit/<project>=, =git/<project>=, =notes=, and =agenda=.
-- Minimal UI: built-in theme, built-in modeline, no dashboard package, no sidebar.
+- Minimal UI: built-in theme, built-in modeline, a lightweight home dashboard, and no sidebar.
 - Keyboard-driven: small command language under =SPC= and =SPC m=.
 
 * Main Areas

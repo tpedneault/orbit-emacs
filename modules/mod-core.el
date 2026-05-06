@@ -32,6 +32,10 @@ between same-named files in different directories.")
   (expand-file-name "history" mod-core-var-directory))
 (defconst mod-core-save-place-file
   (expand-file-name "places" mod-core-var-directory))
+(defconst mod-core-package-directory
+  (expand-file-name "packages/" mod-core-var-directory))
+(defconst mod-core-package-gnupg-directory
+  (expand-file-name "package-gnupg/" mod-core-var-directory))
 (defconst mod-core-user-directory
   (expand-file-name
    ".orbit-emacs.d/"
@@ -139,25 +143,6 @@ aborting init."
          (error-message-string err))
         :warning)))))
 
-(defun mod-core--elpaca-melpa-metadata-safe (fetcher)
-  "Call Elpaca MELPA metadata FETCHER safely.
-On restricted or proxied networks, the MELPA archive.json response may be
-truncated or replaced, which causes JSON parsing to abort startup during the
-first package index build.  In that case, continue with package recipes and no
-metadata instead of failing init."
-  (condition-case err
-      (funcall fetcher)
-    (error
-     (display-warning
-      'mod-core
-      (concat
-       "Elpaca could not parse MELPA metadata; continuing without MELPA "
-       "descriptions/date metadata. This is often caused by a proxy, captive "
-       "portal, or truncated archive.json response. Original error: "
-       (error-message-string err))
-      :warning)
-     nil)))
-
 (defun mod-core-ensure-user-files ()
   "Ensure the user-local orbit-emacs files exist."
   (make-directory mod-core-user-directory t)
@@ -165,14 +150,12 @@ metadata instead of failing init."
   (unless (file-exists-p mod-core-user-config-file)
     (write-region mod-core-user-config-template nil mod-core-user-config-file nil 'silent)))
 
-(defun mod-core--require-elpaca (repo)
-  (let ((load-path (cons repo load-path)))
-    (require 'elpaca)))
-
 (dolist (dir (list mod-core-var-directory
                    mod-core-backup-directory
                    mod-core-auto-save-directory
-                   mod-core-lockfile-directory))
+                   mod-core-lockfile-directory
+                   mod-core-package-directory
+                   mod-core-package-gnupg-directory))
   (make-directory dir t))
 
 (mod-core-ensure-user-files)
@@ -374,69 +357,41 @@ metadata instead of failing init."
       lock-file-name-transforms mod-core-lockfile-transforms
       savehist-file mod-core-savehist-file)
 
-(defvar elpaca-installer-version 0.12)
-(defvar elpaca-directory (expand-file-name "elpaca/" mod-core-config-directory))
-(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-(defvar elpaca-sources-directory (expand-file-name "sources/" elpaca-directory))
-(defvar elpaca-order
-  '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-           :ref nil
-           :depth 1
-           :inherit ignore
-           :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-           :build (:not elpaca-activate)))
+(require 'package)
 
-(let* ((repo (expand-file-name "elpaca/" elpaca-sources-directory))
-       (build (expand-file-name "elpaca/" elpaca-builds-directory))
-       (order (cdr elpaca-order))
-       (bootstrap-ok nil)
-       (default-directory repo))
-  (add-to-list 'load-path
-               (if (file-exists-p build) build repo))
-  (unless (file-exists-p repo)
-    (make-directory repo t)
-    (when (<= emacs-major-version 28)
-      (require 'subr-x))
-    (condition-case-unless-debug err
-        (if-let* ((buffer (get-buffer-create "*elpaca-bootstrap*"))
-                  ((zerop (apply #'call-process
-                                 `("git" nil ,buffer t "clone"
-                                   ,@(when-let* ((depth (plist-get order :depth)))
-                                       (list (format "--depth=%d" depth) "--no-single-branch"))
-                                   ,(plist-get order :repo) ,repo))))
-                  ((or (not (plist-get order :ref))
-                       (zerop (call-process "git" nil buffer t "checkout"
-                                            (plist-get order :ref)))))
-                  (emacs (concat invocation-directory invocation-name))
-                  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                        "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                  ((mod-core--require-elpaca repo))
-                  ((elpaca-generate-autoloads "elpaca" repo)))
-            (progn
-              (message "%s" (buffer-string))
-              (kill-buffer buffer))
-          (error "%s" (with-current-buffer buffer (buffer-string))))
-      ((error)
-       (warn "Elpaca bootstrap failed: %s" err)
-       (delete-directory repo 'recursive))))
-  (setq bootstrap-ok
-        (if (require 'elpaca-autoloads nil t)
-            t
-          (when (mod-core--require-elpaca repo)
-            (elpaca-generate-autoloads "elpaca" repo)
-            (let ((load-source-file-function nil))
-              (load (expand-file-name "elpaca-autoloads" repo) nil 'nomessage))
-            t)))
-  (when bootstrap-ok
-    (when (require 'elpaca-menu-melpa nil t)
-      (advice-add 'elpaca-menu-melpa--metadata :around #'mod-core--elpaca-melpa-metadata-safe))
-    (add-hook 'after-init-hook #'elpaca-process-queues)
-    (eval `(elpaca ,elpaca-order))
-    (elpaca exec-path-from-shell
-      (mod-core-import-shell-environment))
-    (elpaca elpaca-use-package
-      (elpaca-use-package-mode))
-    (setq elpaca-use-package-by-default t)))
+(setq package-user-dir mod-core-package-directory
+      package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
+                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+                         ("melpa" . "https://melpa.org/packages/"))
+      package-archive-priorities '(("melpa" . 30)
+                                   ("nongnu" . 20)
+                                   ("gnu" . 10)))
+
+(when (boundp 'package-gnupghome-dir)
+  (setq package-gnupghome-dir mod-core-package-gnupg-directory))
+
+(package-initialize)
+
+(defun mod-core--package-available-p (package)
+  "Return non-nil when PACKAGE is installed or built into Emacs."
+  (or (package-installed-p package)
+      (package-built-in-p package)))
+
+(defun mod-core-ensure-package-installed (package)
+  "Install PACKAGE with `package.el' when it is not already available."
+  (unless (mod-core--package-available-p package)
+    (unless package-archive-contents
+      (package-refresh-contents))
+    (package-install package)))
+
+(mod-core-ensure-package-installed 'use-package)
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+(use-package exec-path-from-shell
+  :if (mod-core-gui-shell-environment-p)
+  :config
+  (mod-core-import-shell-environment))
 
 (provide 'mod-core)
 

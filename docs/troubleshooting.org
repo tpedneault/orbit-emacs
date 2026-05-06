@@ -4,10 +4,10 @@
 
 * Startup
 
-** Emacs opens =*scratch*= instead of the home screen
+** Emacs opens =*scratch*= instead of the home dashboard
 
 - Start Emacs without opening a file directly.
-- The home screen only appears for an otherwise empty startup.
+- The home dashboard only appears for an otherwise empty startup.
 - Reopen it manually with =M-x mod-home-open=.
 
 ** A package shows native-compiler warnings
