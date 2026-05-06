@@ -51,7 +51,7 @@ In =tcl-mode=:
 - =SPC m r= rebuilds the project-local =TAGS= file.
 - =SPC m g= visits the project =TAGS= file automatically and jumps to the definition at point.
 - =SPC m s= searches known Tcl symbols gathered from project =TAGS= and optional user-known symbols.
-- completion-at-point / Corfu uses the same canonical symbol list when project =TAGS= is available.
+- completion-at-point / Corfu uses the same symbol pool, even when only the optional user-known symbols file is available
 - Rebuild =TAGS= when navigation or highlighting looks stale.
 
 * Namespace Behavior
@@ -92,6 +92,7 @@ Optional extra symbols:
 - blank lines are ignored
 - lines starting with =#= are ignored
 - these symbols are merged into highlighting, symbol search, and Tcl symbol completion
+- the configured path is normalized before loading, so =~/= style user paths work predictably
 - a fake test file lives at [docs/examples/tcl-known-symbols-example.txt](/Users/thomas/.config/emacs/docs/examples/tcl-known-symbols-example.txt)
 - point your user config at it with:
 
@@ -123,6 +124,7 @@ The Tcl tooling diagnostic command =SPC m v= reports:
 - Doxygen program
 - Doxygen config file
 - Doxygen XML directory and =index.xml=
+- configured known-symbols file status and symbol count
 
 * Local Variable Rename
 

@@ -49,8 +49,26 @@
   '((t (:inherit orbit-modeline-context :weight bold))) "Scratch context in the orbit modeline." :group 'orbit-faces)
 (defface orbit-modeline-buffer
   '((t (:inherit mode-line :weight bold))) "Buffer name segment of the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-brand
+  '((t (:inherit mode-line :weight bold))) "Orbit brand badge in the modeline." :group 'orbit-faces)
+(defface orbit-modeline-separator
+  '((t (:inherit mode-line))) "Orbit separator in the modeline." :group 'orbit-faces)
+(defface orbit-modeline-state-modified
+  '((t (:inherit mode-line :weight bold))) "Modified marker in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-state-read-only
+  '((t (:inherit mode-line :weight bold))) "Read-only marker in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-state-narrowed
+  '((t (:inherit mode-line :weight bold))) "Narrowed marker in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-borrowed
+  '((t (:inherit mode-line :weight bold))) "Borrowed-buffer marker in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-vc
+  '((t (:inherit mode-line))) "Version-control segment in the orbit modeline." :group 'orbit-faces)
 (defface orbit-modeline-mode
   '((t (:inherit mode-line))) "Major mode segment of the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-meta
+  '((t (:inherit mode-line))) "Low-noise metadata segment in the orbit modeline." :group 'orbit-faces)
+(defface orbit-modeline-position
+  '((t (:inherit mode-line :weight bold))) "Cursor position segment in the orbit modeline." :group 'orbit-faces)
 (defface orbit-modeline-right
   '((t (:inherit mode-line))) "Right-hand segment of the orbit modeline." :group 'orbit-faces)
 
@@ -215,7 +233,16 @@
    `(orbit-modeline-context-roam    ((t (:background ,bg-dim  :foreground ,cyan   :weight bold))))
    `(orbit-modeline-context-scratch ((t (:background ,bg-dim  :foreground ,orange :weight bold))))
    `(orbit-modeline-buffer          ((t (:background ,bg-dim  :foreground ,fg-main :weight bold))))
+   `(orbit-modeline-brand           ((t (:background ,amber   :foreground ,bg-main :weight bold))))
+   `(orbit-modeline-separator       ((t (:background ,bg-dim  :foreground ,fg-dim))))
+   `(orbit-modeline-state-modified  ((t (:background ,bg-dim  :foreground ,amber  :weight bold))))
+   `(orbit-modeline-state-read-only ((t (:background ,bg-dim  :foreground ,red    :weight bold))))
+   `(orbit-modeline-state-narrowed  ((t (:background ,bg-dim  :foreground ,purple :weight bold))))
+   `(orbit-modeline-borrowed        ((t (:background ,bg-dim  :foreground ,cyan   :weight bold))))
+   `(orbit-modeline-vc              ((t (:background ,bg-dim  :foreground ,green))))
    `(orbit-modeline-mode            ((t (:background ,bg-dim  :foreground ,fg-dim))))
+   `(orbit-modeline-meta            ((t (:background ,bg-dim  :foreground ,fg-dim))))
+   `(orbit-modeline-position        ((t (:background ,bg-dim  :foreground ,fg-main :weight bold))))
    `(orbit-modeline-right           ((t (:background ,bg-dim  :foreground ,fg-dim))))
    ;; ── Orbit header-line faces ───────────────────────────────────────────────
    `(orbit-header-context           ((t (:foreground ,amber   :weight bold :background ,bg-dark))))
@@ -391,7 +418,16 @@
    `(orbit-modeline-context-roam    ((t (:background ,bg-dim  :foreground ,cyan   :weight bold))))
    `(orbit-modeline-context-scratch ((t (:background ,bg-dim  :foreground ,orange :weight bold))))
    `(orbit-modeline-buffer          ((t (:background ,bg-dim  :foreground ,fg-main :weight bold))))
+   `(orbit-modeline-brand           ((t (:background ,amber   :foreground ,bg-main :weight bold))))
+   `(orbit-modeline-separator       ((t (:background ,bg-dim  :foreground ,fg-dim))))
+   `(orbit-modeline-state-modified  ((t (:background ,bg-dim  :foreground ,amber  :weight bold))))
+   `(orbit-modeline-state-read-only ((t (:background ,bg-dim  :foreground ,red    :weight bold))))
+   `(orbit-modeline-state-narrowed  ((t (:background ,bg-dim  :foreground ,purple :weight bold))))
+   `(orbit-modeline-borrowed        ((t (:background ,bg-dim  :foreground ,cyan   :weight bold))))
+   `(orbit-modeline-vc              ((t (:background ,bg-dim  :foreground ,green))))
    `(orbit-modeline-mode            ((t (:background ,bg-dim  :foreground ,fg-dim))))
+   `(orbit-modeline-meta            ((t (:background ,bg-dim  :foreground ,fg-dim))))
+   `(orbit-modeline-position        ((t (:background ,bg-dim  :foreground ,fg-main :weight bold))))
    `(orbit-modeline-right           ((t (:background ,bg-dim  :foreground ,fg-dim))))
    ;; ── Orbit header-line faces ───────────────────────────────────────────────
    `(orbit-header-context           ((t (:foreground ,amber   :weight bold :background ,bg-dark))))

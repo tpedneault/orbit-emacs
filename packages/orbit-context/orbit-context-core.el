@@ -400,6 +400,15 @@ Return non-nil when a saved layout was restored."
   "Return non-nil when BUFFER is explicitly borrowed into context NAME."
   (member name (orbit-context--buffer-borrowed-contexts buffer)))
 
+(defun orbit-context-buffer-borrowed-p (&optional buffer name)
+  "Return non-nil when BUFFER is borrowed into context NAME.
+Defaults to the current buffer and current active context."
+  (let ((buffer (or buffer (current-buffer)))
+        (name (or name (orbit-context-current-name))))
+    (and name
+         (buffer-live-p buffer)
+         (orbit-context--borrowed-buffer-p buffer name))))
+
 (defun orbit-context--borrow-buffer-into-context (buffer name)
   "Add BUFFER to context NAME as an explicitly borrowed buffer."
   (when (buffer-live-p buffer)

@@ -1,6 +1,7 @@
 ;;; mod-ui.el --- UI foundation -*- lexical-binding: t; -*-
 
 (require 'recentf)
+(require 'orbit-modeline)
 (require 'subr-x)
 (require 'uniquify)
 (require 'whitespace)
@@ -8,7 +9,6 @@
 (declare-function orbit-context-current-kind "orbit-context" (&optional name))
 (declare-function orbit-context-current-name "orbit-context")
 (declare-function orbit-context-header-label "orbit-context" (&optional name))
-(declare-function orbit-context-modeline-label "orbit-context" (&optional name))
 (declare-function battery "battery")
 (declare-function mod-theme-apply-font-stack "mod-theme")
 
@@ -28,7 +28,7 @@
 (defvar-local mod-ui--whitespace-visible nil
   "Buffer-local state used by `mod-ui-toggle-whitespace'.")
 
-;;; ─── Modeline data helpers ────────────────────────────────────────────────────
+;;; ─── Header-line data helpers ────────────────────────────────────────────────
 
 (defun mod-ui-context-name ()
   "Return the current orbit context name, or nil."
@@ -40,28 +40,11 @@
   (when (fboundp 'orbit-context-current-kind)
     (ignore-errors (orbit-context-current-kind))))
 
-(defun mod-ui-context-modeline-label ()
-  "Return the current orbit context label for the modeline."
-  (or (when (fboundp 'orbit-context-modeline-label)
-        (ignore-errors (orbit-context-modeline-label)))
-      (mod-ui-context-name)))
-
 (defun mod-ui-context-header-label ()
   "Return the current orbit context label for the header line."
   (or (when (fboundp 'orbit-context-header-label)
         (ignore-errors (orbit-context-header-label)))
       (mod-ui-context-name)))
-
-(defun mod-ui-context-modeline-face ()
-  "Return the modeline face to use for the current context kind."
-  (pcase (mod-ui-context-kind)
-    ('edit-project 'orbit-modeline-context-edit)
-    ('git-project 'orbit-modeline-context-git)
-    ('files-root 'orbit-modeline-context-files)
-    ((or 'notes 'agenda) 'orbit-modeline-context-notes)
-    ((or 'edit-roam 'edit-loose) 'orbit-modeline-context-roam)
-    ('scratch 'orbit-modeline-context-scratch)
-    (_ 'orbit-modeline-context)))
 
 (defun mod-ui-context-header-face ()
   "Return the header-line face to use for the current context kind."
@@ -73,163 +56,6 @@
     ((or 'edit-roam 'edit-loose) 'orbit-header-context-roam)
     ('scratch 'orbit-header-context-scratch)
     (_ 'orbit-header-context)))
-
-(defun mod-ui-evil-state-modeline ()
-  "Return a short Evil state indicator string."
-  (when (bound-and-true-p evil-local-mode)
-    (pcase evil-state
-      ('normal   "N")
-      ('insert   "I")
-      ('visual   "V")
-      ('replace  "R")
-      ('motion   "M")
-      ('operator "O")
-      ('emacs    "E")
-      (_         "-"))))
-
-(defun mod-ui-buffer-status-modeline ()
-  "Return a compact buffer status indicator."
-  (cond
-   (buffer-read-only "RO")
-   ((buffer-modified-p) "*")
-   (t "")))
-
-(defun mod-ui--segment-string (segment)
-  "Return SEGMENT rendered as a plain modeline string, or nil when empty."
-  (when segment
-    (let ((value (string-trim (format-mode-line segment))))
-      (unless (string-empty-p value)
-        value))))
-
-(defun mod-ui-major-mode-modeline ()
-  "Return the current major mode name for the modeline."
-  (or (mod-ui--segment-string mode-name)
-      (and mode-name (format "%s" mode-name))))
-
-(defun mod-ui-vc-branch-modeline ()
-  "Return the current Git branch when available."
-  (when-let* ((file buffer-file-name)
-              (raw  (and (bound-and-true-p vc-mode)
-                         (stringp vc-mode)
-                         vc-mode)))
-    (let ((branch (string-trim
-                   (replace-regexp-in-string "^ Git[:-]?" ""
-                     (substring-no-properties raw)))))
-      (unless (string-empty-p branch)
-        branch))))
-
-(defun mod-ui-battery-modeline ()
-  "Return a compact battery percentage when available."
-  (when (and (boundp 'battery-status-function) battery-status-function)
-    (let ((data (ignore-errors (funcall battery-status-function))))
-      (when (and data (not (equal "N/A" (battery-format "%B" data))))
-        (string-trim (battery-format "%p%%" data))))))
-
-(defun mod-ui-window-width ()
-  "Return the width of the selected window."
-  (window-total-width (selected-window)))
-
-(defun mod-ui-wide-enough-p (width)
-  "Return non-nil when the selected window is at least WIDTH columns wide."
-  (>= (mod-ui-window-width) width))
-
-;;; ─── Powerline modeline ───────────────────────────────────────────────────────
-
-(defun mod-ui--powerline-sep-char ()
-  "Return the right-pointing powerline separator character."
-  (if (bound-and-true-p orbit-user-nerd-fonts)
-      "\xe0b0"
-    "▶"))
-
-(defun mod-ui-evil-state-face ()
-  "Return the modeline face name for the current evil state."
-  (pcase (and (bound-and-true-p evil-local-mode) evil-state)
-    ('normal  'orbit-modeline-evil-normal)
-    ('insert  'orbit-modeline-evil-insert)
-    ('visual  'orbit-modeline-evil-visual)
-    ('replace 'orbit-modeline-evil-replace)
-    ('emacs   'orbit-modeline-evil-emacs)
-    ('motion  'orbit-modeline-evil-motion)
-    (_        'orbit-modeline-evil-normal)))
-
-(defun mod-ui--ml-seg (text face)
-  "Return TEXT propertized with FACE for the powerline modeline."
-  (propertize text 'face face))
-
-(defun mod-ui--ml-sep (left-face right-face)
-  "Return a powerline separator arrow from LEFT-FACE to RIGHT-FACE.
-The arrow takes its foreground from LEFT-FACE's background and its
-background from RIGHT-FACE's background, creating a chevron effect."
-  (let ((fg (or (face-background left-face nil t) "unspecified"))
-        (bg (or (face-background right-face nil t) "unspecified")))
-    (propertize (mod-ui--powerline-sep-char)
-                'face (list :foreground fg :background bg))))
-
-(defun mod-ui-powerline-left ()
-  "Return the powerline left segment string for the mode line."
-  (let* ((state-face  (mod-ui-evil-state-face))
-         (body-face   (mod-ui-context-modeline-face))
-         (mode-face   'orbit-modeline-mode)
-         ;; Components
-         (state-label (or (mod-ui-evil-state-modeline) "N"))
-         (ctx         (mod-ui-context-modeline-label))
-         (bname       (buffer-name))
-         (bstatus     (mod-ui-buffer-status-modeline))
-         (mmode       (when (mod-ui-wide-enough-p 70)
-                        (mod-ui-major-mode-modeline)))
-         ;; Segments
-         (evil-seg    (mod-ui--ml-seg (format " %s " state-label) state-face))
-         (arrow       (mod-ui--ml-sep state-face body-face))
-         (ctx-seg     (when ctx
-                        (mod-ui--ml-seg (format " %s " ctx) body-face)))
-         (buf-text    (if (string-empty-p bstatus)
-                          (format " %s " bname)
-                        (format " %s %s " bname bstatus)))
-         (buf-seg     (mod-ui--ml-seg buf-text 'orbit-modeline-buffer))
-         (mode-seg    (when mmode
-                        (mod-ui--ml-seg (format " %s " mmode) mode-face))))
-    (concat evil-seg arrow
-            (or ctx-seg "")
-            buf-seg
-            (or mode-seg ""))))
-
-(defun mod-ui-powerline-right ()
-  "Return the powerline right segment string for the mode line."
-  (let* ((face    'orbit-modeline-right)
-         (branch  (and (mod-ui-wide-enough-p 100) (mod-ui-vc-branch-modeline)))
-         (clock   (when (and (fboundp 'org-clocking-p) (org-clocking-p)
-                             (boundp 'org-clock-heading)
-                             (fboundp 'org-clock-get-clocked-time)
-                             (fboundp 'org-duration-from-minutes))
-                    (format "[%s] %s"
-                            org-clock-heading
-                            (org-duration-from-minutes
-                             (org-clock-get-clocked-time)))))
-         (pos     (format-mode-line "%l:%c"))
-         (batt    (and (mod-ui-wide-enough-p 85) (mod-ui-battery-modeline)))
-         (time    (and (bound-and-true-p display-time-mode)
-                       (format-time-string "%H:%M")))
-         (parts   (delq nil (list branch clock pos batt time))))
-    (when parts
-      (mod-ui--ml-seg (concat "  " (string-join parts "  ") "  ") face))))
-
-(defun mod-ui-powerline-format ()
-  "Return the complete powerline format string for the current buffer."
-  (condition-case err
-      (let* ((lhs       (mod-ui-powerline-left))
-             (rhs       (or (mod-ui-powerline-right) ""))
-             (rhs-width (string-width rhs))
-             ;; Fill space: same background as the body segments
-             (fill      (propertize " "
-                                    'display `(space :align-to (- right ,rhs-width))
-                                    'face 'orbit-modeline-context)))
-        (concat lhs fill rhs))
-    (error
-     ;; Surface the error in the modeline rather than going fully blank.
-     (propertize (format "  %s  [modeline error: %s] "
-                         (buffer-name)
-                         (error-message-string err))
-                 'face 'error))))
 
 ;;; ─── Header line ──────────────────────────────────────────────────────────────
 
@@ -453,8 +279,8 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
 (add-hook 'after-make-frame-functions #'mod-ui-apply-frame-defaults)
 (mod-ui-apply-frame-defaults)
 
-;; ── Powerline modeline ────────────────────────────────────────────────────────
-(setq-default mode-line-format '("%e" (:eval (mod-ui-powerline-format))))
+;; ── Orbit modeline ────────────────────────────────────────────────────────────
+(orbit-modeline-install)
 
 ;; ── Global header line ────────────────────────────────────────────────────────
 (add-hook 'find-file-hook  #'mod-ui--enable-header-line)

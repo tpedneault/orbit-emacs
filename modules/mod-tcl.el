@@ -451,6 +451,8 @@ Returns the preview buffer."
          (config-file (mod-tcl--doxygen-config-path))
          (xml-directory (mod-tcl--doxygen-xml-directory-path))
          (index-file (and xml-directory (expand-file-name "index.xml" xml-directory)))
+         (known-file (mod-tcl--known-symbols-file-path))
+         (known-count (length (mod-tcl--read-known-symbols-file)))
          (lines
           (list
            (mod-tcl--diagnostic-line
@@ -474,7 +476,19 @@ Returns the preview buffer."
            (mod-tcl--diagnostic-line
             (if (and index-file (file-exists-p index-file)) "OK" "MISSING")
             "index.xml"
-            (or index-file "No XML directory found")))))
+            (or index-file "No XML directory found"))
+           (mod-tcl--diagnostic-line
+            (cond
+             ((not known-file) "INFO")
+             ((file-exists-p known-file) "OK")
+             (t "MISSING"))
+            "known symbols"
+            (cond
+             ((not known-file) "Not configured")
+             ((file-exists-p known-file)
+              (format "%s (%d symbol%s)"
+                      known-file known-count (if (= known-count 1) "" "s")))
+             (t known-file))))))
     (mod-tcl--write-output "Tcl Tooling Validation" lines)
     (mod-tcl--display-output-buffer)))
 
@@ -717,7 +731,7 @@ when they are unique across the current TAGS file. When a TAGS section records
   "Return symbols from `orbit-user-tcl-known-symbols-file'.
 When MESSAGE-MISSING is non-nil, emit a clear message if the configured file
 does not exist. Blank lines and lines starting with `#' are ignored."
-  (let ((file orbit-user-tcl-known-symbols-file)
+  (let ((file (mod-tcl--known-symbols-file-path))
         (symbols '()))
     (cond
      ((not file) nil)
@@ -741,6 +755,11 @@ does not exist. Blank lines and lines starting with `#' are ignored."
                   (push symbol symbols)))))
           (forward-line 1)))
       (delete-dups (nreverse symbols))))))
+
+(defun mod-tcl--known-symbols-file-path ()
+  "Return the configured known-symbols file path, normalized when possible."
+  (when orbit-user-tcl-known-symbols-file
+    (expand-file-name orbit-user-tcl-known-symbols-file)))
 
 (defun mod-tcl--collect-highlight-symbols (&optional message-missing)
   "Return Tcl symbols to highlight for the current buffer.
@@ -805,9 +824,10 @@ file. When REQUIRE-TAGS is non-nil, return nil unless the current project has
 an existing TAGS file."
   (let* ((root (mod-tcl--project-root-for-directory default-directory))
          (tags-file (and root (mod-tcl--project-tags-file-for-root root)))
-         (known-file orbit-user-tcl-known-symbols-file))
+         (known-file (mod-tcl--known-symbols-file-path)))
     (when (or (not require-tags)
-              (and tags-file (file-exists-p tags-file)))
+              (and tags-file (file-exists-p tags-file))
+              known-file)
       (let ((cache-key (mod-tcl--canonical-symbol-cache-key root tags-file known-file)))
         (or (gethash cache-key mod-tcl--canonical-symbol-cache)
             (let ((symbols
@@ -841,12 +861,12 @@ When ROOT is non-nil, only remove cache entries for that project root."
   (when (and (derived-mode-p 'tcl-mode)
              (not (active-minibuffer-window)))
     (when-let* ((bounds (mod-tcl--completion-bounds))
-                (symbols (mod-tcl--canonical-symbols nil t)))
+                (symbols (mod-tcl--canonical-symbols nil)))
       (pcase-let ((`(,beg . ,end) bounds))
         (list beg end
               (completion-table-dynamic
                (lambda (_string)
-                 (mod-tcl--canonical-symbols nil t)))
+                 (mod-tcl--canonical-symbols nil)))
               :exclusive 'no)))))
 
 (defun mod-tcl-setup-completion ()

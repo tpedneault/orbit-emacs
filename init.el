@@ -2,7 +2,8 @@
 
 (let ((config-dir (file-name-directory (or load-file-name buffer-file-name))))
   (add-to-list 'load-path (expand-file-name "modules" config-dir))
-  (add-to-list 'load-path (expand-file-name "packages/orbit-context" config-dir)))
+  (add-to-list 'load-path (expand-file-name "packages/orbit-context" config-dir))
+  (add-to-list 'load-path (expand-file-name "packages/orbit-modeline" config-dir)))
 
 (require 'mod-core)
 (require 'mod-theme)
