@@ -358,6 +358,7 @@ aborting init."
       savehist-file mod-core-savehist-file)
 
 (require 'package)
+(require 'package-vc)
 
 (setq package-user-dir mod-core-package-directory
       package-archives '(("melpa" . "https://melpa.org/packages/"))
@@ -368,19 +369,32 @@ aborting init."
 
 (package-initialize)
 
+(defconst mod-core-package-vc-recipes
+  '((compat :vc-backend Git :url "https://github.com/emacs-compat/compat")
+    (dape :vc-backend Git :url "https://github.com/svaante/dape"))
+  "VC package recipes used when MELPA alone cannot satisfy a dependency.")
+
 (defun mod-core--package-available-p (package)
   "Return non-nil when PACKAGE is installed or built into Emacs."
   (or (package-installed-p package)
       (package-built-in-p package)))
 
+(defun mod-core--package-vc-recipe (package)
+  "Return the VC recipe plist for PACKAGE, or nil when none is defined."
+  (cdr (assq package mod-core-package-vc-recipes)))
+
 (defun mod-core-ensure-package-installed (package)
   "Install PACKAGE with `package.el' when it is not already available."
   (unless (mod-core--package-available-p package)
-    (unless package-archive-contents
-      (package-refresh-contents))
-    (package-install package)))
+    (if-let* ((recipe (mod-core--package-vc-recipe package)))
+        (package-vc-install (cons package recipe))
+      (unless package-archive-contents
+        (package-refresh-contents))
+      (package-install package))))
 
 (mod-core-ensure-package-installed 'use-package)
+(mod-core-ensure-package-installed 'compat)
+(mod-core-ensure-package-installed 'dape)
 (require 'use-package)
 (setq use-package-always-ensure t)
 
