@@ -32,6 +32,8 @@ between same-named files in different directories.")
   (expand-file-name "history" mod-core-var-directory))
 (defconst mod-core-save-place-file
   (expand-file-name "places" mod-core-var-directory))
+(defconst mod-core-custom-file
+  (expand-file-name "custom.el" mod-core-var-directory))
 (defconst mod-core-package-directory
   (expand-file-name "packages/" mod-core-var-directory))
 (defconst mod-core-package-gnupg-directory
@@ -160,6 +162,8 @@ aborting init."
 
 (mod-core-ensure-user-files)
 (load mod-core-user-config-file nil 'nomessage)
+(setq custom-file mod-core-custom-file)
+(load custom-file 'noerror 'nomessage)
 
 (unless orbit-user-snippets-directory
   (setq orbit-user-snippets-directory mod-core-user-snippets-directory))
@@ -371,7 +375,8 @@ aborting init."
 
 (defconst mod-core-package-vc-recipes
   '((compat :vc-backend Git :url "https://github.com/emacs-compat/compat")
-    (dape :vc-backend Git :url "https://github.com/svaante/dape"))
+    (dape :vc-backend Git :url "https://github.com/svaante/dape")
+    (eat :vc-backend Git :url "https://codeberg.org/akib/emacs-eat.git"))
   "VC package recipes used when MELPA alone cannot satisfy a dependency.")
 
 (defun mod-core--package-available-p (package)
@@ -395,6 +400,7 @@ aborting init."
 (mod-core-ensure-package-installed 'use-package)
 (mod-core-ensure-package-installed 'compat)
 (mod-core-ensure-package-installed 'dape)
+(mod-core-ensure-package-installed 'eat)
 (require 'use-package)
 (setq use-package-always-ensure t)
 

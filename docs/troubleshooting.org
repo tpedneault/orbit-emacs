@@ -16,6 +16,13 @@
 - If the feature still works, the config may be fine.
 - Restart Emacs once after package installation to rule out first-build noise.
 
+** Startup feels slow or hangs
+
+- orbit-emacs writes a startup trace to =var/startup.log= on each launch.
+- The log records total startup time plus slow =require= and =load= calls.
+- If Emacs freezes before startup completes, the partial log still shows the last
+  slow step that finished.
+
 * Contexts
 
 ** =SPC x e= says there are no known projects
