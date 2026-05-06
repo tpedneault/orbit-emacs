@@ -434,10 +434,13 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
       uniquify-after-kill-buffer-p t
       uniquify-ignore-buffers-re "^\\*")
 
-(setq recentf-save-file mod-ui-recentf-save-file
-      save-place-file mod-core-save-place-file
+(setq recentf-save-file        mod-ui-recentf-save-file
+      save-place-file         mod-core-save-place-file
       recentf-max-saved-items 200
-      auto-revert-verbose nil)
+      ;; Never auto-clean on mode entry — prevents startup freeze on Windows
+      ;; when recentf tries to stat unreachable network shares / UNC paths.
+      recentf-auto-cleanup    'never
+      auto-revert-verbose     nil)
 
 (when (bound-and-true-p global-visual-line-mode)
   (global-visual-line-mode -1))
