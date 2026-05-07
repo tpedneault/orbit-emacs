@@ -48,7 +48,7 @@ In =tcl-mode=:
 
 - Universal Ctags is used for Tcl navigation and proc highlighting.
 - The =TAGS= file lives at the project root.
-- =SPC m r= rebuilds the project-local =TAGS= file.
+- =SPC m r t= rebuilds the project-local =TAGS= file.
 - =SPC m g= visits the project =TAGS= file automatically and jumps to the definition at point.
 - =SPC m s= searches known Tcl symbols gathered from project =TAGS= and optional user-known symbols.
 - completion-at-point / Corfu uses the same symbol pool, even when only the optional user-known symbols file is available
@@ -56,7 +56,7 @@ In =tcl-mode=:
 - documented Tcl symbols also get a small completion margin marker, so functions and other symbol kinds are easier to scan visually
 - selected Corfu candidates automatically show a richer right-side popup with summary, details, params, returns, and source when Doxygen XML has that metadata
 - completing a documented Tcl proc expands into snippet placeholders for its expected parameters when Yasnippet is active
-- Rebuild =TAGS= when navigation or highlighting looks stale.
+- Rebuild =TAGS= with =SPC m r t= when navigation or highlighting looks stale.
 
 * Namespace Behavior
 
@@ -89,7 +89,7 @@ Practical behavior:
 - qualified proc names such as =ait::log::value= highlight correctly
 - synthesized namespace-qualified names can also highlight when the TAGS section is clear enough
 - ambiguous short names may intentionally not highlight
-- rebuild =TAGS= with =SPC m r= to refresh project proc highlighting
+- rebuild =TAGS= with =SPC m r t= to refresh project proc highlighting
 
 Optional extra symbols:
 - set =orbit-user-tcl-known-symbols-file= to a plain text file with one symbol per line

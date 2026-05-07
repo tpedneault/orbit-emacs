@@ -5,7 +5,6 @@
 (require 'etags)
 (require 'project)
 (require 'subr-x)
-(require 'xref)
 
 (declare-function mod-tcl-docs-doxygen-config-file "mod-tcl-docs")
 (declare-function mod-tcl-docs-completion-doc-buffer "mod-tcl-docs" (symbol))
