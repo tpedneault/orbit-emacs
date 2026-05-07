@@ -8,6 +8,8 @@
   :ensure t
   :demand t
   :config
+  (define-key evil-motion-state-map "j" #'mod-evil-next-line)
+  (define-key evil-motion-state-map "k" #'mod-evil-previous-line)
   (evil-mode 1))
 
 (use-package evil-collection
@@ -54,6 +56,44 @@
 ;; (overlay-get o 'invisible) returns a truthy value for those.  overlays-in
 ;; is used (rather than overlays-at) for the forward direction so that landing
 ;; on the fold header line — before the overlay actually starts — is also caught.
+
+(defun mod-evil--top-visible-line-p ()
+  "Return non-nil when point is on the first visible line of the window."
+  (eq (line-beginning-position)
+      (save-excursion
+        (goto-char (window-start))
+        (line-beginning-position))))
+
+(defun mod-evil--bottom-visible-line-p ()
+  "Return non-nil when point is on the last visible line of the window."
+  (eq (line-beginning-position)
+      (save-excursion
+        (goto-char (max (point-min) (1- (window-end nil t))))
+        (line-beginning-position))))
+
+(defun mod-evil-next-line (count)
+  "Move down COUNT lines, or one-line scroll at the bottom edge of the window.
+When COUNT is nil and point is already on the last visible line, scroll by a
+single line instead of nudging the window by one line."
+  (interactive "P")
+  (let ((count-value (and count (prefix-numeric-value count))))
+    (if (and (null count)
+             (not (eobp))
+             (mod-evil--bottom-visible-line-p))
+        (evil-scroll-down 1)
+      (evil-next-line (or count-value 1)))))
+
+(defun mod-evil-previous-line (count)
+  "Move up COUNT lines, or one-line scroll at the top edge of the window.
+When COUNT is nil and point is already on the first visible line, scroll by a
+single line instead of nudging the window by one line."
+  (interactive "P")
+  (let ((count-value (and count (prefix-numeric-value count))))
+    (if (and (null count)
+             (not (bobp))
+             (mod-evil--top-visible-line-p))
+        (evil-scroll-up 1)
+      (evil-previous-line (or count-value 1)))))
 
 (defun mod-evil--skip-fold-forward (&rest _)
   "After `evil-next-line', jump past any invisible fold overlay at point.
