@@ -52,6 +52,10 @@ In =tcl-mode=:
 - =SPC m g= visits the project =TAGS= file automatically and jumps to the definition at point.
 - =SPC m s= searches known Tcl symbols gathered from project =TAGS= and optional user-known symbols.
 - completion-at-point / Corfu uses the same symbol pool, even when only the optional user-known symbols file is available
+- when Doxygen XML is available, Corfu also shows compact inline Tcl docs such as args or kind
+- documented Tcl symbols also get a small completion margin marker, so functions and other symbol kinds are easier to scan visually
+- selected Corfu candidates automatically show a richer right-side popup with summary, details, params, returns, and source when Doxygen XML has that metadata
+- completing a documented Tcl proc expands into snippet placeholders for its expected parameters when Yasnippet is active
 - Rebuild =TAGS= when navigation or highlighting looks stale.
 
 * Namespace Behavior
@@ -175,6 +179,9 @@ Behavior:
 - docs open in =docs/<project>=
 - source links open in =edit/<project>=
 - =q= goes back inside Tcl docs buffers
+- Doxygen XML also enriches Tcl Corfu completion when available
+- undocumented symbols still complete normally from =TAGS= and external known symbols
+- stale completion docs usually mean the XML needs regeneration with =SPC m d r=
 
 Defaults:
 - =<project-root>/Doxyfile=

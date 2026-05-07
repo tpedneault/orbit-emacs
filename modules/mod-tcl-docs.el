@@ -23,6 +23,12 @@
 (defconst mod-tcl-docs-regenerate-buffer-name "*tcl-doxygen*"
   "Compilation buffer name for Doxygen regeneration.")
 
+(defvar mod-tcl-docs--index-cache (make-hash-table :test #'equal)
+  "Cache of parsed Tcl Doxygen index data keyed by project and index mtime.")
+
+(defvar mod-tcl-docs--completion-entry-cache (make-hash-table :test #'equal)
+  "Cache of Tcl completion doc metadata keyed by project, index mtime, and symbol.")
+
 (defun mod-tcl-docs-go-back ()
   "Go back to the previous Tcl docs location using the xref stack."
   (interactive)
@@ -131,6 +137,45 @@ When no explicit override is set, this defaults to
     (if (fboundp 'libxml-parse-xml-region)
         (libxml-parse-xml-region (point-min) (point-max))
       (car (xml-parse-region (point-min) (point-max))))))
+
+(defun mod-tcl-docs--file-mtime (file)
+  "Return FILE's modification time, or nil when unavailable."
+  (when (and file (file-exists-p file))
+    (file-attribute-modification-time (file-attributes file))))
+
+(defun mod-tcl-docs--cache-context ()
+  "Return a cache context plist for Tcl Doxygen XML, or nil when unavailable."
+  (ignore-errors
+    (let* ((root (mod-tcl-docs--project-root))
+           (index-file (mod-tcl-docs--index-file))
+           (mtime (mod-tcl-docs--file-mtime index-file)))
+      (when (and root index-file mtime)
+        (list :root root :index-file index-file :mtime mtime)))))
+
+(defun mod-tcl-docs--cache-key ()
+  "Return the current Tcl Doxygen cache key, or nil when unavailable."
+  (when-let* ((context (mod-tcl-docs--cache-context)))
+    (list (plist-get context :root)
+          (plist-get context :index-file)
+          (plist-get context :mtime))))
+
+(defun mod-tcl-docs--invalidate-caches (&optional root)
+  "Clear Tcl Doxygen caches.
+When ROOT is non-nil, only remove cache entries for that project root."
+  (if root
+      (progn
+        (maphash
+         (lambda (key _value)
+           (when (equal (car key) root)
+             (remhash key mod-tcl-docs--index-cache)))
+         mod-tcl-docs--index-cache)
+        (maphash
+         (lambda (key _value)
+           (when (equal (car key) root)
+             (remhash key mod-tcl-docs--completion-entry-cache)))
+         mod-tcl-docs--completion-entry-cache))
+    (clrhash mod-tcl-docs--index-cache)
+    (clrhash mod-tcl-docs--completion-entry-cache)))
 
 (defun mod-tcl-docs--line-at-search-option (search-option)
   "Return a line number parsed from SEARCH-OPTION, or nil."
@@ -293,64 +338,73 @@ DUPLICATES is a hash table keyed by symbol names with occurrence counts."
 This minimal implementation assumes the Doxygen index contains `compound'
 entries with nested `member' nodes, and that each member's `refid' can be
 resolved inside the compound XML file named after the compound `refid'."
-  (let* ((root (mod-tcl-docs--parse-xml-file (mod-tcl-docs--index-file)))
-         (compounds (mod-tcl-docs--children-named root 'compound))
-         entries)
-    (dolist (compound compounds)
-      (let ((compound-refid (mod-tcl-docs--attr compound 'refid))
-            (compound-kind (mod-tcl-docs--attr compound 'kind))
-            (compound-name (mod-tcl-docs--text (mod-tcl-docs--child compound 'name))))
-        (dolist (member (mod-tcl-docs--children-named compound 'member))
-          (let* ((member-name (mod-tcl-docs--text (mod-tcl-docs--child member 'name)))
-                 (symbol (and member-name
-                              (mod-tcl-docs--qualified-symbol
-                               compound-kind
-                               compound-name
-                               member-name))))
-            (when (and symbol (not (string-empty-p symbol)))
-              (push (list :symbol symbol
-                          :member-name member-name
-                          :entry-type 'member
-                          :refid (mod-tcl-docs--attr member 'refid)
-                          :kind (mod-tcl-docs--attr member 'kind)
-                          :compound-refid compound-refid
-                          :compound-kind compound-kind
-                          :compound-name compound-name)
-                    entries))))))
-    (nreverse entries)))
+  (plist-get (mod-tcl-docs--index-data) :entries))
 
 (defun mod-tcl-docs--collect-index-compounds ()
   "Collect compound-level entries from Doxygen's index.xml."
-  (let* ((root (mod-tcl-docs--parse-xml-file (mod-tcl-docs--index-file)))
-         (compounds (mod-tcl-docs--children-named root 'compound))
-         entries)
-    (dolist (compound compounds)
-      (let ((name (mod-tcl-docs--text (mod-tcl-docs--child compound 'name)))
-            (kind (mod-tcl-docs--attr compound 'kind))
-            (refid (mod-tcl-docs--attr compound 'refid)))
-        (when (and name (not (string-empty-p name)))
-          (push (list :entry-type 'compound
-                      :symbol name
-                      :kind kind
-                      :refid refid)
-                entries))))
-    (nreverse entries)))
+  (plist-get (mod-tcl-docs--index-data) :compounds))
+
+(defun mod-tcl-docs--index-data ()
+  "Return cached Tcl Doxygen index data for the current project."
+  (let ((cache-key (or (mod-tcl-docs--cache-key)
+                       (user-error "No Doxygen XML index available"))))
+    (or (gethash cache-key mod-tcl-docs--index-cache)
+        (let* ((root (mod-tcl-docs--parse-xml-file (mod-tcl-docs--index-file)))
+               (compounds (mod-tcl-docs--children-named root 'compound))
+               entries
+               compound-entries
+               (entry-table (make-hash-table :test #'equal))
+               (compound-table (make-hash-table :test #'equal)))
+          (dolist (compound compounds)
+            (let ((compound-refid (mod-tcl-docs--attr compound 'refid))
+                  (compound-kind (mod-tcl-docs--attr compound 'kind))
+                  (compound-name (mod-tcl-docs--text (mod-tcl-docs--child compound 'name))))
+              (when (and compound-name (not (string-empty-p compound-name)))
+                (let ((compound-entry
+                       (list :entry-type 'compound
+                             :symbol compound-name
+                             :kind compound-kind
+                             :refid compound-refid)))
+                  (push compound-entry compound-entries)
+                  (puthash compound-refid compound-entry compound-table)))
+              (dolist (member (mod-tcl-docs--children-named compound 'member))
+                (let* ((member-name (mod-tcl-docs--text (mod-tcl-docs--child member 'name)))
+                       (symbol (and member-name
+                                    (mod-tcl-docs--qualified-symbol
+                                     compound-kind
+                                     compound-name
+                                     member-name))))
+                  (when (and symbol (not (string-empty-p symbol)))
+                    (let ((entry
+                           (list :symbol symbol
+                                 :member-name member-name
+                                 :entry-type 'member
+                                 :refid (mod-tcl-docs--attr member 'refid)
+                                 :kind (mod-tcl-docs--attr member 'kind)
+                                 :compound-refid compound-refid
+                                 :compound-kind compound-kind
+                                 :compound-name compound-name)))
+                      (push entry entries)
+                      (puthash symbol
+                               (cons entry (gethash symbol entry-table))
+                               entry-table)))))))
+          (let ((data (list :entries (nreverse entries)
+                            :compounds (nreverse compound-entries)
+                            :entry-table entry-table
+                            :compound-table compound-table)))
+            (puthash cache-key data mod-tcl-docs--index-cache)
+            data)))))
 
 (defun mod-tcl-docs--find-entry-by-symbol (symbol)
   "Return an index entry for SYMBOL, with conservative fallback matching."
-  (let* ((entries (mod-tcl-docs--collect-index-entries))
+  (let* ((index-data (mod-tcl-docs--index-data))
+         (entry-table (plist-get index-data :entry-table))
          (variants (mod-tcl-docs--lookup-variants symbol))
          (exact (cl-loop for variant in variants
-                         thereis (cl-find-if
-                                  (lambda (entry)
-                                    (string= (plist-get entry :symbol) variant))
-                                  entries))))
+                         thereis (car (gethash variant entry-table)))))
     (or exact
         (let* ((fallback (mod-tcl-docs--fallback-symbol symbol))
-               (matches (cl-remove-if-not
-                         (lambda (entry)
-                           (string= (plist-get entry :symbol) fallback))
-                         entries)))
+               (matches (copy-sequence (gethash fallback entry-table))))
           (when (= (length matches) 1)
             (car matches))))))
 
@@ -459,14 +513,11 @@ resolved inside the compound XML file named after the compound `refid'."
   (cl-find-if
    (lambda (entry)
      (equal (plist-get entry :refid) refid))
-   (mod-tcl-docs--collect-index-entries)))
+   (plist-get (mod-tcl-docs--index-data) :entries)))
 
 (defun mod-tcl-docs--compound-by-refid (refid)
   "Return the indexed compound entry identified by REFID."
-  (cl-find-if
-   (lambda (entry)
-     (equal (plist-get entry :refid) refid))
-   (mod-tcl-docs--collect-index-compounds)))
+  (gethash refid (plist-get (mod-tcl-docs--index-data) :compound-table)))
 
 (defun mod-tcl-docs--compound-inner-namespaces (compound)
   "Return indexed child namespace entries referenced by COMPOUND."
@@ -602,6 +653,104 @@ Currently supported XML structures:
                        (mod-tcl-docs--attr location 'file)))
      :source-line (or (mod-tcl-docs--attr location 'bodyline)
                       (mod-tcl-docs--attr location 'line)))))
+
+(defun mod-tcl-docs-completion-entry (symbol)
+  "Return cached Tcl Doxygen completion metadata for SYMBOL, or nil."
+  (when-let* ((cache-key (mod-tcl-docs--cache-key)))
+    (let ((entry-key (append cache-key (list symbol))))
+      (if (gethash entry-key mod-tcl-docs--completion-entry-cache)
+          (gethash entry-key mod-tcl-docs--completion-entry-cache)
+        (let ((doc
+               (ignore-errors
+                 (when-let* ((entry (mod-tcl-docs--find-entry-by-symbol symbol)))
+                   (mod-tcl-docs--entry-doc entry)))))
+          (puthash entry-key doc mod-tcl-docs--completion-entry-cache)
+          doc)))))
+
+(defun mod-tcl-docs--truncate-summary (text)
+  "Return TEXT normalized for compact completion display."
+  (when (and text (not (string-empty-p text)))
+    (truncate-string-to-width
+     (replace-regexp-in-string "[ \t\n\r]+" " " text)
+     72 nil nil t)))
+
+(defun mod-tcl-docs-completion-summary (symbol)
+  "Return a compact Tcl completion summary for SYMBOL, or nil."
+  (when-let* ((doc (mod-tcl-docs-completion-entry symbol)))
+    (or (when-let* ((args (plist-get doc :argsstring)))
+          (unless (string-empty-p args)
+            (format " %s" args)))
+        (when-let* ((kind (plist-get doc :kind)))
+          (unless (string-empty-p kind)
+            (format " %s" kind)))
+        (when-let* ((brief (mod-tcl-docs--truncate-summary (plist-get doc :brief))))
+          (format " %s" brief)))))
+
+(defun mod-tcl-docs--completion-doc-text (doc)
+  "Return compact completion-popup documentation text for DOC."
+  (let (sections)
+    (push (string-trim
+           (format "%s%s"
+                   (or (plist-get doc :symbol) "")
+                   (if-let* ((args (plist-get doc :argsstring))
+                             ((not (string-empty-p args))))
+                       (format " %s" args)
+                     "")))
+          sections)
+    (when-let* ((kind (plist-get doc :kind)))
+      (unless (string-empty-p kind)
+        (push (format "Kind: %s" kind) sections)))
+    (when-let* ((brief (plist-get doc :brief)))
+      (unless (string-empty-p brief)
+        (push (concat "Summary\n" brief) sections)))
+    (when-let* ((details (plist-get doc :details)))
+      (unless (string-empty-p details)
+        (push (concat "Details\n" details) sections)))
+    (when-let* ((parameters (plist-get doc :parameters)))
+      (when parameters
+        (push (concat
+               "Parameters\n"
+               (mapconcat
+                (lambda (parameter)
+                  (format "- %s :: %s" (car parameter) (cdr parameter)))
+                parameters
+                "\n"))
+              sections)))
+    (when-let* ((returns (plist-get doc :returns)))
+      (when returns
+        (push (concat "Returns\n" (string-join returns "\n")) sections)))
+    (when-let* ((file (plist-get doc :source-file)))
+      (push (format "Source\n%s%s"
+                    file
+                    (if-let* ((line (plist-get doc :source-line))
+                              ((not (string-empty-p line))))
+                        (format ":%s" line)
+                      ""))
+            sections))
+    (string-join (nreverse sections) "\n\n")))
+
+(defun mod-tcl-docs-completion-doc-buffer (symbol)
+  "Return a compact Tcl Doxygen documentation buffer for SYMBOL, or nil."
+  (when-let* ((doc (mod-tcl-docs-completion-entry symbol)))
+    (let ((buffer (get-buffer-create (format " *tcl-corfu-doc:%s*" symbol))))
+      (with-current-buffer buffer
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert (mod-tcl-docs--completion-doc-text doc))
+          (goto-char (point-min))
+          (special-mode)
+          (read-only-mode 1)))
+      buffer)))
+
+(defun mod-tcl-docs-completion-location (symbol)
+  "Return a Tcl Doxygen source location for SYMBOL, or nil."
+  (when-let* ((doc (mod-tcl-docs-completion-entry symbol))
+              (file (plist-get doc :source-file)))
+    (cons file
+          (if-let* ((line (plist-get doc :source-line))
+                    ((string-match-p "\\`[0-9]+\\'" line)))
+              (string-to-number line)
+            1))))
 
 (defun mod-tcl-docs--source-link (doc)
   "Return an Org source link string for DOC, or nil."
@@ -885,14 +1034,24 @@ LINK-FN receives an entry plist and must return an Org link string."
        "Doxygen config file not found: %s. Create %s or set orbit-user-doxygen-config-file."
        config-file
        config-file))
-    (let ((default-directory (file-name-directory config-file))
-        (compilation-buffer-name-function (lambda (_) mod-tcl-docs-regenerate-buffer-name)))
-      (compilation-start
-       (mapconcat #'shell-quote-argument
-                  (list orbit-user-doxygen-program config-file)
-                  " ")
-       'compilation-mode
-       (lambda (_) mod-tcl-docs-regenerate-buffer-name)))))
+    (let ((root (file-name-directory config-file))
+          (default-directory (file-name-directory config-file))
+          (compilation-buffer-name-function (lambda (_) mod-tcl-docs-regenerate-buffer-name)))
+      (mod-tcl-docs--invalidate-caches root)
+      (let ((buffer
+             (compilation-start
+              (mapconcat #'shell-quote-argument
+                         (list orbit-user-doxygen-program config-file)
+                         " ")
+              'compilation-mode
+              (lambda (_) mod-tcl-docs-regenerate-buffer-name))))
+        (with-current-buffer buffer
+          (add-hook
+           'compilation-finish-functions
+           (lambda (_buffer status)
+             (when (string-match-p "\\`finished" status)
+               (mod-tcl-docs--invalidate-caches root)))
+           nil t))))))
 
 (provide 'mod-tcl-docs)
 

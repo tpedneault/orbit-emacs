@@ -290,6 +290,8 @@
    `(corfu-current                  ((t (:background ,bg-hl :weight bold))))
    `(corfu-border                   ((t (:background ,bg-dim))))
    `(corfu-bar                      ((t (:background ,amber))))
+   `(corfu-annotations              ((t (:foreground ,fg-dim))))
+   `(corfu-popupinfo                ((t (:background ,bg-dark :foreground ,fg-main))))
    `(completions-common-part        ((t (:foreground ,amber :weight bold))))
    `(completions-first-difference   ((t (:foreground ,blue  :weight bold))))
    ;; ── Which-key ─────────────────────────────────────────────────────────────
@@ -475,6 +477,8 @@
    `(corfu-current                  ((t (:background ,bg-hl :weight bold))))
    `(corfu-border                   ((t (:background ,bg-dim))))
    `(corfu-bar                      ((t (:background ,amber))))
+   `(corfu-annotations              ((t (:foreground ,fg-dim))))
+   `(corfu-popupinfo                ((t (:background ,bg-dark :foreground ,fg-main))))
    `(completions-common-part        ((t (:foreground ,amber :weight bold))))
    `(completions-first-difference   ((t (:foreground ,blue  :weight bold))))
    ;; ── Which-key ─────────────────────────────────────────────────────────────

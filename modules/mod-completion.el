@@ -2,6 +2,24 @@
 
 (require 'cl-lib)
 
+(declare-function mod-tcl-docs-completion-entry "mod-tcl-docs" (symbol))
+
+(defun mod-completion-corfu-kind-margin (metadata)
+  "Return a Tcl-aware Corfu margin formatter for completion METADATA."
+  (when (eq (completion-metadata-get metadata 'category) 'tcl-symbol)
+    (lambda (candidate)
+      (let* ((entry (and (fboundp 'mod-tcl-docs-completion-entry)
+                         (ignore-errors (mod-tcl-docs-completion-entry candidate))))
+             (kind (plist-get entry :kind))
+             (icon
+              (pcase kind
+                ("function" (if (char-displayable-p ?λ) "λ " "f "))
+                ("namespace" (if (char-displayable-p ?◆) "◆ " "n "))
+                ("variable" (if (char-displayable-p ?•) "• " "v "))
+                ("file" (if (char-displayable-p ?◌) "◌ " "F "))
+                (_ "· "))))
+        (propertize icon 'face 'font-lock-keyword-face)))))
+
 (defun mod-completion--path-fragment-bounds ()
   "Return bounds for the current non-whitespace fragment ending at point."
   (save-excursion
@@ -107,6 +125,7 @@
         corfu-auto-prefix 2
         corfu-cycle t
         corfu-preselect 'prompt)
+  (add-hook 'corfu-margin-formatters #'mod-completion-corfu-kind-margin)
   (define-key corfu-map (kbd "TAB") nil)
   (define-key corfu-map (kbd "<tab>") nil)
   (define-key corfu-map (kbd "<backtab>") nil)
@@ -115,6 +134,17 @@
   (define-key corfu-map (kbd "C-k") #'corfu-previous)
   (define-key corfu-map (kbd "RET") #'corfu-insert)
   (global-corfu-mode 1))
+
+(use-package corfu-popupinfo
+  :ensure nil
+  :after corfu
+  :config
+  (setq corfu-popupinfo-delay '(0.8 . 0.3)
+        corfu-popupinfo-min-width 30
+        corfu-popupinfo-max-width 72
+        corfu-popupinfo-max-height 12
+        corfu-popupinfo-direction '(right left vertical))
+  (corfu-popupinfo-mode 1))
 
 (use-package cape
   :ensure t

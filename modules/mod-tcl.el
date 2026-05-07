@@ -8,6 +8,10 @@
 (require 'xref)
 
 (declare-function mod-tcl-docs-doxygen-config-file "mod-tcl-docs")
+(declare-function mod-tcl-docs-completion-doc-buffer "mod-tcl-docs" (symbol))
+(declare-function mod-tcl-docs-completion-entry "mod-tcl-docs" (symbol))
+(declare-function mod-tcl-docs-completion-location "mod-tcl-docs" (symbol))
+(declare-function mod-tcl-docs-completion-summary "mod-tcl-docs" (symbol))
 (declare-function mod-snippets-setup-completion "mod-snippets")
 
 (defgroup mod-tcl nil
@@ -856,6 +860,94 @@ When ROOT is non-nil, only remove cache entries for that project root."
         (when (< beg end)
           (cons beg end))))))
 
+(defun mod-tcl--completion-placeholder-names (candidate)
+  "Return snippet placeholder names for Tcl completion CANDIDATE."
+  (when (fboundp 'mod-tcl-docs-completion-entry)
+    (when-let* ((doc (ignore-errors (mod-tcl-docs-completion-entry candidate)))
+                (kind (plist-get doc :kind))
+                ((equal kind "function")))
+      (let* ((argsstring (plist-get doc :argsstring))
+             (parameters (plist-get doc :parameters))
+             (names (or (mod-tcl--completion-argsstring-names argsstring)
+                        (and parameters (mapcar #'car parameters)))))
+        (setq names
+              (cl-remove-duplicates
+               (delq nil
+                     (mapcar
+                      (lambda (name)
+                        (when (and (stringp name)
+                                   (string-match-p "\\`[[:alpha:]_][[:alnum:]_]*\\'" name))
+                          name))
+                      names))
+               :test #'equal))
+        (unless (null names)
+          names)))))
+
+(defun mod-tcl--completion-argsstring-names (argsstring)
+  "Return ordered Tcl argument names parsed from ARGSSTRING."
+  (when (and (stringp argsstring) (not (string-empty-p argsstring)))
+    (let* ((text (string-trim argsstring))
+           (inner (if (and (> (length text) 1)
+                           (eq (aref text 0) ?{)
+                           (eq (aref text (1- (length text))) ?}))
+                      (substring text 1 -1)
+                    text))
+           (token "")
+           (depth 0)
+           tokens)
+      (cl-labels ((flush-token ()
+                    (let ((trimmed (string-trim token)))
+                      (unless (string-empty-p trimmed)
+                        (push trimmed tokens)))
+                    (setq token "")))
+        (mapc
+         (lambda (char)
+           (cond
+            ((and (= depth 0) (memq char '(?\s ?\t ?\n ?\r)))
+             (flush-token))
+            (t
+             (setq token (concat token (string char)))
+             (cond
+              ((eq char ?{) (setq depth (1+ depth)))
+              ((and (eq char ?}) (> depth 0)) (setq depth (1- depth)))))))
+         (string-to-list inner))
+        (flush-token))
+      (let (names)
+        (dolist (item (nreverse tokens))
+          (let* ((trimmed (string-trim item "{} \t\n\r"))
+                 (name (car (split-string trimmed "[ \t\n\r]+" t))))
+            (when (and name
+                       (string-match-p "\\`[[:alpha:]_][[:alnum:]_]*\\'" name))
+              (push name names))))
+        (nreverse names)))))
+
+(defun mod-tcl--completion-snippet-body (candidate)
+  "Return a Yasnippet body for Tcl completion CANDIDATE, or nil."
+  (when-let* ((names (mod-tcl--completion-placeholder-names candidate)))
+    (concat
+     candidate
+     " "
+     (mapconcat
+      (lambda (entry)
+        (pcase-let ((`(,index . ,name) entry))
+          (format "${%d:%s}" index name)))
+      (cl-mapcar #'cons
+                 (number-sequence 1 (length names))
+                 names)
+      " ")
+     "$0")))
+
+(defun mod-tcl--completion-exit (candidate status)
+  "Expand Tcl completion placeholders for CANDIDATE when STATUS is `finished'."
+  (when (and (eq status 'finished)
+             (bound-and-true-p yas-minor-mode)
+             (fboundp 'yas-expand-snippet))
+    (when-let* ((snippet (mod-tcl--completion-snippet-body candidate)))
+      (let ((end (point))
+            (beg (- (point) (length candidate))))
+        (when (>= beg (point-min))
+          (yas-expand-snippet snippet beg end))))))
+
 (defun mod-tcl-completion-at-point ()
   "Provide Tcl symbol completion from project TAGS and known symbols."
   (when (and (derived-mode-p 'tcl-mode)
@@ -867,7 +959,24 @@ When ROOT is non-nil, only remove cache entries for that project root."
               (completion-table-dynamic
                (lambda (_string)
                  (mod-tcl--canonical-symbols nil)))
-              :exclusive 'no)))))
+              :exclusive 'no
+              :annotation-function
+              (lambda (candidate)
+                (when (fboundp 'mod-tcl-docs-completion-summary)
+                  (ignore-errors
+                    (mod-tcl-docs-completion-summary candidate))))
+              :category 'tcl-symbol
+              :company-doc-buffer
+              (lambda (candidate)
+                (when (fboundp 'mod-tcl-docs-completion-doc-buffer)
+                  (ignore-errors
+                    (mod-tcl-docs-completion-doc-buffer candidate))))
+              :company-location
+              (lambda (candidate)
+                (when (fboundp 'mod-tcl-docs-completion-location)
+                  (ignore-errors
+                    (mod-tcl-docs-completion-location candidate))))
+              :exit-function #'mod-tcl--completion-exit)))))
 
 (defun mod-tcl-setup-completion ()
   "Add Tcl symbol completion to the current buffer's CAPF flow."
