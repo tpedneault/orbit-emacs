@@ -151,6 +151,7 @@ Provided by =evil-mc=.
 
 | Keys            | Use                |
 |-----------------+--------------------|
+| =C-d=           | add next match (or half-page scroll when no match target is active) |
 | =C-n=           | add next match     |
 | =C-p=           | add previous match |
 | =M-n= / =M-p=   | move across cursors |

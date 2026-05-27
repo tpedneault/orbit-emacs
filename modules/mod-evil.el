@@ -4,12 +4,60 @@
 (setq evil-want-integration t
       evil-want-keybinding nil)
 
+(declare-function evil-mc-has-cursors-p "evil-mc-vars")
+(declare-function evil-mc-make-and-goto-next-match "evil-mc-cursor-make")
+(declare-function evil-mc-undo-all-cursors "evil-mc-cursor-make")
+
+(defun mod-evil--mc-target-available-p ()
+  "Return non-nil when a VS Code-style next-match action makes sense."
+  (or (and (fboundp 'evil-mc-has-cursors-p)
+           (evil-mc-has-cursors-p))
+      (and (bound-and-true-p evil-local-mode)
+           (evil-visual-state-p))
+      (thing-at-point 'symbol t)))
+
+(defun mod-evil--mc-activate-symbol-selection ()
+  "Promote the symbol at point into a visual selection for evil-mc.
+This makes the whole symbol visibly selected, which feels much closer to a
+VS Code-style Ctrl-D flow than starting from a bare cursor column."
+  (unless (evil-visual-state-p)
+    (when-let* ((range (ignore-errors (evil-inner-symbol))))
+      (evil-visual-char (car range) (1- (cadr range))))))
+
+(defun mod-evil-multicursor-next-match-or-scroll ()
+  "Add/select the next match like VS Code `C-d`, or keep scroll fallback.
+When there is an active visual selection, an existing evil-mc session, or a
+symbol at point, extend the multiple-cursor selection to the next match.
+Otherwise preserve Evil's normal half-page scroll on `C-d'."
+  (interactive)
+  (if (mod-evil--mc-target-available-p)
+      (condition-case nil
+          (progn
+            (mod-evil--mc-activate-symbol-selection)
+            (evil-mc-make-and-goto-next-match))
+        (error (evil-scroll-down nil)))
+    (evil-scroll-down nil)))
+
+(defun mod-evil-multicursor-quit-dwim ()
+  "Quit an active evil-mc session, or fall back to the usual quit behavior."
+  (interactive)
+  (if (and (fboundp 'evil-mc-has-cursors-p)
+           (evil-mc-has-cursors-p))
+      (evil-mc-undo-all-cursors)
+    (keyboard-quit)))
+
 (use-package evil
   :ensure t
   :demand t
   :config
   (define-key evil-motion-state-map "j" #'mod-evil-next-line)
   (define-key evil-motion-state-map "k" #'mod-evil-previous-line)
+  (define-key evil-normal-state-map (kbd "C-d") #'mod-evil-multicursor-next-match-or-scroll)
+  (define-key evil-visual-state-map (kbd "C-d") #'mod-evil-multicursor-next-match-or-scroll)
+  (define-key evil-normal-state-map (kbd "q") #'mod-evil-multicursor-quit-dwim)
+  (define-key evil-visual-state-map (kbd "q") #'mod-evil-multicursor-quit-dwim)
+  (define-key evil-normal-state-map (kbd "C-g") #'mod-evil-multicursor-quit-dwim)
+  (define-key evil-visual-state-map (kbd "C-g") #'mod-evil-multicursor-quit-dwim)
   (evil-mode 1))
 
 (use-package evil-collection
