@@ -52,6 +52,10 @@
 9. Inspect a file from another revision with =SPC g f f= when you want to compare without touching the working tree.
 10. Use the utility bay for transient support:
    - =SPC o p= toggles the Treemacs project tree
+   - inside Treemacs:
+     - =v= opens in a vertical split
+     - =s= opens in a horizontal split
+     - =o= opens in the most recently used editing window
    - =SPC o s= eat shell (opens or reuses the default shell)
    - =SPC o S= new named eat shell
    - =SPC o m= messages

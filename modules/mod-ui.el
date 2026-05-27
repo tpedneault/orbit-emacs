@@ -42,26 +42,35 @@
 
 (defun mod-ui-context-header-label ()
   "Return the current orbit context label for the header line."
-  (or (when (fboundp 'orbit-context-header-label)
+  (or (when (derived-mode-p 'treemacs-mode)
+        "FILES")
+      (when (fboundp 'orbit-context-header-label)
         (ignore-errors (orbit-context-header-label)))
       (mod-ui-context-name)))
 
 (defun mod-ui-context-header-face ()
   "Return the header-line face to use for the current context kind."
-  (pcase (mod-ui-context-kind)
-    ('edit-project 'orbit-header-context-edit)
-    ('git-project 'orbit-header-context-git)
-    ('files-root 'orbit-header-context-files)
-    ((or 'notes 'agenda) 'orbit-header-context-notes)
-    ((or 'edit-roam 'edit-loose) 'orbit-header-context-roam)
-    ('scratch 'orbit-header-context-scratch)
-    (_ 'orbit-header-context)))
+  (if (derived-mode-p 'treemacs-mode)
+      'orbit-header-context-files
+    (pcase (mod-ui-context-kind)
+      ('edit-project 'orbit-header-context-edit)
+      ('git-project 'orbit-header-context-git)
+      ('files-root 'orbit-header-context-files)
+      ((or 'notes 'agenda) 'orbit-header-context-notes)
+      ((or 'edit-roam 'edit-loose) 'orbit-header-context-roam)
+      ('scratch 'orbit-header-context-scratch)
+      (_ 'orbit-header-context))))
 
 ;;; ─── Header line ──────────────────────────────────────────────────────────────
 
 (defun mod-ui-header-path ()
   "Return the buffer path relative to the project root, or the buffer name."
   (cond
+   ((derived-mode-p 'treemacs-mode)
+    (if-let* ((proj (and (fboundp 'project-current) (project-current nil)))
+              (root (and proj (fboundp 'project-root) (project-root proj))))
+        (format "project tree · %s" (abbreviate-file-name root))
+      "project tree"))
    (buffer-file-name
     (let* ((proj (and (fboundp 'project-current) (project-current)))
            (root (and proj (fboundp 'project-root) (project-root proj))))

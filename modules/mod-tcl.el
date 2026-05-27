@@ -1239,8 +1239,6 @@ A diff preview is shown before the user confirms."
                '(tcl-mode "{" "}" "#" nil nil))
   (add-hook 'tcl-mode-hook #'mod-tcl--configure-editing-defaults)
   (add-hook 'tcl-mode-hook #'mod-tcl-enable-manual-folding)
-  (add-hook 'tcl-mode-hook #'mod-tcl--maybe-auto-fold-definitions)
-  (add-hook 'tcl-mode-hook #'mod-tcl--maybe-auto-fold-doxygen-comments)
   (add-hook 'tcl-mode-hook #'mod-tcl-setup-completion)
   (add-hook 'tcl-mode-hook #'mod-tcl--enable-symbol-highlighting))
 

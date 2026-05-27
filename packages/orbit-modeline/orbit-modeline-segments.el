@@ -74,7 +74,9 @@
 
 (defun orbit-modeline-buffer-name ()
   "Return the current buffer name."
-  (buffer-name))
+  (if (derived-mode-p 'treemacs-mode)
+      "Project Tree"
+    (buffer-name)))
 
 (defun orbit-modeline-buffer-state-markers ()
   "Return a list of buffer state markers."

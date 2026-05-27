@@ -15,6 +15,9 @@
 (declare-function treemacs-load-theme "treemacs-themes" (name))
 (declare-function treemacs-modify-theme "treemacs-themes" (theme &rest args))
 (declare-function treemacs--call-imenu-and-goto-tag "treemacs-tags" (tag-path &optional org?))
+(declare-function treemacs-visit-node-horizontal-split "treemacs")
+(declare-function treemacs-visit-node-in-most-recently-used-window "treemacs")
+(declare-function treemacs-visit-node-vertical-split "treemacs")
 
 (setq delete-by-moving-to-trash t
       dired-dwim-target t
@@ -83,6 +86,14 @@
               cursor-type nil)
   (when (boundp 'display-line-numbers)
     (setq-local display-line-numbers nil)))
+
+(defun mod-dired--treemacs-noise-file-p (filename _path)
+  "Return non-nil when FILENAME is generated noise for Treemacs purposes."
+  (or (member filename '("TAGS" ".DS_Store"))
+      (string-match-p "\\`#.*#\\'" filename)
+      (string-match-p "\\`\\.?#.*\\~\\'" filename)
+      (string-match-p "\\.elc\\'" filename)
+      (string-match-p "\\.pyc\\'" filename)))
 
 (defun mod-dired-setup-treemacs-icons ()
   "Override a few Treemacs file icons to better match Orbit workflows."
@@ -165,8 +176,20 @@ PATH is the category path inside the Treemacs tag index, such as
       "C" #'dired-do-copy
       "+" #'dired-create-directory)))
 
+(defun mod-dired-setup-treemacs-evil ()
+  "Install a few Orbit-friendly Treemacs window actions."
+  (when (and (fboundp 'evil-define-key)
+             (boundp 'treemacs-mode-map))
+    (evil-define-key 'treemacs treemacs-mode-map
+      "v" #'treemacs-visit-node-vertical-split
+      "s" #'treemacs-visit-node-horizontal-split
+      "o" #'treemacs-visit-node-in-most-recently-used-window)))
+
 (with-eval-after-load 'evil
   (mod-dired-setup-evil))
+
+(with-eval-after-load 'treemacs
+  (mod-dired-setup-treemacs-evil))
 
 (use-package treemacs
   :ensure t
@@ -176,9 +199,12 @@ PATH is the category path inside the Treemacs tag index, such as
         treemacs-position 'left
         treemacs-indentation 1
         treemacs-indentation-string " "
+        treemacs-follow-after-init t
         treemacs-show-hidden-files t
+        treemacs-move-forward-on-expand t
         treemacs-silent-filewatch t
         treemacs-space-between-root-nodes nil
+        treemacs-sorting 'alphabetic-case-insensitive-asc
         treemacs-user-mode-line-format nil
         treemacs-collapse-dirs 3
         treemacs-git-mode 'deferred)
@@ -186,6 +212,7 @@ PATH is the category path inside the Treemacs tag index, such as
   (treemacs-follow-mode 1)
   (treemacs-filewatch-mode 1)
   (treemacs-fringe-indicator-mode 'always)
+  (add-to-list 'treemacs-ignored-file-predicates #'mod-dired--treemacs-noise-file-p)
   (add-hook 'treemacs-mode-hook #'mod-dired-setup-treemacs-buffer)
   (treemacs-load-theme "Default")
   (mod-dired-setup-treemacs-icons)

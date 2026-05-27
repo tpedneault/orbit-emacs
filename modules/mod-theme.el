@@ -514,6 +514,45 @@
     "DejaVu Sans")
   "Ordered list of preferred variable-pitch font families.")
 
+(defun mod-theme-apply-treemacs-faces ()
+  "Align Treemacs faces with Orbit's visual language."
+  (when (featurep 'treemacs-faces)
+    (set-face-attribute 'treemacs-window-background-face nil
+                        :inherit 'default
+                        :background (face-background 'default nil t))
+    (set-face-attribute 'treemacs-hl-line-face nil
+                        :inherit 'hl-line
+                        :background (face-background 'hl-line nil t))
+    (set-face-attribute 'treemacs-root-face nil
+                        :inherit 'orbit-header-context-files
+                        :height 0.95
+                        :weight 'bold)
+    (set-face-attribute 'treemacs-directory-face nil
+                        :inherit 'font-lock-keyword-face
+                        :weight 'semi-bold)
+    (set-face-attribute 'treemacs-directory-collapsed-face nil
+                        :inherit 'shadow)
+    (set-face-attribute 'treemacs-file-face nil
+                        :inherit 'default)
+    (set-face-attribute 'treemacs-tags-face nil
+                        :inherit 'font-lock-function-name-face)
+    (set-face-attribute 'treemacs-fringe-indicator-face nil
+                        :inherit 'orbit-header-context-files)
+    (set-face-attribute 'treemacs-git-modified-face nil
+                        :inherit 'orbit-modeline-state-modified)
+    (set-face-attribute 'treemacs-git-renamed-face nil
+                        :inherit 'font-lock-keyword-face)
+    (set-face-attribute 'treemacs-git-untracked-face nil
+                        :inherit 'success)
+    (set-face-attribute 'treemacs-git-added-face nil
+                        :inherit 'success)
+    (set-face-attribute 'treemacs-git-ignored-face nil
+                        :inherit 'shadow)
+    (set-face-attribute 'treemacs-git-conflict-face nil
+                        :inherit 'error)
+    (set-face-attribute 'treemacs-git-unmodified-face nil
+                        :inherit 'default)))
+
 (defun mod-theme--first-available-font (candidates)
   "Return the first font family in CANDIDATES that is installed, or nil."
   (when (display-graphic-p)
@@ -561,6 +600,7 @@ Windows (where `find-font' scans the system font list synchronously)."
   (mapc #'disable-theme custom-enabled-themes)
   (enable-theme theme)
   (setq mod-theme--current theme)
+  (mod-theme-apply-treemacs-faces)
   (when apply-fonts
     (mod-theme-apply-font-stack))
   (force-mode-line-update t))
@@ -575,6 +615,8 @@ Windows (where `find-font' scans the system font list synchronously)."
 
 ;;; Re-apply font stack when a new GUI frame is created (e.g. emacsclient --create-frame).
 (add-hook 'after-make-frame-functions #'mod-theme-apply-font-stack)
+(with-eval-after-load 'treemacs-faces
+  (mod-theme-apply-treemacs-faces))
 
 ;; Apply the initial theme now (both defthemes are already defined above).
 ;; Font stack is NOT applied here — deferred below to avoid blocking on Windows.
