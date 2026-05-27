@@ -6,12 +6,16 @@
 (require 'project)
 (require 'subr-x)
 
+(eval-when-compile
+  (require 'evil nil t))
+
 (declare-function mod-tcl-docs-doxygen-config-file "mod-tcl-docs")
 (declare-function mod-tcl-docs-completion-doc-buffer "mod-tcl-docs" (symbol))
 (declare-function mod-tcl-docs-completion-entry "mod-tcl-docs" (symbol))
 (declare-function mod-tcl-docs-completion-location "mod-tcl-docs" (symbol))
 (declare-function mod-tcl-docs-completion-summary "mod-tcl-docs" (symbol))
 (declare-function mod-snippets-setup-completion "mod-snippets")
+(declare-function evil-range "evil" (beginning end &optional type expanded))
 
 (defgroup mod-tcl nil
   "Minimal Tcl workflow helpers."
@@ -56,6 +60,10 @@
 (defconst mod-tcl--imenu-namespace-regexp
   "^[[:blank:]]*namespace[[:blank:]]+eval[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]*{"
   "Regexp matching Tcl namespace definitions for Orbit imenu indexing.")
+
+(defconst mod-tcl--definition-regexp
+  "^[[:blank:]]*\\(?:proc[[:blank:]]+\\(?:\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]+\\|namespace[[:blank:]]+eval[[:blank:]]+\\(?:\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]*{\\)"
+  "Regexp matching top-level Tcl proc or namespace definitions.")
 
 (defun mod-tcl-indent-width ()
   "Return the preferred Tcl indentation width."
@@ -159,6 +167,184 @@ proc definitions, which in turn breaks Treemacs tag navigation."
   "Toggle the hideshow fold at point."
   (interactive)
   (hs-toggle-hiding))
+
+(defun mod-tcl--point-in-range-p (point start end)
+  "Return non-nil when POINT is between START and END inclusive."
+  (and start end (<= start point end)))
+
+(defun mod-tcl--definition-context-at-point (regexp)
+  "Return definition context at point matching REGEXP, or nil.
+The returned plist includes `:name', `:start', `:body-start', `:body-end',
+and `:end'."
+  (save-excursion
+    (let ((origin (point)))
+      (catch 'found
+        (while (re-search-backward regexp nil t)
+          (unless (nth 8 (syntax-ppss (match-beginning 0)))
+            (let ((name (match-string-no-properties 1))
+                  (start (line-beginning-position)))
+              (save-excursion
+                (goto-char (match-end 1))
+                (skip-chars-forward " \t\n\r")
+                (condition-case nil
+                    (progn
+                      (forward-sexp 1)
+                      (skip-chars-forward " \t\n\r")
+                      (when (eq (char-after) ?{)
+                        (let* ((body-open (point))
+                               (body-close (scan-sexps body-open 1))
+                               (end (and body-close
+                                         (save-excursion
+                                           (goto-char body-close)
+                                           (end-of-line)
+                                           (point)))))
+                          (when (and end
+                                     (mod-tcl--point-in-range-p origin start end))
+                            (throw 'found
+                                   (list :name name
+                                         :start start
+                                         :body-start (1+ body-open)
+                                         :body-end (1- body-close)
+                                         :end end))))))
+                  (error nil))))))))))
+
+(defun mod-tcl--proc-definition-context ()
+  "Return the Tcl proc definition context at point, or nil."
+  (mod-tcl--definition-context-at-point
+   "^[[:blank:]]*proc[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)"))
+
+(defun mod-tcl--namespace-definition-context ()
+  "Return the Tcl namespace definition context at point, or nil."
+  (mod-tcl--definition-context-at-point
+   "^[[:blank:]]*namespace[[:blank:]]+eval[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)"))
+
+(defun mod-tcl--continued-line-start ()
+  "Return the beginning of the current Tcl logical line.
+This walks backward across simple backslash-continued lines."
+  (save-excursion
+    (beginning-of-line)
+    (while (save-excursion
+             (forward-line -1)
+             (end-of-line)
+             (and (not (bobp))
+                  (eq (char-before) ?\\)))
+      (forward-line -1)
+      (beginning-of-line))
+    (point)))
+
+(defun mod-tcl--command-block-context ()
+  "Return the surrounding Tcl brace-bodied command context, or nil.
+This is a conservative structural helper for forms like:
+
+    titled \"Access caller variable\" {
+        ...
+    }
+
+The returned plist includes `:start', `:body-start', `:body-end', and `:end'."
+  (save-excursion
+    (let* ((origin (point))
+           (state (syntax-ppss origin))
+           (body-open (or (nth 1 state)
+                          (when (eq (char-after) ?{) (point)))))
+      (when body-open
+        (goto-char body-open)
+        (let* ((body-close (ignore-errors (scan-sexps body-open 1)))
+               (command-start (mod-tcl--continued-line-start))
+               (end (and body-close
+                         (save-excursion
+                           (goto-char body-close)
+                           (end-of-line)
+                           (point)))))
+          (when (and end
+                     (mod-tcl--point-in-range-p origin command-start end)
+                     (> body-open command-start)
+                     (save-excursion
+                       (goto-char command-start)
+                       (looking-at-p "^[[:blank:]]*[^#\n]"))
+                     (save-excursion
+                       (goto-char command-start)
+                       (re-search-forward "\\S-" body-open t)))
+            (list :start command-start
+                  :body-start (1+ body-open)
+                  :body-end (1- body-close)
+                  :end end)))))))
+
+(defun mod-tcl--goto-definition (count backward)
+  "Move to the next or previous Tcl definition.
+COUNT controls how many definitions to move across. When BACKWARD is non-nil,
+move backward."
+  (unless (derived-mode-p 'tcl-mode)
+    (user-error "Current buffer is not in tcl-mode"))
+  (let ((count (max 1 (or count 1)))
+        (search-fn (if backward #'re-search-backward #'re-search-forward))
+        (start (point))
+        found)
+    (dotimes (_ count)
+      (setq found nil)
+      (when backward
+        (forward-line -1)
+        (beginning-of-line))
+      (while (and (not found)
+                  (funcall search-fn mod-tcl--definition-regexp nil t))
+        (unless (nth 8 (syntax-ppss (match-beginning 0)))
+          (setq found (match-beginning 0))
+          (goto-char found)))
+      (unless found
+        (goto-char start)
+        (user-error "No %s Tcl definition"
+                    (if backward "previous" "next"))))
+    (back-to-indentation)))
+
+(defun mod-tcl-next-definition (count)
+  "Move to the next Tcl proc or namespace definition."
+  (interactive "p")
+  (mod-tcl--goto-definition count nil))
+
+(defun mod-tcl-previous-definition (count)
+  "Move to the previous Tcl proc or namespace definition."
+  (interactive "p")
+  (mod-tcl--goto-definition count t))
+
+(defun mod-tcl--evil-range-from-context (context &optional outer)
+  "Return an Evil range from CONTEXT.
+When OUTER is non-nil, return a linewise outer range; otherwise return the
+inner body range."
+  (when context
+    (evil-range
+     (if outer (plist-get context :start) (plist-get context :body-start))
+     (if outer (plist-get context :end) (plist-get context :body-end))
+     (if outer 'line 'exclusive)
+     t)))
+
+(evil-define-text-object mod-tcl-evil-inner-proc (count &optional beg end type)
+  "Select the inner body of the current Tcl proc."
+  (ignore count beg end type)
+  (mod-tcl--evil-range-from-context (mod-tcl--proc-definition-context)))
+
+(evil-define-text-object mod-tcl-evil-outer-proc (count &optional beg end type)
+  "Select the current Tcl proc including its definition line and braces."
+  (ignore count beg end type)
+  (mod-tcl--evil-range-from-context (mod-tcl--proc-definition-context) t))
+
+(evil-define-text-object mod-tcl-evil-inner-namespace (count &optional beg end type)
+  "Select the inner body of the current Tcl namespace block."
+  (ignore count beg end type)
+  (mod-tcl--evil-range-from-context (mod-tcl--namespace-definition-context)))
+
+(evil-define-text-object mod-tcl-evil-outer-namespace (count &optional beg end type)
+  "Select the current Tcl namespace block including its definition line."
+  (ignore count beg end type)
+  (mod-tcl--evil-range-from-context (mod-tcl--namespace-definition-context) t))
+
+(evil-define-text-object mod-tcl-evil-inner-command-block (count &optional beg end type)
+  "Select the inner body of the surrounding Tcl command block."
+  (ignore count beg end type)
+  (mod-tcl--evil-range-from-context (mod-tcl--command-block-context)))
+
+(evil-define-text-object mod-tcl-evil-outer-command-block (count &optional beg end type)
+  "Select the surrounding Tcl command block including its header."
+  (ignore count beg end type)
+  (mod-tcl--evil-range-from-context (mod-tcl--command-block-context) t))
 
 (defun mod-tcl--definition-start-line-p ()
   "Return non-nil when the current line starts a top-level Tcl definition."
@@ -1241,6 +1427,18 @@ A diff preview is shown before the user confirms."
   (add-hook 'tcl-mode-hook #'mod-tcl-enable-manual-folding)
   (add-hook 'tcl-mode-hook #'mod-tcl-setup-completion)
   (add-hook 'tcl-mode-hook #'mod-tcl--enable-symbol-highlighting))
+
+(with-eval-after-load 'evil
+  (define-key evil-inner-text-objects-map "p" #'mod-tcl-evil-inner-proc)
+  (define-key evil-outer-text-objects-map "p" #'mod-tcl-evil-outer-proc)
+  (define-key evil-inner-text-objects-map "n" #'mod-tcl-evil-inner-namespace)
+  (define-key evil-outer-text-objects-map "n" #'mod-tcl-evil-outer-namespace)
+  (define-key evil-inner-text-objects-map "c" #'mod-tcl-evil-inner-command-block)
+  (define-key evil-outer-text-objects-map "c" #'mod-tcl-evil-outer-command-block)
+  (with-eval-after-load 'tcl
+    (evil-define-key '(normal motion visual) tcl-mode-map
+      (kbd "]m") #'mod-tcl-next-definition
+      (kbd "[m") #'mod-tcl-previous-definition)))
 
 (provide 'mod-tcl)
 

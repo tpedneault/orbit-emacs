@@ -443,6 +443,8 @@
      "F" '(mod-tcl-fold-definitions :which-key "fold definitions")
      "D" '(mod-tcl-fold-doxygen-comments :which-key "fold doxygen comments")
      "TAB" '(mod-tcl-toggle-fold :which-key "toggle fold")
+     "n" '(mod-tcl-next-definition :which-key "next definition")
+     "p" '(mod-tcl-previous-definition :which-key "previous definition")
      "g" '(mod-tcl-find-tag :which-key "goto tag")
      "s" '(mod-tcl-search-symbols :which-key "search symbols")
      "v" '(mod-tcl-validate-tooling :which-key "validate tools")

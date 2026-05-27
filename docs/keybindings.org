@@ -258,7 +258,10 @@
 | =SPC m l=   | =mod-tcl-lint-file=      | lint current file   |
 | =SPC m f=   | =mod-tcl-format-file=    | format current file |
 | =SPC m F=   | =mod-tcl-fold-definitions= | fold definitions  |
+| =SPC m D=   | =mod-tcl-fold-doxygen-comments= | fold Doxygen comments |
 | =SPC m TAB= | =mod-tcl-toggle-fold=    | toggle fold at point |
+| =SPC m n=   | =mod-tcl-next-definition= | next proc / namespace |
+| =SPC m p=   | =mod-tcl-previous-definition= | previous proc / namespace |
 | =SPC m r r= | =mod-tcl-rename-local-symbol= | rename local variable in surrounding proc |
 | =SPC m r t= | =mod-tcl-rebuild-tags=   | rebuild project TAGS |
 | =SPC m g=   | =mod-tcl-find-tag=       | jump to definition  |
@@ -268,6 +271,11 @@
 | =SPC m d d= | =mod-tcl-docs-manual=    | project docs manual |
 | =SPC m d s= | =mod-tcl-docs-search=    | search docs         |
 | =SPC m d p= | =mod-tcl-docs-at-point=  | docs at point       |
+| =]m=        | =mod-tcl-next-definition= | next proc / namespace |
+| =[m=        | =mod-tcl-previous-definition= | previous proc / namespace |
+| =ip= / =ap= | Tcl proc text objects    | inner / around proc |
+| =in= / =an= | Tcl namespace text objects | inner / around namespace |
+| =ic= / =ac= | Tcl command block text objects | inner / around brace-bodied command |
 
 ** Python Buffer
 

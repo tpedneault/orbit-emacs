@@ -32,6 +32,8 @@ In =tcl-mode=:
 | =SPC m F=   | fold definitions       | top-level proc/namespace   |
 | =SPC m D=   | fold doxygen comments  | all =##= comment blocks    |
 | =SPC m TAB= | toggle fold            | fold at point              |
+| =SPC m n=   | next definition        | next proc / namespace      |
+| =SPC m p=   | previous definition    | previous proc / namespace  |
 | =SPC m r r= | rename local variable  | proc-body Tcl refactor     |
 | =SPC m r t= | rebuild TAGS           | project-local =TAGS=       |
 | =SPC m g=   | jump to definition     | uses project =TAGS=        |
@@ -51,6 +53,9 @@ In =tcl-mode=:
 - =SPC m r t= rebuilds the project-local =TAGS= file.
 - =SPC m g= visits the project =TAGS= file automatically and jumps to the definition at point.
 - =SPC m s= searches known Tcl symbols gathered from project =TAGS= and optional user-known symbols.
+- =SPC m n= and =SPC m p= move between top-level =proc= and =namespace eval= definitions.
+- =]m= and =[m= provide the same motions directly in Evil.
+- =ic= and =ac= operate on generic brace-bodied Tcl command blocks.
 - completion-at-point / Corfu uses the same symbol pool, even when only the optional user-known symbols file is available
 - when Doxygen XML is available, Corfu also shows compact inline Tcl docs such as args or kind
 - documented Tcl symbols also get a small completion margin marker, so functions and other symbol kinds are easier to scan visually
@@ -196,7 +201,7 @@ If the XML directory or =index.xml= is missing, regenerate docs with =SPC m d r=
 
 * Folding
 
-Folding is powered by =hs-minor-mode= (hideshow), which is enabled automatically in every Tcl buffer.
+Folding is powered by =hs-minor-mode= (hideshow), which is enabled in every Tcl buffer. Definitions are no longer folded automatically on open, so folding stays manual unless you explicitly opt back into the auto-fold settings.
 
 ** Definition folding
 
@@ -213,6 +218,27 @@ Definition folding limits:
 
 - =SPC m D= folds all Doxygen comment blocks in the buffer
 - set =orbit-user-tcl-auto-fold-doxygen-comments t= to fold them automatically when a file opens
+
+* Structural Editing
+
+Orbit now exposes a first Tcl-specific structural editing layer for Evil.
+
+- =ip= selects the inner body of the surrounding =proc=
+- =ap= selects the whole surrounding =proc= including its header and braces
+- =in= selects the inner body of the surrounding =namespace eval=
+- =an= selects the whole surrounding =namespace eval= block
+- =ic= selects the inner body of the surrounding brace-bodied command
+- =ac= selects the whole surrounding brace-bodied command including its header
+- =]m= jumps to the next top-level =proc= or =namespace eval=
+- =[m= jumps to the previous top-level =proc= or =namespace eval=
+
+This gives you useful motions like:
+
+- =vip= select the current proc body
+- =dap= delete the whole proc
+- =cin= change the inside of a namespace block
+- =vac= select a command form like =titled "Access caller variable" { ... }=
+- =]m= / =[m= move structurally between top-level Tcl definitions
 
 A Doxygen block is a run of consecutive comment lines where the first line starts with =##= (the standard Doxygen marker for Tcl).  Subsequent lines start with =#=.  Example:
 
@@ -249,7 +275,7 @@ missing symbols in the XML output.
 * Troubleshooting
 
 - =SPC m g= cannot find a symbol:
-  rebuild =TAGS= with =SPC m r=
+  rebuild =TAGS= with =SPC m r t=
 - symbol search is missing entries:
   check the project root and confirm the right =TAGS= file was rebuilt
 - docs search is empty:
@@ -262,7 +288,7 @@ missing symbols in the XML output.
 * Typical Loop
 
 1. Open a Tcl project with =SPC x e=.
-2. Rebuild =TAGS= with =SPC m r=.
+2. Rebuild =TAGS= with =SPC m r t=.
 3. Jump with =SPC m g= or search with =SPC m s=.
 4. Lint with =SPC m l=.
 5. Format with =SPC m f= when needed.
