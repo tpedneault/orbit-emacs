@@ -23,6 +23,9 @@
 (defvar mod-snippets--evil-insert-tab-fallback #'indent-for-tab-command
   "Fallback command for `TAB' in Evil insert state.")
 
+(defvar mod-snippets--evil-insert-backtab-fallback nil
+  "Fallback command for `<backtab>' in Evil insert state.")
+
 (defun mod-snippets--bounds ()
   "Return practical snippet completion bounds at point."
   (or (bounds-of-thing-at-point 'symbol)
@@ -82,9 +85,28 @@
 (defun mod-snippets-expand-or-tab ()
   "Expand a snippet at point, or fall back to normal `TAB' behavior."
   (interactive)
-  (unless (and (bound-and-true-p yas-minor-mode)
-               (yas-expand))
-    (call-interactively mod-snippets--evil-insert-tab-fallback)))
+  (cond
+   ((and (bound-and-true-p yas-minor-mode)
+         (fboundp 'yas-active-snippets)
+         (yas-active-snippets)
+         (fboundp 'yas-next-field-or-maybe-expand))
+    (call-interactively #'yas-next-field-or-maybe-expand))
+   ((and (bound-and-true-p yas-minor-mode)
+         (yas-expand)))
+   (t
+    (call-interactively mod-snippets--evil-insert-tab-fallback))))
+
+(defun mod-snippets-previous-field-or-backtab ()
+  "Move to the previous active snippet field, or fall back to `<backtab>'."
+  (interactive)
+  (cond
+   ((and (bound-and-true-p yas-minor-mode)
+         (fboundp 'yas-active-snippets)
+         (yas-active-snippets)
+         (fboundp 'yas-prev-field))
+   (call-interactively #'yas-prev-field))
+   ((commandp mod-snippets--evil-insert-backtab-fallback)
+    (call-interactively mod-snippets--evil-insert-backtab-fallback))))
 
 (use-package yasnippet
   :ensure t
@@ -102,8 +124,17 @@
   (let ((fallback (lookup-key evil-insert-state-map (kbd "TAB"))))
     (when (commandp fallback)
       (setq mod-snippets--evil-insert-tab-fallback fallback)))
+  (let ((backtab-fallback (lookup-key evil-insert-state-map (kbd "<backtab>"))))
+    (when (commandp backtab-fallback)
+      (setq mod-snippets--evil-insert-backtab-fallback backtab-fallback)))
   (define-key evil-insert-state-map (kbd "TAB") #'mod-snippets-expand-or-tab)
-  (define-key evil-insert-state-map (kbd "<tab>") #'mod-snippets-expand-or-tab))
+  (define-key evil-insert-state-map (kbd "<tab>") #'mod-snippets-expand-or-tab)
+  (define-key evil-insert-state-map (kbd "<backtab>") #'mod-snippets-previous-field-or-backtab))
+
+(with-eval-after-load 'yasnippet
+  (define-key yas-keymap (kbd "TAB") #'yas-next-field-or-maybe-expand)
+  (define-key yas-keymap (kbd "<tab>") #'yas-next-field-or-maybe-expand)
+  (define-key yas-keymap (kbd "<backtab>") #'yas-prev-field))
 
 (provide 'mod-snippets)
 
