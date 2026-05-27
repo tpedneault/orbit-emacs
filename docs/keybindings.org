@@ -103,6 +103,7 @@
 |-----------+---------------------------+------------------|
 | =SPC o o= | =mod-utility-toggle=      | close or reopen  |
 | =SPC o O= | =mod-core-open-at-point=  | open URL or file path at point |
+| =SPC o p= | =mod-dired-project-sidebar-toggle= | toggle Treemacs project tree |
 | =SPC o s= | =mod-utility-shell=       | built-in shell   |
 | =SPC o m= | =mod-utility-messages=    | =*Messages*=     |
 | =SPC o h= | =mod-utility-help=        | =*Help*=         |

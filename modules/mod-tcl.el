@@ -49,6 +49,14 @@
      (1 'font-lock-function-name-face keep)))
   "Font-lock keywords used for Tcl project symbol highlighting.")
 
+(defconst mod-tcl--imenu-proc-regexp
+  "^[[:blank:]]*proc[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]+"
+  "Regexp matching Tcl proc definitions for Orbit imenu indexing.")
+
+(defconst mod-tcl--imenu-namespace-regexp
+  "^[[:blank:]]*namespace[[:blank:]]+eval[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]*{"
+  "Regexp matching Tcl namespace definitions for Orbit imenu indexing.")
+
 (defun mod-tcl-indent-width ()
   "Return the preferred Tcl indentation width."
   (or orbit-user-tcl-indent-width mod-tcl-default-indent-width))
@@ -87,11 +95,49 @@
    orbit-user-tcl-enable-fill-column-indicator
    orbit-user-enable-fill-column-indicator))
 
+(defun mod-tcl--imenu-display-name (symbol)
+  "Return a compact display name for Tcl SYMBOL."
+  (if (string-match "::\\([^:]+\\)\\'" symbol)
+      (match-string 1 symbol)
+    symbol))
+
+(defun mod-tcl--imenu-marker-at-match ()
+  "Return a marker for the current imenu match."
+  (copy-marker (match-beginning 1)))
+
+(defun mod-tcl-imenu-create-index ()
+  "Build a conservative imenu index for Tcl buffers.
+This avoids edge cases in the default Tcl imenu indexer that can miss later
+proc definitions, which in turn breaks Treemacs tag navigation."
+  (let (functions namespaces)
+    (save-excursion
+      (save-restriction
+        (widen)
+        (goto-char (point-min))
+        (while (re-search-forward mod-tcl--imenu-namespace-regexp nil t)
+          (unless (nth 8 (syntax-ppss (match-beginning 0)))
+            (push (cons (mod-tcl--imenu-display-name (match-string-no-properties 1))
+                        (mod-tcl--imenu-marker-at-match))
+                  namespaces)))
+        (goto-char (point-min))
+        (while (re-search-forward mod-tcl--imenu-proc-regexp nil t)
+          (unless (nth 8 (syntax-ppss (match-beginning 0)))
+            (push (cons (mod-tcl--imenu-display-name (match-string-no-properties 1))
+                        (mod-tcl--imenu-marker-at-match))
+                  functions)))))
+    (let (index)
+      (when functions
+        (push (cons "Functions" (nreverse functions)) index))
+      (when namespaces
+        (push (cons "Namespaces" (nreverse namespaces)) index))
+      (nreverse index))))
+
 (defun mod-tcl--configure-editing-defaults ()
   "Apply Tcl editing defaults to the current buffer."
   (setq-local indent-tabs-mode (mod-tcl-use-tabs-p)
               tab-width (mod-tcl-indent-width)
-              fill-column (mod-tcl-fill-column))
+              fill-column (mod-tcl-fill-column)
+              imenu-create-index-function #'mod-tcl-imenu-create-index)
   (when (boundp 'tcl-indent-level)
     (setq-local tcl-indent-level (mod-tcl-indent-width)))
   (setq-local display-fill-column-indicator-column fill-column)
@@ -1183,10 +1229,7 @@ A diff preview is shown before the user confirms."
            (when (string-match-p "\\`finished" status)
              (mod-tcl--invalidate-canonical-symbol-cache root)
              (mod-tcl--refresh-symbol-highlighting-in-project root)))
-         nil t)))
-    (when-let* ((tags-file (expand-file-name "TAGS" root)))
-      (when (file-exists-p tags-file)
-        (visit-tags-table tags-file t)))))
+         nil t)))))
 
 (defalias 'mod-tcl-show-output #'mod-tcl--display-output-buffer)
 

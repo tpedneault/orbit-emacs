@@ -164,6 +164,7 @@ aborting init."
 (load mod-core-user-config-file nil 'nomessage)
 (setq custom-file mod-core-custom-file)
 (load custom-file 'noerror 'nomessage)
+(setq use-short-answers t)
 
 (unless orbit-user-snippets-directory
   (setq orbit-user-snippets-directory mod-core-user-snippets-directory))

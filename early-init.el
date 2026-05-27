@@ -96,6 +96,12 @@
 ;; orbit-emacs initializes packages explicitly from `init.el`.
 (setq package-enable-at-startup nil)
 
+;; Evil and evil-collection both expect these to be decided before either
+;; package is loaded, and some integrations can pull Evil in earlier than the
+;; dedicated `mod-evil' module does.
+(setq evil-want-integration t
+      evil-want-keybinding nil)
+
 ;; Emacs 31's native compiler can emit a lot of benign warnings for third-party
 ;; packages during install/update.  Keep real init errors visible, but suppress
 ;; this noisy warning class so first-run package setup stays readable.

@@ -289,6 +289,8 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
   (add-hook 'magit-mode-hook #'mod-ui--enable-header-line))
 (with-eval-after-load 'org-agenda
   (add-hook 'org-agenda-mode-hook #'mod-ui--enable-header-line))
+(with-eval-after-load 'treemacs
+  (add-hook 'treemacs-mode-hook #'mod-ui--enable-header-line))
 
 ;; ── Miscellaneous defaults ────────────────────────────────────────────────────
 (setq-default display-line-numbers-type 'relative
