@@ -52,7 +52,7 @@
 ;; `orbit-user-evil-pulse-alphas` controls the fade shape: each number is a
 ;; blend strength from 0.0 to 1.0, where larger values are more opaque/brighter.
 ;; `orbit-user-evil-pulse-interval` is the time between animation frames.
-;; Leave the color nil to derive a theme-aware accent from the current theme.
+;; Leave the color nil to use the active theme's yank/paste pulse accent.
 (setq orbit-user-evil-pulse-enabled t)
 (setq orbit-user-evil-pulse-interval 0.04)
 (setq orbit-user-evil-pulse-alphas '(0.82 0.62 0.44 0.28 0.15 0.06))
@@ -132,8 +132,16 @@
 
 ;; ─── Visual design ──────────────────────────────────────────────────────────
 
-;; Initial theme: 'orbit-dark (deep navy, default) or 'orbit-light (warm cream).
-;; Toggle at runtime with SPC t T.
+;; Initial theme:
+;; - 'orbit-dark (deep navy, default)
+;; - 'orbit-light (warm cream)
+;; - 'orbit-retro-amber (amber CRT)
+;; - 'orbit-retro-green (green phosphor terminal)
+;; - 'orbit-retro-blue (late-night blue terminal)
+;; - 'orbit-retro-temple (TempleOS-inspired bright primary colors)
+;; - 'orbit-retro-paper (dot-matrix paper)
+;; - 'orbit-retro-sky (light blue workstation)
+;; Choose at runtime with SPC t T.
 (setq orbit-user-orbit-theme 'orbit-dark)
 
 ;; Set to t if you have a Nerd Font installed (e.g. JetBrainsMono Nerd Font).

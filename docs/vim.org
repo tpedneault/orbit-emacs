@@ -39,7 +39,8 @@ Think in:
 Yank and paste commands briefly animate the affected text as visual feedback.
 Customize this with =orbit-user-evil-pulse-enabled=,
 =orbit-user-evil-pulse-interval=, =orbit-user-evil-pulse-alphas=, and
-=orbit-user-evil-pulse-color= in =config.el=.
+=orbit-user-evil-pulse-color= in =config.el=.  When the color is nil, Orbit
+uses the active theme's pulse accent.
 
 * Motions
 

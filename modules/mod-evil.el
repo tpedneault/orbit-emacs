@@ -50,8 +50,27 @@
 
 (defun mod-evil--color-rgb (color)
   "Return COLOR as normalized RGB components, or nil."
-  (when-let* ((values (and color (color-values color))))
-    (mapcar (lambda (value) (/ value 65535.0)) values)))
+  (cond
+   ((and (stringp color)
+         (string-match
+          "\\`#\\([[:xdigit:]]\\{2\\}\\)\\([[:xdigit:]]\\{2\\}\\)\\([[:xdigit:]]\\{2\\}\\)\\'"
+          color))
+    (mapcar (lambda (group)
+              (/ (string-to-number (match-string group color) 16) 255.0))
+            '(1 2 3)))
+   ((and (stringp color)
+         (string-match
+          "\\`#\\([[:xdigit:]]\\)\\([[:xdigit:]]\\)\\([[:xdigit:]]\\)\\'"
+          color))
+    (mapcar (lambda (group)
+              (/ (string-to-number (concat (match-string group color)
+                                           (match-string group color))
+                                   16)
+                 255.0))
+            '(1 2 3)))
+   (t
+    (when-let* ((values (and color (color-values color))))
+      (mapcar (lambda (value) (/ value 65535.0)) values)))))
 
 (defun mod-evil--pulse-background-color ()
   "Return the current frame background color for pulse blending."
@@ -66,6 +85,7 @@
   (let* ((background (mod-evil--pulse-background-color))
          (accent (or (and (boundp 'orbit-user-evil-pulse-color)
                           orbit-user-evil-pulse-color)
+                     (face-background mod-evil--pulse-face nil t)
                      (face-foreground 'warning nil t)
                      (face-background 'region nil t)
                      "#f5d76e"))

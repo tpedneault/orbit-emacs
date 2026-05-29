@@ -2,23 +2,31 @@
 
 * Overview
 
-Orbit Emacs ships two bespoke themes — =orbit-dark= and =orbit-light= — plus a
-powerline modeline, a global header line, and a rich home-screen dashboard.
+Orbit Emacs ships bespoke themes, a powerline modeline, a global header line,
+and a rich home-screen dashboard.
 Every visual element is pure styling; no core feature is altered.
 
 * Themes
 
-| Theme          | Character                        |
-|----------------+----------------------------------|
-| =orbit-dark=   | Deep navy with warm amber accent |
-| =orbit-light=  | Warm cream / paper               |
+| Theme                 | Character                                  |
+|-----------------------+--------------------------------------------|
+| =orbit-dark=          | Deep navy with warm amber accent           |
+| =orbit-light=         | Warm cream / paper                         |
+| =orbit-retro-amber=   | Amber CRT glow on warm black               |
+| =orbit-retro-green=   | Green phosphor terminal                    |
+| =orbit-retro-blue=    | Late-night blue terminal                   |
+| =orbit-retro-temple=  | TempleOS-inspired bright primary colors    |
+| =orbit-retro-paper=   | Dot-matrix paper with softened colors      |
+| =orbit-retro-sky=     | Light blue workstation palette             |
 
-Toggle at runtime: =SPC t T=
+Choose at runtime with completion: =SPC t T=
 
 Set the default in your config:
 
 #+begin_src emacs-lisp
-;; 'orbit-dark (default) or 'orbit-light
+;; 'orbit-dark, 'orbit-light, 'orbit-retro-amber, 'orbit-retro-green,
+;; 'orbit-retro-blue, 'orbit-retro-temple, 'orbit-retro-paper,
+;; or 'orbit-retro-sky
 (setq orbit-user-orbit-theme 'orbit-dark)
 #+end_src
 
@@ -54,6 +62,24 @@ Set the default in your config:
 | green        | =#276749= | strings                          |
 | red          | =#c0392b= | errors                           |
 | cyan         | =#1a7490= | types, insert state              |
+
+*** retro themes
+
+The retro themes keep the same Orbit face roles and modeline grammar, but shift
+the palette toward older terminal aesthetics:
+
+| Theme                 | Base feel                         | Signature accent |
+|-----------------------+-----------------------------------+------------------|
+| =orbit-retro-amber=   | warm black / amber CRT            | =#ffb454=        |
+| =orbit-retro-green=   | dark phosphor terminal            | =#65ff7a=        |
+| =orbit-retro-blue=    | blue-black late-night terminal    | =#5cc8ff=        |
+| =orbit-retro-temple=  | white screen / primary colors     | =#0000aa=        |
+| =orbit-retro-paper=   | dot-matrix paper                  | =#9a6a00=        |
+| =orbit-retro-sky=     | light blue workstation            | =#0069aa=        |
+
+They are intentionally not full novelty themes: comments, diffs, completion,
+Org, modeline states, and context colors preserve the normal Orbit visual
+language so switching themes does not change how the editor reads.
 
 * Font Stack
 

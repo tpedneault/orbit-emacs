@@ -84,7 +84,7 @@
         dashboard-set-navigator nil
         dashboard-set-init-info t
         dashboard-footer-messages
-        '("SPC h h  →  return here  ·  SPC t T  →  toggle theme  ·  SPC x e  →  edit context"))
+        '("SPC h h  →  return here  ·  SPC t T  →  choose theme  ·  SPC x e  →  edit context"))
   :config
   (with-eval-after-load 'mod-theme
     (custom-set-faces

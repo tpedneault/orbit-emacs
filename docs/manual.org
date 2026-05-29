@@ -123,6 +123,9 @@ Settings available by section:
 - =orbit-user-variable-pitch-font= — proportional font for org prose (leave nil to stay monospace)
 - =orbit-user-variable-pitch-height= — height for variable-pitch; float (=1.0=) or absolute integer
 - =orbit-user-variable-pitch-weight= — weight for variable-pitch face
+- =orbit-user-orbit-theme= — one of =orbit-dark=, =orbit-light=,
+  =orbit-retro-amber=, =orbit-retro-green=, =orbit-retro-blue=,
+  =orbit-retro-temple=, =orbit-retro-paper=, or =orbit-retro-sky=
 
 When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically kept in sync, so org tables and code blocks stay aligned even when =mixed-pitch-mode= is active.
 
@@ -133,7 +136,7 @@ When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically ke
 - =orbit-user-evil-pulse-enabled= — animate Evil yank/paste feedback
 - =orbit-user-evil-pulse-interval= — seconds between pulse animation frames
 - =orbit-user-evil-pulse-alphas= — fade steps from most visible to least visible
-- =orbit-user-evil-pulse-color= — optional pulse accent color; nil derives one from the theme
+- =orbit-user-evil-pulse-color= — optional pulse accent color; nil uses the active theme's pulse accent
 
 *Tools* — =orbit-user-rg-program=, =orbit-user-ctags-program=
 
