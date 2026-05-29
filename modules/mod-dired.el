@@ -2,6 +2,8 @@
 
 (require 'dired)
 (require 'dired-x)
+(require 'cl-lib)
+(require 'imenu)
 (require 'project)
 
 (eval-when-compile
@@ -14,6 +16,7 @@
 (declare-function treemacs-create-icon "treemacs-icons" (&rest args))
 (declare-function treemacs-load-theme "treemacs-themes" (name))
 (declare-function treemacs-modify-theme "treemacs-themes" (theme &rest args))
+(declare-function treemacs--get-imenu-index "treemacs-tags" (file))
 (declare-function treemacs--call-imenu-and-goto-tag "treemacs-tags" (tag-path &optional org?))
 (declare-function treemacs-visit-node-horizontal-split "treemacs")
 (declare-function treemacs-visit-node-in-most-recently-used-window "treemacs")
@@ -23,6 +26,14 @@
       dired-dwim-target t
       dired-recursive-copies 'always
       dired-recursive-deletes 'top)
+
+(defconst mod-dired--treemacs-tcl-proc-regexp
+  "^[[:blank:]]*proc[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]+"
+  "Regexp matching Tcl proc definitions for Treemacs tag indexing.")
+
+(defconst mod-dired--treemacs-tcl-namespace-regexp
+  "^[[:blank:]]*namespace[[:blank:]]+eval[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]*{"
+  "Regexp matching Tcl namespace definitions for Treemacs tag indexing.")
 
 (let ((gls (executable-find "gls"))
       (ls (executable-find "ls")))
@@ -114,6 +125,100 @@
   "Return non-nil when FILE is a Tcl-family source file."
   (member (downcase (or (file-name-extension file) ""))
           '("tcl" "tm" "xdc" "sdc" "upf")))
+
+(defun mod-dired--treemacs-file-too-large-p (file)
+  "Return non-nil when FILE should not be indexed for Treemacs tags."
+  (and orbit-user-treemacs-tags-max-file-size
+       (file-regular-p file)
+       (let ((attrs (file-attributes file)))
+         (and attrs
+              (> (file-attribute-size attrs)
+                 orbit-user-treemacs-tags-max-file-size)))))
+
+(defun mod-dired--treemacs-count-tags (index)
+  "Return the number of leaf tags in INDEX."
+  (cl-labels ((count-item
+               (item)
+               (if (imenu--subalist-p item)
+                   (mod-dired--treemacs-count-tags (cdr item))
+                 1)))
+    (cl-loop for item in index sum (count-item item))))
+
+(defun mod-dired--treemacs-tags-too-many-p (index)
+  "Return non-nil when INDEX has too many tags for Treemacs to render safely."
+  (and orbit-user-treemacs-tags-max-items
+       (> (mod-dired--treemacs-count-tags index)
+          orbit-user-treemacs-tags-max-items)))
+
+(defun mod-dired--treemacs-tcl-display-name (symbol)
+  "Return a compact display name for Tcl SYMBOL."
+  (if (string-match "::\\([^:]+\\)\\'" symbol)
+      (match-string 1 symbol)
+    symbol))
+
+(defun mod-dired--treemacs-limited-push-tag (name pos tags count)
+  "Push NAME and POS into TAGS while COUNT is below the configured limit."
+  (if (and orbit-user-treemacs-tags-max-items
+           (>= (car count) orbit-user-treemacs-tags-max-items))
+      tags
+    (cl-incf (car count))
+    (push (cons (mod-dired--treemacs-tcl-display-name name) pos) tags)))
+
+(defun mod-dired--treemacs-tag-limit-reached-p (count)
+  "Return non-nil when COUNT has reached the configured tag item limit."
+  (and orbit-user-treemacs-tags-max-items
+       (>= (car count) orbit-user-treemacs-tags-max-items)))
+
+(defun mod-dired--treemacs-tcl-imenu-index (file)
+  "Return a fast Treemacs tag index for Tcl-family FILE."
+  (let (functions namespaces
+        (count (list 0)))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (goto-char (point-min))
+      (while (and (not (mod-dired--treemacs-tag-limit-reached-p count))
+                  (re-search-forward mod-dired--treemacs-tcl-namespace-regexp nil t))
+        (setq namespaces
+              (mod-dired--treemacs-limited-push-tag
+               (match-string-no-properties 1)
+               (match-beginning 1)
+               namespaces
+               count)))
+      (goto-char (point-min))
+      (while (and (not (mod-dired--treemacs-tag-limit-reached-p count))
+                  (re-search-forward mod-dired--treemacs-tcl-proc-regexp nil t))
+        (setq functions
+              (mod-dired--treemacs-limited-push-tag
+               (match-string-no-properties 1)
+               (match-beginning 1)
+               functions
+               count))))
+    (let (index)
+      (when functions
+        (push (cons "Functions" (nreverse functions)) index))
+      (when namespaces
+        (push (cons "Namespaces" (nreverse namespaces)) index))
+      (when (mod-dired--treemacs-tag-limit-reached-p count)
+        (message "Treemacs tags capped at %d for %s"
+                 orbit-user-treemacs-tags-max-items
+                 file))
+      (nreverse index))))
+
+(defun mod-dired--treemacs-safe-imenu-index (orig file)
+  "Guard Treemacs tag indexing for FILE before calling ORIG."
+  (cond
+   ((mod-dired--treemacs-file-too-large-p file)
+    (message "Treemacs tags skipped for large file: %s" file)
+    nil)
+   ((mod-dired--tcl-file-p file)
+    (mod-dired--treemacs-tcl-imenu-index file))
+   (t
+    (let ((index (funcall orig file)))
+      (if (and index (mod-dired--treemacs-tags-too-many-p index))
+          (progn
+            (message "Treemacs tags skipped for noisy file: %s" file)
+            nil)
+        index)))))
 
 (defun mod-dired--treemacs-find-tcl-tag (file path tag)
   "Jump to Tcl TAG in FILE based on Treemacs PATH.
@@ -220,6 +325,7 @@ PATH is the category path inside the Treemacs tag index, such as
     (treemacs-hide-gitignored-files-mode 1)))
 
 (with-eval-after-load 'treemacs-tags
+  (advice-add 'treemacs--get-imenu-index :around #'mod-dired--treemacs-safe-imenu-index)
   (advice-add 'treemacs--call-imenu-and-goto-tag :around #'mod-dired--treemacs-call-imenu-fallback)
   (advice-add 'treemacs--goto-tag :around #'mod-dired--treemacs-goto-tag-fallback))
 

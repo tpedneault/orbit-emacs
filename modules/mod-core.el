@@ -113,6 +113,14 @@ Credentials are read from ~/.authinfo, not from this variable.")
   "Path to the delta diff-highlight tool.
 Leave nil to locate delta on PATH automatically.")
 
+(defvar orbit-user-treemacs-tags-max-file-size (* 2 1024 1024)
+  "Maximum file size, in bytes, that Treemacs may index for function tags.
+Set to nil to disable the guard.")
+
+(defvar orbit-user-treemacs-tags-max-items 2000
+  "Maximum number of function tags Treemacs may render for one file.
+Set to nil to disable the guard.")
+
 (defvar orbit-user-orbit-theme 'orbit-dark
   "Initial orbit theme.
 One of \\='orbit-dark, \\='orbit-light, \\='orbit-retro-amber,

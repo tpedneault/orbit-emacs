@@ -93,6 +93,7 @@ Useful examples:
 * Treemacs
 
 - =SPC o p= toggles the project tree.
+- Expanding a file's functions is guarded for very large or noisy files.
 - In the tree:
   - =v= opens in a vertical split
   - =s= opens in a horizontal split
@@ -139,6 +140,9 @@ When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically ke
 - =orbit-user-evil-pulse-color= — optional pulse accent color; nil uses the active theme's pulse accent
 
 *Tools* — =orbit-user-rg-program=, =orbit-user-ctags-program=
+
+- =orbit-user-treemacs-tags-max-file-size= — skip Treemacs function expansion for files larger than this many bytes
+- =orbit-user-treemacs-tags-max-items= — cap the number of function tags Treemacs renders for one file
 
 *TCL* — indent width, fill column, tabs, per-language display overrides, doxygen, linter and formatter paths
 

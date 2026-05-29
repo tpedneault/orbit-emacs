@@ -64,6 +64,12 @@
 (setq orbit-user-rg-program nil)
 (setq orbit-user-ctags-program nil)
 
+;; Treemacs function/tag expansion guards.
+;; These keep accidental expansion of very large or noisy files from blocking Emacs.
+;; Set either value to nil to disable that guard.
+(setq orbit-user-treemacs-tags-max-file-size (* 2 1024 1024))
+(setq orbit-user-treemacs-tags-max-items 2000)
+
 ;; ─── Tcl workflow ───────────────────────────────────────────────────────────
 
 ;; Tcl formatter / linter overrides.
