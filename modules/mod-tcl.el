@@ -872,13 +872,17 @@ local tclfmt uses a different CLI shape, set `orbit-user-tclfmt-program'."
   "Return the TAGS file path for ROOT."
   (expand-file-name "TAGS" root))
 
-(defun mod-tcl--visit-project-tags-table ()
-  "Visit the current project's TAGS file and return its path."
-  (let ((tags-file (mod-tcl--project-tags-file)))
+(defun mod-tcl--visit-project-tags-table-for-root (root)
+  "Visit ROOT's TAGS file and return its path."
+  (let ((tags-file (mod-tcl--project-tags-file-for-root root)))
     (unless (file-exists-p tags-file)
       (user-error "No TAGS file found at %s" tags-file))
     (visit-tags-table tags-file t)
     tags-file))
+
+(defun mod-tcl--visit-project-tags-table ()
+  "Visit the current project's TAGS file and return its path."
+  (mod-tcl--visit-project-tags-table-for-root (mod-tcl--project-root)))
 
 (defun mod-tcl--normalize-tag-symbol (symbol)
   "Return a practical Tcl symbol spelling for SYMBOL."
@@ -1413,6 +1417,7 @@ A diff preview is shown before the user confirms."
          'compilation-finish-functions
          (lambda (_buffer status)
            (when (string-match-p "\\`finished" status)
+             (mod-tcl--visit-project-tags-table-for-root root)
              (mod-tcl--invalidate-canonical-symbol-cache root)
              (mod-tcl--refresh-symbol-highlighting-in-project root)))
          nil t)))))

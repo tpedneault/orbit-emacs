@@ -46,12 +46,28 @@ Otherwise preserve Evil's normal half-page scroll on `C-d'."
       (evil-mc-undo-all-cursors)
     (keyboard-quit)))
 
+(defun mod-evil--visible-char-before-visual-char (&rest _)
+  "Start charwise Visual state on the visible character at end of line."
+  (when (and (not (evil-visual-state-p))
+             (eolp)
+             (not (bolp)))
+    (backward-char)))
+
 (use-package evil
   :ensure t
   :demand t
+  :init
+  (setq evil-want-visual-char-semi-exclusive nil)
   :config
+  (advice-add 'evil-visual-char :before #'mod-evil--visible-char-before-visual-char)
   (define-key evil-motion-state-map "j" #'mod-evil-next-line)
   (define-key evil-motion-state-map "k" #'mod-evil-previous-line)
+  (evil-set-command-property 'mod-evil-next-line :keep-visual t)
+  (evil-set-command-property 'mod-evil-next-line :repeat 'motion)
+  (evil-set-command-property 'mod-evil-next-line :type 'line)
+  (evil-set-command-property 'mod-evil-previous-line :keep-visual t)
+  (evil-set-command-property 'mod-evil-previous-line :repeat 'motion)
+  (evil-set-command-property 'mod-evil-previous-line :type 'line)
   (define-key evil-normal-state-map (kbd "C-d") #'mod-evil-multicursor-next-match-or-scroll)
   (define-key evil-visual-state-map (kbd "C-d") #'mod-evil-multicursor-next-match-or-scroll)
   (define-key evil-normal-state-map (kbd "q") #'mod-evil-multicursor-quit-dwim)
