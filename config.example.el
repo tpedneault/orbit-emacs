@@ -48,6 +48,16 @@
 (setq orbit-user-enable-whitespace t)
 (setq orbit-user-enable-hl-line t)
 
+;; Evil yank/paste pulse feedback.
+;; `orbit-user-evil-pulse-alphas` controls the fade shape: each number is a
+;; blend strength from 0.0 to 1.0, where larger values are more opaque/brighter.
+;; `orbit-user-evil-pulse-interval` is the time between animation frames.
+;; Leave the color nil to derive a theme-aware accent from the current theme.
+(setq orbit-user-evil-pulse-enabled t)
+(setq orbit-user-evil-pulse-interval 0.04)
+(setq orbit-user-evil-pulse-alphas '(0.82 0.62 0.44 0.28 0.15 0.06))
+(setq orbit-user-evil-pulse-color nil)
+
 ;; ─── Search and external tools ──────────────────────────────────────────────
 
 ;; Tool overrides. Leave nil to use `executable-find` and the normal PATH.

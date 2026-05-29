@@ -19,6 +19,7 @@ Quick start:
 - start with:
   - `SPC SPC` switch buffers
   - `SPC .` find a project file
+  - `SPC ,` find a file anywhere
   - `SPC /` search the project
   - `SPC x e` enter an edit context
   - `SPC x a` open the agenda dashboard

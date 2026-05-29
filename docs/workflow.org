@@ -23,8 +23,9 @@
    - =SPC x p= is the wider preset when you want the project's edit, git, and
      files contexts ready together
 2. Find files with =SPC .= or =SPC p f=.
-   - =SPC SPC= is the quickest file entry point: project file finder in a project, =find-file= otherwise
-   - =SPC .= is the quick buffer switcher
+   - =SPC SPC= is the quick buffer switcher
+   - =SPC .= is the quick project file finder
+   - =SPC ,= opens =find-file= for any path
 3. Search with =SPC /=, =SPC s s=, or =SPC p s=.
    - =SPC s b= searches the current buffer
    - =SPC s f= jumps to files by name

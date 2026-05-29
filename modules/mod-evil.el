@@ -1,12 +1,148 @@
 ;;; mod-evil.el --- Evil foundation -*- lexical-binding: t; -*-
 
+(require 'cl-lib)
+(require 'color)
+
 ;; `evil-collection` expects this to be set before Evil loads.
 (setq evil-want-integration t
       evil-want-keybinding nil)
 
+(declare-function evil-get-marker "evil-common" (char &optional raw))
 (declare-function evil-mc-has-cursors-p "evil-mc-vars")
 (declare-function evil-mc-make-and-goto-next-match "evil-mc-cursor-make")
 (declare-function evil-mc-undo-all-cursors "evil-mc-cursor-make")
+
+(defface mod-evil-pulse
+  '((t (:inherit secondary-selection)))
+  "Face used for brief editing feedback pulses.")
+
+(defconst mod-evil--pulse-face 'mod-evil-pulse
+  "Face used for brief editing feedback pulses.")
+
+(defconst mod-evil--pulse-default-interval 0.04
+  "Default seconds between editing feedback pulse animation frames.")
+
+(defconst mod-evil--pulse-default-alphas '(0.82 0.62 0.44 0.28 0.15 0.06)
+  "Default blend strengths used for editing feedback pulse animation.")
+
+(defun mod-evil--pulse-enabled-p ()
+  "Return non-nil when Evil yank/paste pulse feedback is enabled."
+  (not (and (boundp 'orbit-user-evil-pulse-enabled)
+            (eq orbit-user-evil-pulse-enabled nil))))
+
+(defun mod-evil--pulse-interval ()
+  "Return the configured Evil pulse animation interval."
+  (if (and (boundp 'orbit-user-evil-pulse-interval)
+           (numberp orbit-user-evil-pulse-interval)
+           (> orbit-user-evil-pulse-interval 0))
+      orbit-user-evil-pulse-interval
+    mod-evil--pulse-default-interval))
+
+(defun mod-evil--pulse-alphas ()
+  "Return configured Evil pulse blend strengths."
+  (let ((alphas (and (boundp 'orbit-user-evil-pulse-alphas)
+                     (listp orbit-user-evil-pulse-alphas)
+                     (cl-remove-if-not
+                      (lambda (alpha)
+                        (and (numberp alpha) (<= 0 alpha) (<= alpha 1)))
+                      orbit-user-evil-pulse-alphas))))
+    (or alphas mod-evil--pulse-default-alphas)))
+
+(defun mod-evil--color-rgb (color)
+  "Return COLOR as normalized RGB components, or nil."
+  (when-let* ((values (and color (color-values color))))
+    (mapcar (lambda (value) (/ value 65535.0)) values)))
+
+(defun mod-evil--pulse-background-color ()
+  "Return the current frame background color for pulse blending."
+  (or (and (mod-evil--color-rgb (face-background 'default nil t))
+           (face-background 'default nil t))
+      (and (mod-evil--color-rgb (frame-parameter nil 'background-color))
+           (frame-parameter nil 'background-color))
+      "#000000"))
+
+(defun mod-evil--pulse-color (alpha)
+  "Return a theme-aware pulse color blended by ALPHA."
+  (let* ((background (mod-evil--pulse-background-color))
+         (accent (or (and (boundp 'orbit-user-evil-pulse-color)
+                          orbit-user-evil-pulse-color)
+                     (face-foreground 'warning nil t)
+                     (face-background 'region nil t)
+                     "#f5d76e"))
+         (bg-rgb (mod-evil--color-rgb background))
+         (accent-rgb (mod-evil--color-rgb accent)))
+    (if (and bg-rgb accent-rgb)
+        (apply #'color-rgb-to-hex
+               (append
+                (cl-mapcar
+                 (lambda (from to)
+                   (+ (* alpha from) (* (- 1 alpha) to)))
+                 accent-rgb bg-rgb)
+                '(2)))
+      accent)))
+
+(defun mod-evil--pulse-faces ()
+  "Return face specs for one editing feedback pulse animation."
+  (mapcar
+   (lambda (alpha)
+     `(:background ,(mod-evil--pulse-color alpha) :extend t))
+   (mod-evil--pulse-alphas)))
+
+(defun mod-evil--animate-pulse-overlay (overlay)
+  "Animate OVERLAY as a short theme-aware pulse."
+  (let ((faces (mod-evil--pulse-faces)))
+    (when faces
+      (overlay-put overlay 'face (car faces))
+      (cl-loop
+       for face in (cdr faces)
+       for step from 1
+       do (run-at-time
+           (* (mod-evil--pulse-interval) step)
+           nil
+           (lambda (overlay face)
+             (when (overlay-buffer overlay)
+               (overlay-put overlay 'face face)))
+           overlay face)))
+    (run-at-time
+     (* (mod-evil--pulse-interval) (length faces))
+     nil #'delete-overlay overlay)))
+
+(defun mod-evil--pulse-region-later (beg end)
+  "Briefly highlight BEG to END after the current command finishes."
+  (when (and (mod-evil--pulse-enabled-p) beg end (< beg end))
+    (let ((buffer (current-buffer))
+          (beg-marker (copy-marker beg))
+          (end-marker (copy-marker end)))
+      (run-at-time
+       0 nil
+       (lambda (buffer beg-marker end-marker)
+         (unwind-protect
+             (when (buffer-live-p buffer)
+               (with-current-buffer buffer
+                 (let ((beg (marker-position beg-marker))
+                       (end (marker-position end-marker)))
+                   (when (and beg end (< beg end))
+                     (let ((overlay (make-overlay beg end nil t t)))
+                       (overlay-put overlay 'face mod-evil--pulse-face)
+                       (overlay-put overlay 'priority 1000)
+                       (overlay-put overlay 'evaporate t)
+                       (mod-evil--animate-pulse-overlay overlay))))))
+           (set-marker beg-marker nil)
+           (set-marker end-marker nil)))
+       buffer beg-marker end-marker))))
+
+(defun mod-evil--pulse-yank (&rest args)
+  "Pulse the range captured by an Evil yank command."
+  (let ((beg (nth 0 args))
+        (end (nth 1 args)))
+    (mod-evil--pulse-region-later beg end)))
+
+(defun mod-evil--pulse-paste (&rest _)
+  "Pulse the range inserted by an Evil paste command."
+  (let ((beg (evil-get-marker ?\[))
+        (end (evil-get-marker ?\])))
+    (when (and beg end)
+      (mod-evil--pulse-region-later beg (min (point-max) (1+ end))))))
 
 (defun mod-evil--mc-target-available-p ()
   "Return non-nil when a VS Code-style next-match action makes sense."
@@ -60,6 +196,9 @@ Otherwise preserve Evil's normal half-page scroll on `C-d'."
   (setq evil-want-visual-char-semi-exclusive nil)
   :config
   (advice-add 'evil-visual-char :before #'mod-evil--visible-char-before-visual-char)
+  (advice-add 'evil-yank :after #'mod-evil--pulse-yank)
+  (advice-add 'evil-paste-before :after #'mod-evil--pulse-paste)
+  (advice-add 'evil-paste-after :after #'mod-evil--pulse-paste)
   (define-key evil-motion-state-map "j" #'mod-evil-next-line)
   (define-key evil-motion-state-map "k" #'mod-evil-previous-line)
   (evil-set-command-property 'mod-evil-next-line :keep-visual t)

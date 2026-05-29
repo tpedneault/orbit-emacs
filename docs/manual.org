@@ -8,8 +8,9 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 
 * Quick Start
 
-- =SPC SPC=: find a file in the current project, or =find-file= outside a project
-- =SPC .=: switch buffers
+- =SPC SPC=: switch buffers
+- =SPC .=: find a file in the current project
+- =SPC ,=: find a file anywhere
 - =SPC /=: search the current project
 - =SPC v=: expand region
 - =SPC x e=: jump into an editing context
@@ -129,6 +130,10 @@ When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically ke
 - =orbit-user-enable-fill-column-indicator= / =orbit-user-fill-column=
 - =orbit-user-enable-whitespace=
 - =orbit-user-enable-hl-line=
+- =orbit-user-evil-pulse-enabled= — animate Evil yank/paste feedback
+- =orbit-user-evil-pulse-interval= — seconds between pulse animation frames
+- =orbit-user-evil-pulse-alphas= — fade steps from most visible to least visible
+- =orbit-user-evil-pulse-color= — optional pulse accent color; nil derives one from the theme
 
 *Tools* — =orbit-user-rg-program=, =orbit-user-ctags-program=
 

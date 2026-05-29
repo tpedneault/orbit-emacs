@@ -4,11 +4,11 @@
 
 | Key       | Action                     | Notes                  |
 |-----------+----------------------------+------------------------|
-| =SPC SPC= | =mod-keys-find-file-dwim=  | project file finder in project, =find-file= otherwise |
-| =SPC .=   | =consult-buffer=           | fast buffer switch     |
+| =SPC SPC= | =consult-buffer=           | fast buffer switch     |
+| =SPC .=   | =mod-keys-find-project-file= | find file in current project |
 | =SPC /=   | =mod-search-project=       | ripgrep in project     |
 | =SPC :=   | =execute-extended-command= | =M-x=                  |
-| =SPC ,=   | local leader               | same target as =SPC m= |
+| =SPC ,=   | =find-file=                | find file anywhere     |
 | =SPC v=   | =er/expand-region=         | grow selection         |
 
 * =SPC f= Files
@@ -29,7 +29,8 @@
 | =SPC f c s e= | =yas-visit-snippet-file=  | edit snippet file |
 | =SPC f c s n= | =yas-new-snippet=         | new snippet       |
 | =SPC f c s r= | =yas-reload-all=          | reload snippets   |
-| =SPC f f=   | =orbit-context-open-path=   | open file/path in matching context |
+| =SPC f f=   | =orbit-context-open-path=   | open path in matching context |
+| =SPC f o=   | =mod-core-open-at-point=    | open URL or file path at point |
 | =SPC f r=   | =mod-core-recentf-open=     | recent files, current project first when available |
 | =SPC f s=   | =save-buffer=               | save current file |
 | =SPC f y a= | copy absolute file path     | current buffer file |
@@ -40,8 +41,10 @@
 
 | Key       | Action                | Notes                         |
 |-----------+-----------------------+-------------------------------|
-| =SPC b b= | =consult-buffer=      | =switch-to-buffer= is remapped |
+| =SPC b b= | =consult-buffer=      | switch buffer |
 | =SPC b d= | =kill-current-buffer= | kill buffer                   |
+| =SPC b n= | =next-buffer=         | next buffer                   |
+| =SPC b p= | =previous-buffer=     | previous buffer               |
 | =SPC b r= | =revert-buffer=       | revert from disk              |
 
 * =SPC c= Code

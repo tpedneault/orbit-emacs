@@ -182,12 +182,12 @@
   (load-file (expand-file-name "init.el" mod-keys-config-directory))
   (message "Reloaded orbit-emacs config"))
 
-(defun mod-keys-find-file-dwim ()
-  "Find a file using the current project when available."
+(defun mod-keys-find-project-file ()
+  "Find a file in the current project."
   (interactive)
-  (if-let* ((project (project-current nil)))
-      (project-find-file)
-    (call-interactively #'find-file)))
+  (if (project-current nil)
+      (call-interactively #'project-find-file)
+    (user-error "Not in a project")))
 
 (use-package which-key
   :ensure t
@@ -212,11 +212,11 @@
 
   (mod-keys-leader-def
     "" '(:ignore t :which-key "leader")
-    "SPC" '(mod-keys-find-file-dwim :which-key "find file")
-    "." '(consult-buffer :which-key "buffer")
+    "SPC" '(consult-buffer :which-key "buffer")
+    "." '(mod-keys-find-project-file :which-key "project file")
     "/" '(mod-search-project :which-key "project search")
     ":" '(execute-extended-command :which-key "M-x")
-    "," '(mod-keys-local-leader-map :which-key "local")
+    "," '(find-file :which-key "find file")
     "f" '(:ignore t :which-key "files")
     "f c" '(:ignore t :which-key "config")
     "f c s" '(:ignore t :which-key "snippets")
@@ -233,15 +233,18 @@
     "f c s e" '(yas-visit-snippet-file :which-key "edit snippet")
     "f c s n" '(yas-new-snippet :which-key "new snippet")
     "f c s r" '(yas-reload-all :which-key "reload snippets")
-    "f f" '(orbit-context-open-path :which-key "find file")
+    "f f" '(orbit-context-open-path :which-key "open path")
+    "f o" '(mod-core-open-at-point :which-key "open at point")
     "f r" '(mod-core-recentf-open :which-key "recent")
     "f s" '(save-buffer :which-key "save")
     "f y a" '(mod-core-copy-absolute-file-path :which-key "absolute path")
     "f y r" '(mod-core-copy-project-relative-file-path :which-key "relative path")
     "f y d" '(mod-core-copy-directory-path :which-key "directory path")
     "b" '(:ignore t :which-key "buffers")
-    "b b" '(switch-to-buffer :which-key "switch buffer")
+    "b b" '(consult-buffer :which-key "switch buffer")
     "b d" '(kill-current-buffer :which-key "kill buffer")
+    "b n" '(next-buffer :which-key "next buffer")
+    "b p" '(previous-buffer :which-key "previous buffer")
     "b r" '(revert-buffer :which-key "revert")
     "c" '(:ignore t :which-key "code")
     "c d" '(mod-core-duplicate-line-or-region :which-key "duplicate")
