@@ -93,6 +93,41 @@ between same-named files in different directories.")
 (defvar orbit-user-jira-token-command nil)
 (defvar orbit-user-jira-pat-env nil)
 
+(defvar orbit-keybinding-profile 'vim
+  "Editing/keybinding profile.
+Use \\='vim for Evil modal editing and the SPC leader.
+Use \\='standard for conventional Emacs editing with the C-; Orbit prefix.")
+
+(defvar orbit-standard-menu-bar 'auto
+  "Whether the Orbit menu bar is shown.
+Use \\='auto to show it for `orbit-keybinding-profile' \\='standard only.
+Use t to always show it, or nil to always hide it.")
+
+(defvar orbit-standard-cua-keys 'auto
+  "Whether Windows-style CUA copy/cut/paste keys are enabled.
+Use \\='auto to enable them for `orbit-keybinding-profile' \\='standard only.
+Use t to always enable them, or nil to always keep them disabled.")
+
+(defun mod-core-vim-profile-p ()
+  "Return non-nil when Orbit should use the Vim/Evil profile."
+  (not (eq orbit-keybinding-profile 'standard)))
+
+(defun mod-core-standard-profile-p ()
+  "Return non-nil when Orbit should use the standard Emacs profile."
+  (eq orbit-keybinding-profile 'standard))
+
+(defun mod-core-menu-bar-enabled-p ()
+  "Return non-nil when the menu bar should be visible."
+  (or (eq orbit-standard-menu-bar t)
+      (and (eq orbit-standard-menu-bar 'auto)
+           (mod-core-standard-profile-p))))
+
+(defun mod-core-cua-keys-enabled-p ()
+  "Return non-nil when Windows-style CUA keys should be enabled."
+  (or (eq orbit-standard-cua-keys t)
+      (and (eq orbit-standard-cua-keys 'auto)
+           (mod-core-standard-profile-p))))
+
 (defvar orbit-user-roam-directory nil
   "Directory for org-roam nodes.
 Defaults to roam/ inside the org directory when nil.")
@@ -177,6 +212,12 @@ aborting init."
 (setq custom-file mod-core-custom-file)
 (load custom-file 'noerror 'nomessage)
 (setq use-short-answers t)
+
+(when (mod-core-cua-keys-enabled-p)
+  (require 'cua-base)
+  (setq cua-enable-cua-keys t
+        cua-delete-selection t)
+  (cua-mode 1))
 
 (unless orbit-user-snippets-directory
   (setq orbit-user-snippets-directory mod-core-user-snippets-directory))

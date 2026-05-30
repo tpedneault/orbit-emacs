@@ -1,7 +1,10 @@
 ;;; mod-keys.el --- Leader key foundation -*- lexical-binding: t; -*-
 
+(require 'easymenu)
 (require 'project)
 
+(declare-function mod-core-menu-bar-enabled-p "mod-core")
+(declare-function mod-core-vim-profile-p "mod-core")
 (declare-function orbit-context-agenda "orbit-context")
 (declare-function orbit-context-buffers "orbit-context")
 (declare-function orbit-context-borrow-buffer "orbit-context")
@@ -190,6 +193,43 @@
       (call-interactively #'project-find-file)
     (user-error "Not in a project")))
 
+(defun mod-keys-show-jumps ()
+  "Show jump history using Evil when available, or fall back to marks."
+  (interactive)
+  (if (fboundp 'evil-show-jumps)
+      (call-interactively #'evil-show-jumps)
+    (call-interactively #'consult-mark)))
+
+(defun mod-keys--mode-local-prefix ()
+  "Return the active mode-local Orbit prefix."
+  (if (mod-core-vim-profile-p) "SPC m" "C-; m"))
+
+(defun mod-keys--define-mode-local (keymaps &rest bindings)
+  "Define Orbit mode-local BINDINGS in KEYMAPS for the active profile."
+  (if (mod-core-vim-profile-p)
+      (apply #'general-define-key
+             :states '(normal visual motion emacs)
+             :keymaps keymaps
+             :prefix (mod-keys--mode-local-prefix)
+             bindings)
+    (apply #'general-define-key
+           :keymaps keymaps
+           :prefix (mod-keys--mode-local-prefix)
+           bindings)))
+
+(defun mod-keys--define-motion-mode-local (keymaps &rest bindings)
+  "Define Orbit mode-local motion BINDINGS in KEYMAPS for the active profile."
+  (if (mod-core-vim-profile-p)
+      (apply #'general-define-key
+             :states '(normal motion emacs)
+             :keymaps keymaps
+             :prefix (mod-keys--mode-local-prefix)
+             bindings)
+    (apply #'general-define-key
+           :keymaps keymaps
+           :prefix (mod-keys--mode-local-prefix)
+           bindings)))
+
 (use-package which-key
   :ensure (:wait t)
   :demand t
@@ -202,14 +242,20 @@
   :config
   (define-prefix-command 'mod-keys-local-leader-map)
 
-  (general-create-definer mod-keys-leader-def
-    :states '(normal visual motion emacs)
-    :keymaps 'override
-    :prefix "SPC")
-
-  (general-create-definer mod-keys-local-leader-def
-    :states '(normal visual motion emacs)
-    :keymaps 'mod-keys-local-leader-map)
+  (if (mod-core-vim-profile-p)
+      (progn
+        (general-create-definer mod-keys-leader-def
+          :states '(normal visual motion emacs)
+          :keymaps 'override
+          :prefix "SPC")
+        (general-create-definer mod-keys-local-leader-def
+          :states '(normal visual motion emacs)
+          :keymaps 'mod-keys-local-leader-map))
+    (general-create-definer mod-keys-leader-def
+      :keymaps 'global-map
+      :prefix "C-;")
+    (general-create-definer mod-keys-local-leader-def
+      :keymaps 'mod-keys-local-leader-map))
 
   (mod-keys-leader-def
     "" '(:ignore t :which-key "leader")
@@ -278,7 +324,7 @@
     "s i" '(consult-imenu :which-key "imenu")
     "s I" '(consult-imenu-multi :which-key "imenu (all buffers)")
     "s o" '(consult-outline :which-key "outline")
-    "s j" '(evil-show-jumps :which-key "jumps")
+    "s j" '(mod-keys-show-jumps :which-key "jumps")
     "s m" '(consult-mark :which-key "marks")
     "v" '(er/expand-region :which-key "expand region")
     "w" '(:ignore t :which-key "windows")
@@ -392,14 +438,13 @@
   (with-eval-after-load 'org
     (when (fboundp 'evil-ret)
       (setq mod-org-return-fallback-command #'evil-ret))
-    (general-define-key
-     :states '(normal)
-     :keymaps 'org-mode-map
-     (kbd "RET") #'mod-org-open-at-point-dwim)
-    (general-define-key
-     :states '(normal visual motion emacs)
-     :keymaps 'org-mode-map
-     :prefix "SPC m"
+    (when (mod-core-vim-profile-p)
+      (general-define-key
+       :states '(normal)
+       :keymaps 'org-mode-map
+       (kbd "RET") #'mod-org-open-at-point-dwim))
+    (mod-keys--define-mode-local
+     'org-mode-map
      "J" '(org-metadown :which-key "move down")
      "K" '(org-metaup :which-key "move up")
      "H" '(org-metaleft :which-key "promote")
@@ -433,10 +478,8 @@
      "m e" '(org-babel-execute-src-block :which-key "execute block")))
 
   (with-eval-after-load 'tcl
-    (general-define-key
-     :states '(normal visual motion emacs)
-     :keymaps 'tcl-mode-map
-     :prefix "SPC m"
+    (mod-keys--define-mode-local
+     'tcl-mode-map
      "d" '(:ignore t :which-key "docs")
      "d d" '(mod-tcl-docs-manual :which-key "project manual")
      "d s" '(mod-tcl-docs-search :which-key "search docs")
@@ -459,10 +502,8 @@
      "e" '(mod-tcl-show-output :which-key "tool output")))
 
   (with-eval-after-load 'python
-    (general-define-key
-     :states '(normal visual motion emacs)
-     :keymaps '(python-mode-map python-ts-mode-map)
-     :prefix "SPC m"
+    (mod-keys--define-mode-local
+     '(python-mode-map python-ts-mode-map)
      "e" '(:ignore t :which-key "eglot")
      "e s" '(mod-python-eglot :which-key "start")
      "e R" '(mod-python-eglot-reconnect :which-key "reconnect")
@@ -496,20 +537,16 @@
      "d I" '(dape-info :which-key "info")))
 
   (with-eval-after-load 'mermaid-mode
-    (general-define-key
-     :states '(normal visual motion emacs)
-     :keymaps 'mermaid-mode-map
-     :prefix "SPC m"
+    (mod-keys--define-mode-local
+     'mermaid-mode-map
      "p" '(mod-mermaid-preview :which-key "preview")
      "P" '(mod-mermaid-auto-preview-mode :which-key "auto preview")
      "e" '(mermaid-compile-buffer :which-key "compile")
      "o" '(mermaid-open-browser :which-key "open in browser")))
 
   (with-eval-after-load 'markdown-mode
-    (general-define-key
-     :states '(normal visual motion emacs)
-     :keymaps '(markdown-mode-map gfm-mode-map)
-     :prefix "SPC m"
+    (mod-keys--define-mode-local
+     '(markdown-mode-map gfm-mode-map)
      "p" '(markdown-preview :which-key "preview")
      "e" '(markdown-export :which-key "export to html")
      "t" '(markdown-toggle-gfm-checkbox :which-key "toggle checkbox")
@@ -517,23 +554,40 @@
      "l" '(markdown-insert-link :which-key "insert link")))
 
   (with-eval-after-load 'dape
-    (general-define-key
-     :states '(normal motion emacs)
-     :keymaps '(dape-repl-mode-map
-                dape-info-parent-mode-map
-                dape-shell-mode-map)
-     "c" #'dape-continue
-     "n" #'dape-next
-     "i" #'dape-step-in
-     "o" #'dape-step-out
-     "p" #'dape-pause
-     "r" #'dape-restart
-     "q" #'dape-kill
-     "b" #'dape-breakpoint-toggle
-     "x" #'dape-breakpoint-remove-at-point
-     "w" #'dape-watch-dwim
-     "R" #'dape-repl
-     "I" #'dape-info))
+    (if (mod-core-vim-profile-p)
+        (general-define-key
+         :states '(normal motion emacs)
+         :keymaps '(dape-repl-mode-map
+                    dape-info-parent-mode-map
+                    dape-shell-mode-map)
+         "c" #'dape-continue
+         "n" #'dape-next
+         "i" #'dape-step-in
+         "o" #'dape-step-out
+         "p" #'dape-pause
+         "r" #'dape-restart
+         "q" #'dape-kill
+         "b" #'dape-breakpoint-toggle
+         "x" #'dape-breakpoint-remove-at-point
+         "w" #'dape-watch-dwim
+         "R" #'dape-repl
+         "I" #'dape-info)
+      (general-define-key
+       :keymaps '(dape-repl-mode-map
+                  dape-info-parent-mode-map
+                  dape-shell-mode-map)
+       "c" #'dape-continue
+       "n" #'dape-next
+       "i" #'dape-step-in
+       "o" #'dape-step-out
+       "p" #'dape-pause
+       "r" #'dape-restart
+       "q" #'dape-kill
+       "b" #'dape-breakpoint-toggle
+       "x" #'dape-breakpoint-remove-at-point
+       "w" #'dape-watch-dwim
+       "R" #'dape-repl
+       "I" #'dape-info)))
 
   (with-eval-after-load 'org-agenda
     (define-key org-agenda-mode-map (kbd "j") #'org-agenda-next-line)
@@ -544,10 +598,8 @@
         (kbd "j") #'org-agenda-next-line
         (kbd "k") #'org-agenda-previous-line
         (kbd "RET") #'mod-org-agenda-visit))
-    (general-define-key
-     :states '(normal motion emacs)
-     :keymaps 'org-agenda-mode-map
-     :prefix "SPC m"
+    (mod-keys--define-motion-mode-local
+     'org-agenda-mode-map
      "c" '(:ignore t :which-key "clock")
      "c i" '(org-agenda-clock-in :which-key "clock in")
      "c o" '(org-agenda-clock-out :which-key "clock out")
@@ -559,6 +611,67 @@
      "r" '(org-agenda-refile :which-key "refile")
      "a" '(org-agenda-archive :which-key "archive")
      "v" '(mod-org-agenda-visit :which-key "visit"))))
+
+(easy-menu-define mod-keys-orbit-menu global-map
+  "Menu bar entries for the Orbit command language."
+  '("Orbit"
+    ["Switch Buffer" consult-buffer t]
+    ["Find Project File" mod-keys-find-project-file t]
+    ["Find File Anywhere" find-file t]
+    ["M-x" execute-extended-command t]
+    "---"
+    ("Files"
+     ["Open Path" orbit-context-open-path t]
+     ["Open At Point" mod-core-open-at-point t]
+     ["Recent Files" mod-core-recentf-open t]
+     ["Save Buffer" save-buffer t])
+    ("Buffers"
+     ["Switch Buffer" consult-buffer t]
+     ["Kill Buffer" kill-current-buffer t]
+     ["Next Buffer" next-buffer t]
+     ["Previous Buffer" previous-buffer t]
+     ["Revert Buffer" revert-buffer t])
+    ("Projects"
+     ["Switch Project" mod-project-switch t]
+     ["Find Project File" project-find-file t]
+     ["Search Project" mod-project-search t]
+     ["Replace In Project" mod-project-replace t])
+    ("Search"
+     ["Project Search" mod-search-project t]
+     ["Buffer Search" mod-search-buffer t]
+     ["Find Project Files" mod-search-project-files t]
+     ["Directory Search" mod-search-directory t])
+    ("Git"
+     ["Status" mod-git-status t]
+     ["Log" mod-git-log t]
+     ["Blame" mod-git-blame t]
+     ["Magit Dispatch" magit-dispatch t])
+    ("Notes"
+     ["Open Notes" mod-org-open-notes t]
+     ["Open Agenda" mod-org-open-agenda t]
+     ["Capture" mod-org-capture t]
+     ["Inbox Task" mod-org-capture-inbox-task t])
+    ("Contexts"
+     ["Panel" orbit-context-dispatch t]
+     ["Switch" orbit-context-switch t]
+     ["New" orbit-context-new t]
+     ["Delete" orbit-context-delete t]
+     ["Rename" orbit-context-rename t]
+     ["Project Suite" orbit-context-project-suite t])
+    ("Toggles"
+     ["Fullscreen" mod-ui-toggle-fullscreen t]
+     ["Big Font" mod-ui-toggle-big-font t]
+     ["Line Numbers" mod-ui-toggle-line-numbers t]
+     ["Wrap" mod-ui-toggle-wrap t]
+     ["Choose Theme" mod-theme-select t])
+    ("Help"
+     ["Orbit Home" mod-home-open t]
+     ["Manual" mod-keys-open-docs-manual t]
+     ["Describe Key" describe-key t]
+     ["Describe Mode" describe-mode t])))
+
+(when (mod-core-menu-bar-enabled-p)
+  (easy-menu-add mod-keys-orbit-menu global-map))
 
 (global-set-key (kbd "M-j") #'mod-core-move-line-or-region-down)
 (global-set-key (kbd "M-k") #'mod-core-move-line-or-region-up)

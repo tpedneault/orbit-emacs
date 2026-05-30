@@ -1,5 +1,29 @@
 #+title: keybindings
 
+* Profiles
+
+Orbit has two command profiles:
+
+| Profile    | Editing model               | Global Orbit prefix | Mode-local prefix |
+|------------+-----------------------------+---------------------+-------------------|
+| =vim=      | Evil modal editing          | =SPC=               | =SPC m=           |
+| =standard= | Conventional Emacs editing  | =C-;=               | =C-; m=           |
+
+The tables below show the default Vim keys.  In the standard profile, replace
+the leading =SPC= with =C-;=.  For mode-local commands, replace =SPC m= with
+=C-; m=.  For example:
+
+| Vim key   | Standard key | Action                      |
+|-----------+--------------+-----------------------------|
+| =SPC SPC= | =C-; SPC=    | switch buffer               |
+| =SPC .=   | =C-; .=      | find file in current project |
+| =SPC ,=   | =C-; ,=      | find file anywhere          |
+| =SPC m a= | =C-; m a=    | mode-local command          |
+
+When =orbit-standard-cua-keys= is =auto= or t, the standard profile also enables
+Windows-style copy/cut/paste with =C-c=, =C-x=, and =C-v= in ordinary editing
+situations.
+
 * Global Shortcuts
 
 | Key       | Action                     | Notes                  |

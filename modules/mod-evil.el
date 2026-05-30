@@ -209,62 +209,63 @@ Otherwise preserve Evil's normal half-page scroll on `C-d'."
              (not (bolp)))
     (backward-char)))
 
-(use-package evil
-  :ensure (:wait t)
-  :demand t
-  :init
-  (setq evil-want-visual-char-semi-exclusive nil)
-  :config
-  (advice-add 'evil-visual-char :before #'mod-evil--visible-char-before-visual-char)
-  (advice-add 'evil-yank :after #'mod-evil--pulse-yank)
-  (advice-add 'evil-paste-before :after #'mod-evil--pulse-paste)
-  (advice-add 'evil-paste-after :after #'mod-evil--pulse-paste)
-  (define-key evil-motion-state-map "j" #'mod-evil-next-line)
-  (define-key evil-motion-state-map "k" #'mod-evil-previous-line)
-  (evil-set-command-property 'mod-evil-next-line :keep-visual t)
-  (evil-set-command-property 'mod-evil-next-line :repeat 'motion)
-  (evil-set-command-property 'mod-evil-next-line :type 'line)
-  (evil-set-command-property 'mod-evil-previous-line :keep-visual t)
-  (evil-set-command-property 'mod-evil-previous-line :repeat 'motion)
-  (evil-set-command-property 'mod-evil-previous-line :type 'line)
-  (define-key evil-normal-state-map (kbd "C-d") #'mod-evil-multicursor-next-match-or-scroll)
-  (define-key evil-visual-state-map (kbd "C-d") #'mod-evil-multicursor-next-match-or-scroll)
-  (define-key evil-normal-state-map (kbd "q") #'mod-evil-multicursor-quit-dwim)
-  (define-key evil-visual-state-map (kbd "q") #'mod-evil-multicursor-quit-dwim)
-  (define-key evil-normal-state-map (kbd "C-g") #'mod-evil-multicursor-quit-dwim)
-  (define-key evil-visual-state-map (kbd "C-g") #'mod-evil-multicursor-quit-dwim)
-  (evil-mode 1))
+(when (mod-core-vim-profile-p)
+  (use-package evil
+    :ensure (:wait t)
+    :demand t
+    :init
+    (setq evil-want-visual-char-semi-exclusive nil)
+    :config
+    (advice-add 'evil-visual-char :before #'mod-evil--visible-char-before-visual-char)
+    (advice-add 'evil-yank :after #'mod-evil--pulse-yank)
+    (advice-add 'evil-paste-before :after #'mod-evil--pulse-paste)
+    (advice-add 'evil-paste-after :after #'mod-evil--pulse-paste)
+    (define-key evil-motion-state-map "j" #'mod-evil-next-line)
+    (define-key evil-motion-state-map "k" #'mod-evil-previous-line)
+    (evil-set-command-property 'mod-evil-next-line :keep-visual t)
+    (evil-set-command-property 'mod-evil-next-line :repeat 'motion)
+    (evil-set-command-property 'mod-evil-next-line :type 'line)
+    (evil-set-command-property 'mod-evil-previous-line :keep-visual t)
+    (evil-set-command-property 'mod-evil-previous-line :repeat 'motion)
+    (evil-set-command-property 'mod-evil-previous-line :type 'line)
+    (define-key evil-normal-state-map (kbd "C-d") #'mod-evil-multicursor-next-match-or-scroll)
+    (define-key evil-visual-state-map (kbd "C-d") #'mod-evil-multicursor-next-match-or-scroll)
+    (define-key evil-normal-state-map (kbd "q") #'mod-evil-multicursor-quit-dwim)
+    (define-key evil-visual-state-map (kbd "q") #'mod-evil-multicursor-quit-dwim)
+    (define-key evil-normal-state-map (kbd "C-g") #'mod-evil-multicursor-quit-dwim)
+    (define-key evil-visual-state-map (kbd "C-g") #'mod-evil-multicursor-quit-dwim)
+    (evil-mode 1))
 
-(use-package evil-collection
-  :ensure t
-  :after evil
-  :config
-  (evil-collection-init))
+  (use-package evil-collection
+    :ensure t
+    :after evil
+    :config
+    (evil-collection-init))
 
-(use-package evil-surround
-  :ensure t
-  :after evil
-  :config
-  (global-evil-surround-mode 1))
+  (use-package evil-surround
+    :ensure t
+    :after evil
+    :config
+    (global-evil-surround-mode 1))
 
-(use-package evil-commentary
-  :ensure t
-  :after evil
-  :config
-  (evil-commentary-mode 1))
+  (use-package evil-commentary
+    :ensure t
+    :after evil
+    :config
+    (evil-commentary-mode 1))
 
-(use-package evil-args
-  :ensure t
-  :after evil
-  :config
-  (define-key evil-inner-text-objects-map "a" #'evil-inner-arg)
-  (define-key evil-outer-text-objects-map "a" #'evil-outer-arg))
+  (use-package evil-args
+    :ensure t
+    :after evil
+    :config
+    (define-key evil-inner-text-objects-map "a" #'evil-inner-arg)
+    (define-key evil-outer-text-objects-map "a" #'evil-outer-arg))
 
-(use-package evil-mc
-  :ensure t
-  :after evil
-  :config
-  (global-evil-mc-mode 1))
+  (use-package evil-mc
+    :ensure t
+    :after evil
+    :config
+    (global-evil-mc-mode 1)))
 
 ;; When j/k deposits point inside a folded (invisible overlay) region, jump to
 ;; the near edge of the fold so the cursor skips it in one press.
@@ -340,8 +341,9 @@ line the overlay begins later on that same line and `overlays-at' misses it."
                                (overlays-at (point)))))
       (goto-char (max (point-min) (1- (overlay-start ov)))))))
 
-(advice-add 'evil-next-line     :after #'mod-evil--skip-fold-forward)
-(advice-add 'evil-previous-line :after #'mod-evil--skip-fold-backward)
+(with-eval-after-load 'evil
+  (advice-add 'evil-next-line     :after #'mod-evil--skip-fold-forward)
+  (advice-add 'evil-previous-line :after #'mod-evil--skip-fold-backward))
 
 (provide 'mod-evil)
 

@@ -119,11 +119,12 @@
 
 (defun mod-ui-apply-frame-defaults (&optional frame)
   "Apply minimal UI chrome defaults to FRAME or the current frame.
-Hides menu bar, tool bar, and scroll bars.  Font configuration is
+Hides menu bar unless the standard profile wants it, and hides tool bar
+and scroll bars.  Font configuration is
 handled by `mod-theme-apply-font-stack' in mod-theme.el."
   (with-selected-frame (or frame (selected-frame))
     (when (fboundp 'menu-bar-mode)
-      (menu-bar-mode -1))
+      (menu-bar-mode (if (mod-core-menu-bar-enabled-p) 1 -1)))
     (when (fboundp 'tool-bar-mode)
       (tool-bar-mode -1))
     (when (fboundp 'scroll-bar-mode)
@@ -280,8 +281,11 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
 
 ;;; ─── Initialization ───────────────────────────────────────────────────────────
 
-;; Keep new GUI frames aligned with the text-first startup defaults.
-(add-to-list 'default-frame-alist '(menu-bar-lines . 0))
+;; Keep new GUI frames aligned with the selected startup defaults.
+(add-to-list 'default-frame-alist
+             (if (mod-core-menu-bar-enabled-p)
+                 '(menu-bar-lines . 1)
+               '(menu-bar-lines . 0)))
 (add-to-list 'default-frame-alist '(tool-bar-lines . 0))
 (add-to-list 'default-frame-alist '(vertical-scroll-bars))
 

@@ -1,7 +1,7 @@
 ;;; config.el --- User overrides for orbit-emacs -*- lexical-binding: t; -*-
 
 ;; This file is a complete sample user config for orbit-emacs.
-;; Every currently supported `orbit-user-*` setting is listed here and set to
+;; Every currently supported user-facing setting is listed here and set to
 ;; its current default value.
 ;;
 ;; Practical reading guide:
@@ -40,6 +40,27 @@
 (setq orbit-user-variable-pitch-weight nil)
 
 ;; ─── Editor defaults ────────────────────────────────────────────────────────
+
+;; Editing/keybinding profile.
+;; - 'vim keeps Evil modal editing and the SPC / SPC m Orbit command prefixes.
+;; - 'standard disables Evil modal editing and uses C-; / C-; m instead.
+(setq orbit-keybinding-profile 'vim)
+
+;; Menu bar visibility.
+;; - 'auto shows the Orbit menu bar only for the 'standard profile.
+;; - t always shows it.
+;; - nil always hides it.
+(setq orbit-standard-menu-bar 'auto)
+
+;; Windows-style copy/cut/paste keys for the standard profile.
+;; - 'auto enables CUA keys only for the 'standard profile.
+;; - t always enables them.
+;; - nil always keeps them disabled.
+;;
+;; When enabled, C-c / C-x / C-v copy, cut, and paste in ordinary editing
+;; situations while Emacs mode-specific C-c bindings remain available when no
+;; region is active.
+(setq orbit-standard-cua-keys 'auto)
 
 ;; Global whitespace / current-line / fill-column indicator defaults.
 ;; These apply broadly unless a mode-specific override says otherwise.

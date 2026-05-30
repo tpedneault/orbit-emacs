@@ -517,35 +517,36 @@ inner body range."
      (if outer 'line 'exclusive)
      t)))
 
-(evil-define-text-object mod-tcl-evil-inner-proc (count &optional beg end type)
-  "Select the inner body of the current Tcl proc."
-  (ignore count beg end type)
-  (mod-tcl--evil-range-from-context (mod-tcl--proc-definition-context)))
+(with-eval-after-load 'evil
+  (evil-define-text-object mod-tcl-evil-inner-proc (count &optional beg end type)
+    "Select the inner body of the current Tcl proc."
+    (ignore count beg end type)
+    (mod-tcl--evil-range-from-context (mod-tcl--proc-definition-context)))
 
-(evil-define-text-object mod-tcl-evil-outer-proc (count &optional beg end type)
-  "Select the current Tcl proc including its definition line and braces."
-  (ignore count beg end type)
-  (mod-tcl--evil-range-from-context (mod-tcl--proc-definition-context) t))
+  (evil-define-text-object mod-tcl-evil-outer-proc (count &optional beg end type)
+    "Select the current Tcl proc including its definition line and braces."
+    (ignore count beg end type)
+    (mod-tcl--evil-range-from-context (mod-tcl--proc-definition-context) t))
 
-(evil-define-text-object mod-tcl-evil-inner-namespace (count &optional beg end type)
-  "Select the inner body of the current Tcl namespace block."
-  (ignore count beg end type)
-  (mod-tcl--evil-range-from-context (mod-tcl--namespace-definition-context)))
+  (evil-define-text-object mod-tcl-evil-inner-namespace (count &optional beg end type)
+    "Select the inner body of the current Tcl namespace block."
+    (ignore count beg end type)
+    (mod-tcl--evil-range-from-context (mod-tcl--namespace-definition-context)))
 
-(evil-define-text-object mod-tcl-evil-outer-namespace (count &optional beg end type)
-  "Select the current Tcl namespace block including its definition line."
-  (ignore count beg end type)
-  (mod-tcl--evil-range-from-context (mod-tcl--namespace-definition-context) t))
+  (evil-define-text-object mod-tcl-evil-outer-namespace (count &optional beg end type)
+    "Select the current Tcl namespace block including its definition line."
+    (ignore count beg end type)
+    (mod-tcl--evil-range-from-context (mod-tcl--namespace-definition-context) t))
 
-(evil-define-text-object mod-tcl-evil-inner-command-block (count &optional beg end type)
-  "Select the inner body of the surrounding Tcl command block."
-  (ignore count beg end type)
-  (mod-tcl--evil-range-from-context (mod-tcl--command-block-context)))
+  (evil-define-text-object mod-tcl-evil-inner-command-block (count &optional beg end type)
+    "Select the inner body of the surrounding Tcl command block."
+    (ignore count beg end type)
+    (mod-tcl--evil-range-from-context (mod-tcl--command-block-context)))
 
-(evil-define-text-object mod-tcl-evil-outer-command-block (count &optional beg end type)
-  "Select the surrounding Tcl command block including its header."
-  (ignore count beg end type)
-  (mod-tcl--evil-range-from-context (mod-tcl--command-block-context) t))
+  (evil-define-text-object mod-tcl-evil-outer-command-block (count &optional beg end type)
+    "Select the surrounding Tcl command block including its header."
+    (ignore count beg end type)
+    (mod-tcl--evil-range-from-context (mod-tcl--command-block-context) t)))
 
 (defun mod-tcl--definition-start-line-p ()
   "Return non-nil when the current line starts a top-level Tcl definition."
