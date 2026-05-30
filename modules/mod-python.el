@@ -389,7 +389,7 @@ Return a list of arguments parsed with `split-string-and-unquote'."
      . ,(eglot-alternatives mod-python-language-server-candidates))))
 
 (use-package dape
-  :ensure t
+  :ensure nil
   :commands (dape dape-breakpoint-toggle)
   :config
   (add-hook 'dape-start-hook #'mod-python--refresh-debugger-key-buffers)

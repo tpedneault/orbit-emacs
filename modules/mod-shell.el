@@ -17,7 +17,7 @@
         (or (getenv "SHELL") "/bin/sh"))))
 
 (use-package eat
-  :ensure t
+  :ensure nil
   :defer t
   :config
   (with-eval-after-load 'evil

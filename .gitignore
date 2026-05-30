@@ -1,4 +1,6 @@
 elpaca/
+elpa/
+.cache/
 var/
 eln-cache/
 *.elc

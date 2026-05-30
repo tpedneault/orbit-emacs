@@ -57,7 +57,7 @@
   (call-interactively #'magit-file-unstage))
 
 (use-package diff-hl
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :config
   (global-diff-hl-mode 1)

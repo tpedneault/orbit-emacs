@@ -40,6 +40,8 @@ This manual is the in-Emacs documentation hub. Use it as the first stop for look
 - Context-based: work lives in named workspaces like =edit/<project>=, =git/<project>=, =notes=, and =agenda=.
 - Minimal UI: built-in theme, built-in modeline, a lightweight home dashboard, and an optional Treemacs project tree.
 - Keyboard-driven: small command language under =SPC= and =SPC m=.
+- Packages are managed by Elpaca under =var/elpaca/=, using Git-backed recipes and MELPA metadata.
+- GNU/NonGNU ELPA archives are intentionally not required for startup.
 
 * Main Areas
 

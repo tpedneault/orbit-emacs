@@ -82,14 +82,14 @@
                   " File")))))))
 
 (use-package vertico
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :config
   (setq vertico-cycle t)
   (vertico-mode 1))
 
 (use-package orderless
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :config
   (setq completion-styles '(orderless basic)
@@ -103,7 +103,7 @@
   (marginalia-mode 1))
 
 (use-package consult
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :config
   ;; Keep the existing leader tree and upgrade the underlying buffer switcher.
@@ -117,7 +117,7 @@
            " --path-separator / --smart-case --no-heading --line-number ."))))
 
 (use-package corfu
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :config
   (setq corfu-auto t

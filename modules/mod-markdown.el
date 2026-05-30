@@ -1,7 +1,7 @@
 ;;; mod-markdown.el --- Markdown editing support -*- lexical-binding: t; -*-
 
 (use-package markdown-mode
-  :ensure t
+  :ensure nil
   :mode (("\\.md\\'"       . gfm-mode)
          ("\\.markdown\\'" . markdown-mode)
          ("README\\.md\\'" . gfm-mode))

@@ -210,7 +210,7 @@ Otherwise preserve Evil's normal half-page scroll on `C-d'."
     (backward-char)))
 
 (use-package evil
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :init
   (setq evil-want-visual-char-semi-exclusive nil)

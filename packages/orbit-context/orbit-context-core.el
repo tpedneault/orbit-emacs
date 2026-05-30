@@ -7,7 +7,7 @@
 (declare-function mod-roam-directory "mod-roam")
 
 (use-package perspective
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :init
   (setq persp-mode-prefix-key nil

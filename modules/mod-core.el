@@ -34,10 +34,8 @@ between same-named files in different directories.")
   (expand-file-name "places" mod-core-var-directory))
 (defconst mod-core-custom-file
   (expand-file-name "custom.el" mod-core-var-directory))
-(defconst mod-core-package-directory
-  (expand-file-name "packages/" mod-core-var-directory))
-(defconst mod-core-package-gnupg-directory
-  (expand-file-name "package-gnupg/" mod-core-var-directory))
+(defconst mod-core-elpaca-directory
+  (expand-file-name "elpaca/" mod-core-var-directory))
 (defconst mod-core-user-directory
   (expand-file-name
    ".orbit-emacs.d/"
@@ -171,8 +169,7 @@ aborting init."
                    mod-core-backup-directory
                    mod-core-auto-save-directory
                    mod-core-lockfile-directory
-                   mod-core-package-directory
-                   mod-core-package-gnupg-directory))
+                   mod-core-elpaca-directory))
   (make-directory dir t))
 
 (mod-core-ensure-user-files)
@@ -377,48 +374,79 @@ aborting init."
       lock-file-name-transforms mod-core-lockfile-transforms
       savehist-file mod-core-savehist-file)
 
-(require 'package)
-(require 'package-vc)
+(defvar elpaca-installer-version 0.12)
+(defvar elpaca-directory mod-core-elpaca-directory)
+(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+(defvar elpaca-sources-directory (expand-file-name "sources/" elpaca-directory))
+(defvar elpaca-order
+  '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+           :ref nil
+           :depth 1
+           :inherit ignore
+           :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+           :build (:not elpaca-activate)))
 
-(setq package-user-dir mod-core-package-directory
-      package-archives '(("melpa" . "https://melpa.org/packages/"))
-      package-archive-priorities '(("melpa" . 30)))
+(let* ((repo (expand-file-name "elpaca/" elpaca-sources-directory))
+       (build (expand-file-name "elpaca/" elpaca-builds-directory))
+       (order (cdr elpaca-order))
+       (default-directory repo))
+  (add-to-list 'load-path (if (file-exists-p build) build repo))
+  (unless (file-exists-p repo)
+    (make-directory repo t)
+    (condition-case-unless-debug err
+        (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                  ((zerop
+                    (apply #'call-process
+                           `("git" nil ,buffer t "clone"
+                             ,@(when-let* ((depth (plist-get order :depth)))
+                                 (list (format "--depth=%d" depth)
+                                       "--no-single-branch"))
+                             ,(plist-get order :repo)
+                             ,repo))))
+                  ((zerop (call-process "git" nil buffer t "checkout"
+                                        (or (plist-get order :ref) "--"))))
+                  (emacs (concat invocation-directory invocation-name))
+                  ((zerop (call-process emacs nil buffer nil
+                                        "-Q" "-L" "." "--batch"
+                                        "--eval"
+                                        "(byte-recompile-directory \".\" 0 'force)")))
+                  ((require 'elpaca))
+                  ((elpaca-generate-autoloads "elpaca" repo)))
+            (progn
+              (message "%s" (buffer-string))
+              (kill-buffer buffer))
+          (error "%s" (with-current-buffer buffer (buffer-string))))
+      ((error)
+       (warn "%s" err)
+       (delete-directory repo 'recursive))))
+  (unless (require 'elpaca-autoloads nil t)
+    (require 'elpaca)
+    (elpaca-generate-autoloads "elpaca" repo)
+    (let ((load-source-file-function nil))
+      (load "./elpaca-autoloads"))))
 
-(when (boundp 'package-gnupghome-dir)
-  (setq package-gnupghome-dir mod-core-package-gnupg-directory))
+(add-hook 'after-init-hook #'elpaca-process-queues)
+(elpaca `(,@elpaca-order))
 
-(package-initialize)
+;; Corporate networks often block GNU/NonGNU ELPA.  Keep Elpaca on Git-backed
+;; menus and explicit source recipes instead of package archive downloads.
+(setq elpaca-menu-functions
+      '(elpaca-menu-lock-file
+        elpaca-menu-extensions
+        elpaca-menu-melpa
+        elpaca-menu-declarations))
 
-(defconst mod-core-package-vc-recipes
-  '((compat :vc-backend Git :url "https://github.com/emacs-compat/compat")
-    (dape :vc-backend Git :url "https://github.com/svaante/dape")
-    (eat :vc-backend Git :url "https://codeberg.org/akib/emacs-eat.git"))
-  "VC package recipes used when MELPA alone cannot satisfy a dependency.")
+;; Explicit Git recipes for packages that should not be fetched from ELPA.
+(elpaca (use-package :repo "https://github.com/jwiegley/use-package.git" :wait t))
+(elpaca (compat :repo "https://github.com/emacs-compat/compat.git" :wait t))
+(elpaca (dape :repo "https://github.com/svaante/dape.git" :wait t))
+(elpaca (eat :repo "https://codeberg.org/akib/emacs-eat.git" :wait t))
 
-(defun mod-core--package-available-p (package)
-  "Return non-nil when PACKAGE is installed or built into Emacs."
-  (or (package-installed-p package)
-      (package-built-in-p package)))
-
-(defun mod-core--package-vc-recipe (package)
-  "Return the VC recipe plist for PACKAGE, or nil when none is defined."
-  (cdr (assq package mod-core-package-vc-recipes)))
-
-(defun mod-core-ensure-package-installed (package)
-  "Install PACKAGE with `package.el' when it is not already available."
-  (unless (mod-core--package-available-p package)
-    (if-let* ((recipe (mod-core--package-vc-recipe package)))
-        (package-vc-install (cons package recipe))
-      (unless package-archive-contents
-        (package-refresh-contents))
-      (package-install package))))
-
-(mod-core-ensure-package-installed 'use-package)
-(mod-core-ensure-package-installed 'compat)
-(mod-core-ensure-package-installed 'dape)
-(mod-core-ensure-package-installed 'eat)
 (require 'use-package)
 (setq use-package-always-ensure t)
+
+(elpaca elpaca-use-package
+  (elpaca-use-package-mode))
 
 (use-package exec-path-from-shell
   :if (mod-core-gui-shell-environment-p)

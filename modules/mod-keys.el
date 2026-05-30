@@ -190,13 +190,13 @@
     (user-error "Not in a project")))
 
 (use-package which-key
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :config
   (which-key-mode 1))
 
 (use-package general
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :config
   (define-prefix-command 'mod-keys-local-leader-map)

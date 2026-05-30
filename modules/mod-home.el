@@ -42,7 +42,7 @@
          :name (file-name-nondirectory (directory-file-name root)))))
 
 (use-package dashboard
-  :ensure t
+  :ensure (:wait t)
   :demand t
   :init
   (setq dashboard-startup-banner
