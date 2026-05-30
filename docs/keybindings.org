@@ -263,6 +263,7 @@
 | =SPC m F=   | =mod-tcl-fold-definitions= | fold definitions  |
 | =SPC m D=   | =mod-tcl-fold-doxygen-comments= | fold Doxygen comments |
 | =SPC m TAB= | =mod-tcl-toggle-fold=    | toggle fold at point |
+| =SPC m a=   | =mod-tcl-ait-jump=       | jump to AIT procedure / step |
 | =SPC m n=   | =mod-tcl-next-definition= | next proc / namespace |
 | =SPC m p=   | =mod-tcl-previous-definition= | previous proc / namespace |
 | =SPC m r r= | =mod-tcl-rename-local-symbol= | rename local variable in surrounding proc |

@@ -119,6 +119,7 @@
 (declare-function mermaid-compile-buffer "mermaid-mode")
 (declare-function mermaid-open-browser "mermaid-mode")
 (declare-function org-babel-execute-src-block "ob")
+(declare-function mod-tcl-ait-jump "mod-tcl")
 
 (defconst mod-keys-config-directory
   (file-name-directory
@@ -446,6 +447,7 @@
      "F" '(mod-tcl-fold-definitions :which-key "fold definitions")
      "D" '(mod-tcl-fold-doxygen-comments :which-key "fold doxygen comments")
      "TAB" '(mod-tcl-toggle-fold :which-key "toggle fold")
+     "a" '(mod-tcl-ait-jump :which-key "AIT block")
      "n" '(mod-tcl-next-definition :which-key "next definition")
      "p" '(mod-tcl-previous-definition :which-key "previous definition")
      "g" '(mod-tcl-find-tag :which-key "goto tag")

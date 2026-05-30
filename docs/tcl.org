@@ -32,6 +32,7 @@ In =tcl-mode=:
 | =SPC m F=   | fold definitions       | top-level proc/namespace   |
 | =SPC m D=   | fold doxygen comments  | all =##= comment blocks    |
 | =SPC m TAB= | toggle fold            | fold at point              |
+| =SPC m a=   | jump to AIT block      | procedure / step completion |
 | =SPC m n=   | next definition        | next proc / namespace      |
 | =SPC m p=   | previous definition    | previous proc / namespace  |
 | =SPC m r r= | rename local variable  | proc-body Tcl refactor     |
@@ -54,6 +55,7 @@ In =tcl-mode=:
 - =SPC m g= visits the project =TAGS= file automatically and jumps to the definition at point.
 - =SPC m s= searches known Tcl symbols gathered from project =TAGS= and optional user-known symbols.
 - =SPC m n= and =SPC m p= move between top-level =proc= and =namespace eval= definitions.
+- =SPC m a= opens completion for hard-coded =ait::procedure= and =ait::step= blocks in the current file.
 - =]m= and =[m= provide the same motions directly in Evil.
 - =ic= and =ac= operate on generic brace-bodied Tcl command blocks.
 - completion-at-point / Corfu uses the same symbol pool, even when only the optional user-known symbols file is available

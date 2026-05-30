@@ -65,6 +65,10 @@
   "^[[:blank:]]*\\(?:proc[[:blank:]]+\\(?:\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]+\\|namespace[[:blank:]]+eval[[:blank:]]+\\(?:\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]*{\\)"
   "Regexp matching top-level Tcl proc or namespace definitions.")
 
+(defconst mod-tcl--ait-block-regexp
+  "^[[:blank:]]*\\(ait::\\(?:procedure\\|step\\)\\)\\_>"
+  "Regexp matching hard-coded AIT procedure and step block commands.")
+
 (defun mod-tcl-indent-width ()
   "Return the preferred Tcl indentation width."
   (or orbit-user-tcl-indent-width mod-tcl-default-indent-width))
@@ -139,6 +143,203 @@ proc definitions, which in turn breaks Treemacs tag navigation."
       (when namespaces
         (push (cons "Namespaces" (nreverse namespaces)) index))
       (nreverse index))))
+
+(defun mod-tcl--ait-command-kind (command)
+  "Return the AIT block kind symbol for COMMAND."
+  (pcase command
+    ("ait::procedure" 'procedure)
+    ("ait::step" 'step)))
+
+(defun mod-tcl--read-quoted-token ()
+  "Read a double-quoted Tcl token at point."
+  (when (looking-at "\"")
+    (forward-char 1)
+    (let ((start (point))
+          (done nil))
+      (while (and (not done) (not (eobp)))
+        (cond
+         ((looking-at "\\\\.")
+          (forward-char 2))
+         ((looking-at "\"")
+          (setq done t))
+         (t
+          (forward-char 1))))
+      (prog1 (buffer-substring-no-properties start (point))
+        (when (looking-at "\"")
+          (forward-char 1))))))
+
+(defun mod-tcl--read-braced-token ()
+  "Read a braced Tcl token at point."
+  (when (looking-at "{")
+    (let* ((start (point))
+           (end (mod-tcl--ait-matching-brace-end start)))
+      (when end
+        (goto-char end)
+        (buffer-substring-no-properties (1+ start) (1- end))))))
+
+(defun mod-tcl--read-bare-token ()
+  "Read a bare Tcl token at point."
+  (unless (looking-at "[[:space:]{}\"]")
+    (let ((start (point)))
+      (skip-chars-forward "^ \t\n{}\"")
+      (buffer-substring-no-properties start (point)))))
+
+(defun mod-tcl--read-ait-name ()
+  "Read the AIT block display name after point."
+  (skip-chars-forward " \t")
+  (or (mod-tcl--read-quoted-token)
+      (mod-tcl--read-braced-token)
+      (mod-tcl--read-bare-token)))
+
+(defun mod-tcl--ait-find-body-start (limit)
+  "Return the body opening brace position before LIMIT, or nil."
+  (let (found)
+    (while (and (not found)
+                (search-forward "{" limit t))
+      (setq found (1- (point))))
+    found))
+
+(defun mod-tcl--ait-matching-brace-end (start)
+  "Return the position after the Tcl brace block starting at START.
+This intentionally avoids `scan-sexps' because Tcl mode syntax tables can make
+large brace-bodied command blocks expensive to scan."
+  (save-excursion
+    (goto-char (1+ start))
+    (let ((depth 1)
+          (in-string nil)
+          (escaped nil)
+          end)
+      (while (and (not end) (not (eobp)))
+        (let ((char (char-after)))
+          (cond
+           (escaped
+            (setq escaped nil))
+           ((eq char ?\\)
+            (setq escaped t))
+           ((eq char ?\")
+            (setq in-string (not in-string)))
+           ((and (not in-string) (eq char ?{))
+            (cl-incf depth))
+           ((and (not in-string) (eq char ?}))
+            (cl-decf depth)
+            (when (zerop depth)
+              (setq end (1+ (point)))))))
+        (forward-char 1))
+      end)))
+
+(defun mod-tcl--ait-block-at-match ()
+  "Return an AIT block plist for the current match, or nil."
+  (let* ((command (match-string-no-properties 1))
+         (kind (mod-tcl--ait-command-kind command))
+         (start (match-beginning 0))
+         (command-end (match-end 1))
+         (line-end (line-end-position))
+         (name (save-excursion
+                 (goto-char command-end)
+                 (mod-tcl--read-ait-name)))
+         (body-start (save-excursion
+                       (goto-char command-end)
+                       (mod-tcl--ait-find-body-start line-end)))
+         (end (and body-start (mod-tcl--ait-matching-brace-end body-start))))
+    (when (and kind name body-start end)
+      (list :kind kind
+            :name name
+            :start start
+            :body-start (1+ body-start)
+            :body-end (1- end)
+            :end end
+            :children nil))))
+
+(defun mod-tcl--ait-blocks-flat ()
+  "Return all hard-coded AIT blocks in the current buffer as flat plists."
+  (let (blocks)
+    (save-excursion
+      (save-restriction
+        (widen)
+        (goto-char (point-min))
+        (while (re-search-forward mod-tcl--ait-block-regexp nil t)
+          (when-let* ((block (mod-tcl--ait-block-at-match)))
+            (push block blocks)))))
+    (nreverse blocks)))
+
+(defun mod-tcl--ait-block-parent (block candidates)
+  "Return the nearest parent of BLOCK from CANDIDATES."
+  (let ((start (plist-get block :start)))
+    (car
+     (sort
+      (cl-remove-if-not
+       (lambda (candidate)
+         (and (< (plist-get candidate :start) start)
+              (< start (plist-get candidate :body-end))))
+       candidates)
+      (lambda (a b)
+        (> (plist-get a :start) (plist-get b :start)))))))
+
+(defun mod-tcl-ait-block-tree ()
+  "Return AIT blocks as a nested tree.
+Currently recognizes hard-coded `ait::procedure' and `ait::step' blocks."
+  (let ((blocks (mod-tcl--ait-blocks-flat))
+        roots)
+    (dolist (block blocks)
+      (if-let* ((parent (mod-tcl--ait-block-parent block blocks)))
+          (plist-put parent :children
+                     (append (plist-get parent :children) (list block)))
+        (push block roots)))
+    (nreverse roots)))
+
+(defun mod-tcl--ait-block-display (block &optional parent)
+  "Return a completion display string for BLOCK under optional PARENT."
+  (let ((line (line-number-at-pos (plist-get block :start) t)))
+    (pcase (plist-get block :kind)
+      ('procedure
+       (format "procedure  %s  :%d" (plist-get block :name) line))
+      ('step
+       (format "step       %s%s  :%d"
+               (if parent
+                   (concat (plist-get parent :name) " / ")
+                 "")
+               (plist-get block :name)
+               line)))))
+
+(defun mod-tcl--ait-completion-candidates ()
+  "Return completion candidates for AIT blocks in the current buffer."
+  (let (candidates)
+    (dolist (procedure (mod-tcl-ait-block-tree))
+      (setq candidates
+            (append candidates
+                    (list (cons (mod-tcl--ait-block-display procedure)
+                                procedure))))
+      (dolist (child (plist-get procedure :children))
+        (setq candidates
+              (append candidates
+                      (list (cons (mod-tcl--ait-block-display child procedure)
+                                  child))))))
+    candidates))
+
+(defun mod-tcl--ait-completion-table (candidates)
+  "Return a completion table for CANDIDATES preserving source order."
+  (completion-table-with-metadata
+   (mapcar #'car candidates)
+   '((category . mod-tcl-ait-block)
+     (display-sort-function . identity)
+     (cycle-sort-function . identity))))
+
+(defun mod-tcl-ait-jump ()
+  "Jump to an AIT procedure or step in the current Tcl buffer."
+  (interactive)
+  (unless (derived-mode-p 'tcl-mode)
+    (user-error "Current buffer is not in tcl-mode"))
+  (let* ((candidates (mod-tcl--ait-completion-candidates))
+         (default (car (car candidates))))
+    (unless candidates
+      (user-error "No AIT procedures or steps found"))
+    (let* ((choice (completing-read "AIT block: "
+                                    (mod-tcl--ait-completion-table candidates)
+                                    nil t nil nil default))
+           (block (cdr (assoc choice candidates))))
+      (goto-char (plist-get block :start))
+      (back-to-indentation)
+      (recenter))))
 
 (defun mod-tcl--configure-editing-defaults ()
   "Apply Tcl editing defaults to the current buffer."
