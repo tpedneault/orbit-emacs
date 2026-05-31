@@ -1,0 +1,18 @@
+# -*- mode: snippet -*-
+# name: interface note
+# key: interface
+# --
+* ${1:Interface} :interface:
+:PROPERTIES:
+:COMPONENT: ${2:}
+:STANDARD: ${3:}
+:END:
+
+** Producers
+$0
+
+** Consumers
+
+** Data
+
+** Failure Modes

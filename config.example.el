@@ -19,6 +19,19 @@
 ;; Leave nil to keep orbit-emacs' default under ~/org/.
 (setq orbit-user-org-directory nil)
 
+;; Org appearance.
+;; Pretty mode enables visual indentation, hidden emphasis markers, prettier
+;; entities, and cleaner heading/tag behavior.
+(setq orbit-user-org-pretty t)
+
+;; Keep nil for a text-first monospace Org buffer.  Set t if you want prose in
+;; variable pitch while tables and code remain fixed-pitch.
+(setq orbit-user-org-variable-pitch nil)
+
+;; Automatically align native Org tables after table commands such as TAB,
+;; row/column insertion, conversion, recalculation, and explicit alignment.
+(setq orbit-user-org-auto-align-tables t)
+
 ;; Directory containing personal YASnippet snippets.
 ;; Leave nil to use ~/.orbit-emacs.d/snippets/.
 (setq orbit-user-snippets-directory nil)

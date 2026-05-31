@@ -33,6 +33,8 @@ The SQLite database is maintained automatically via =org-roam-db-autosync-mode=.
 | =SPC n r D=   | pick a date's daily note      | =org-roam-dailies-find-date= |
 | =SPC n r c=   | capture to a node             | =org-roam-capture=           |
 | =SPC n r s=   | force DB resync               | =org-roam-db-sync=           |
+| =SPC m l=     | insert node link              | from an Org buffer           |
+| =SPC m L=     | insert heading link           | agenda/Org heading completion |
 
 * Nodes
 
@@ -44,6 +46,17 @@ Workflow:
 1. Press =SPC n r f= to find or create a node.
 2. Write content and insert links with =SPC n r i=.
 3. Toggle the backlinks buffer with =SPC n r b= to see what links into the current node.
+
+Orbit's default templates are tuned for software/satellite engineering:
+
+- concept — durable pages like CCSDS, subsystem notes, protocols, or test rigs
+- procedure — repeatable operational or debug steps
+- standard — standard clauses and interpretation notes
+- meeting — decisions and actions from reviews or standups
+- decision — architectural and mission-impacting choices
+
+Completion shows title, tags, and source file so similarly named subsystem or
+standard notes are easier to tell apart.
 
 * Daily Notes
 

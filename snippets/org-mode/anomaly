@@ -1,0 +1,18 @@
+# -*- mode: snippet -*-
+# name: anomaly note
+# key: anomaly
+# --
+* ${1:Anomaly} :risk:
+:PROPERTIES:
+:COMPONENT: ${2:}
+:JIRA_KEY: ${3:}
+:END:
+
+** Observed
+$0
+
+** Expected
+
+** Impact
+
+** Next Actions

@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: procedure step
+# key: procstep
+# --
+*** ${1:Step}
+:PROPERTIES:
+:EXPECTED: ${2:}
+:END:
+
+- Action :: $0
+- Expected :: ${3:}
+- Evidence :: ${4:}

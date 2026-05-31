@@ -123,7 +123,19 @@ Settings available by section:
 *General*
 - =orbit-user-shell= — shell binary (e.g. =/bin/zsh=)
 - =orbit-user-org-directory= — root Org directory
+- =orbit-user-org-pretty= — enable Orbit's readable Org visual defaults
+- =orbit-user-org-variable-pitch= — use variable-pitch prose in Org buffers
+- =orbit-user-org-auto-align-tables= — align native Org tables after table commands
 - =orbit-user-snippets-directory= — personal YASnippet snippets
+
+Org is set up as an engineering notebook: durable knowledge lives in org-roam,
+agenda tasks link back to notes through =LINKED_NOTE=, and evidence files use
+Org attachments.  Common traceability properties are available on tasks:
+=JIRA_KEY=, =COMPONENT=, =MISSION=, =STANDARD=, =REQUIREMENT=, =LINKED_NOTE=,
+and =EVIDENCE=.
+
+Org snippets are available for recurring engineering records: =reqtrace=,
+=testresult=, =anomaly=, =interface=, =procstep=, and =risk=.
 
 *Fonts*
 - =orbit-user-font-family= — monospace font (default and fixed-pitch faces)
@@ -140,7 +152,7 @@ Settings available by section:
   =orbit-retro-amber=, =orbit-retro-green=, =orbit-retro-blue=,
   =orbit-retro-temple=, =orbit-retro-paper=, or =orbit-retro-sky=
 
-When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically kept in sync, so org tables and code blocks stay aligned even when =mixed-pitch-mode= is active.
+When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically kept in sync, so org tables and code blocks stay aligned even when variable-pitch Org prose is enabled.
 
 Font presets use plist entries:
 

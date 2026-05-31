@@ -1,0 +1,17 @@
+# -*- mode: snippet -*-
+# name: requirement trace
+# key: reqtrace
+# --
+* ${1:Requirement} :requirement:
+:PROPERTIES:
+:REQUIREMENT: ${2:REQ-}
+:STANDARD: ${3:}
+:COMPONENT: ${4:}
+:END:
+
+** Intent
+$0
+
+** Verification
+
+** Evidence

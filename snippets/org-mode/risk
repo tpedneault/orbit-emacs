@@ -1,0 +1,16 @@
+# -*- mode: snippet -*-
+# name: risk note
+# key: risk
+# --
+* ${1:Risk} :risk:
+:PROPERTIES:
+:COMPONENT: ${2:}
+:MISSION: ${3:}
+:END:
+
+** Risk
+$0
+
+** Mitigation
+
+** Owner / Follow-up

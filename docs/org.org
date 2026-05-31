@@ -70,6 +70,11 @@ Jira sync:
 
 Templates:
 - inbox task
+- linked task
+- Jira follow-up
+- investigation/debug note
+- meeting action
+- test evidence task
 - quick note
 - journal entry
 
@@ -106,6 +111,13 @@ The main dashboard contains:
 - =Waiting=
 - =Inbox=
 - =Triage=
+
+Additional agenda views are available from the agenda dispatcher:
+- =i=: inbox / triage
+- =b=: blocked / waiting
+- =r=: review / follow-up
+- =e=: evidence / test
+- =j=: Jira-linked work
 
 Meaning:
 - =Schedule=: today’s scheduled items and deadlines
@@ -152,9 +164,9 @@ In a normal Org buffer:
 |-----------+-----------------|
 | =SPC m t= | change TODO     |
 | =SPC m s= | schedule        |
-| =SPC m d= | deadline        |
+| =SPC m D= | deadline        |
 | =SPC m r= | refile          |
-| =SPC m a= | archive subtree |
+| =SPC m A= | archive subtree |
 | =SPC m P= | priority        |
 
 ** Editing / Restructuring
@@ -183,6 +195,14 @@ In a normal Org buffer:
 | =SPC m c o= | clock out       |
 | =SPC m c c= | cancel clock    |
 | =SPC m c g= | goto active clock |
+| =SPC m c l= | capture linked task |
+| =SPC m c e= | capture evidence task |
+| =SPC m l= | insert roam node link |
+| =SPC m L= | insert heading link |
+| =SPC m a a= | attach file |
+| =SPC m a i= | insert attached image |
+| =SPC m d f= | insert Mermaid flowchart |
+| =SPC m v e= | toggle emphasis markers |
 | =SPC m z= | narrow subtree  |
 | =SPC m Z= | widen           |
 

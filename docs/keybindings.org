@@ -154,6 +154,8 @@ press =RET= to run a command, and close it with =q= or =ESC=.
 | =SPC n c c= | =org-clock-cancel=       | cancel active clock |
 | =SPC n C= | =mod-org-capture=          | capture menu       |
 | =SPC n t= | =mod-org-capture-inbox-task= | inbox task       |
+| =SPC m c l= | =mod-org-capture-linked-task= | task linked to current note |
+| =SPC m c e= | =mod-org-capture-evidence= | test evidence task |
 | =SPC n j j= | =mod-org-capture-journal= | journal entry    |
 | =SPC n j J= | =mod-jira-open-file=     | open =jira.org=   |
 | =SPC n j c= | =mod-jira-add-comment=   | add Jira comment   |
@@ -165,6 +167,14 @@ press =RET= to run a command, and close it with =q= or =ESC=.
 | =SPC n j w= | =mod-jira-log-work=      | submit worklog from Org clock |
 | =SPC n j W= | =mod-jira-log-work-manual= | submit manual Jira worklog |
 | =SPC n N= | =mod-org-capture-note=     | quick note         |
+
+Agenda custom views:
+- =w= work dashboard
+- =i= inbox / triage
+- =b= blocked / waiting
+- =r= review / follow-up
+- =e= evidence / test
+- =j= Jira-linked work
 
 * =SPC x= Contexts
 
@@ -244,12 +254,38 @@ press =RET= to run a command, and close it with =q= or =ESC=.
 | =SPC m p=   | =org-previous-visible-heading= | previous heading |
 | =SPC m u=   | =outline-up-heading=        | up heading          |
 | =SPC m TAB= | =org-cycle=                 | cycle subtree       |
+| =SPC m T a= | =mod-org-table-align=       | align table         |
+| =SPC m T c= | =mod-org-table-create-or-convert-from-region= | create or convert table |
+| =SPC m T r= | =mod-org-table-recalculate= | recalculate table   |
+| =SPC m T n= | =mod-org-table-next-row=    | next table row      |
+| =SPC m T i r= | =mod-org-table-insert-row= | insert row         |
+| =SPC m T i c= | =mod-org-table-insert-column= | insert column    |
+| =SPC m T d r= | =mod-org-table-kill-row=  | delete row          |
+| =SPC m T d c= | =mod-org-table-delete-column= | delete column    |
 | =SPC m t=   | =org-todo=                  | TODO state          |
 | =SPC m s=   | =org-schedule=              | schedule            |
-| =SPC m d=   | =org-deadline=              | deadline            |
+| =SPC m D=   | =org-deadline=              | deadline            |
 | =SPC m r=   | =org-refile=                | refile heading      |
-| =SPC m a=   | =org-archive-subtree=       | archive subtree     |
+| =SPC m A=   | =org-archive-subtree=       | archive subtree     |
 | =SPC m P=   | =org-priority=              | priority            |
+| =SPC m l=   | =mod-org-insert-node-link=  | link to roam node   |
+| =SPC m L=   | =mod-org-insert-heading-link= | link to heading   |
+| =SPC m RET= | =mod-org-open-link-at-point= | open link          |
+| =SPC m a a= | =mod-org-attach-file=       | attach file         |
+| =SPC m a d= | =mod-org-attachment-directory= | attachment dir    |
+| =SPC m a i= | =mod-org-insert-attached-image= | insert image     |
+| =SPC m a t= | =mod-org-toggle-inline-images= | toggle images     |
+| =SPC m c l= | =mod-org-capture-linked-task= | linked task       |
+| =SPC m c j= | =mod-org-capture-jira-follow-up= | Jira follow-up  |
+| =SPC m c d= | =mod-org-capture-investigation= | investigation    |
+| =SPC m c m= | =mod-org-capture-meeting-action= | meeting action   |
+| =SPC m c e= | =mod-org-capture-evidence=  | evidence task       |
+| =SPC m d f= | =mod-mermaid-insert-flowchart= | flowchart        |
+| =SPC m d s= | =mod-mermaid-insert-sequence= | sequence diagram  |
+| =SPC m d t= | =mod-mermaid-insert-state=  | state diagram       |
+| =SPC m d T= | =mod-mermaid-insert-timeline= | timeline          |
+| =SPC m v e= | =mod-org-toggle-emphasis-markers= | emphasis markers |
+| =SPC m v d= | =mod-org-toggle-property-drawers= | property drawers |
 | =SPC m J=   | =org-metadown=              | move subtree down   |
 | =SPC m K=   | =org-metaup=                | move subtree up     |
 | =SPC m H=   | =org-metaleft=              | promote heading     |

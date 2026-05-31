@@ -14,7 +14,7 @@
    - The agenda context stays stable.
    - The source entry opens in the =notes= context.
 4. Refile inbox items with =SPC m r=.
-5. Adjust state with =SPC m t=, schedule with =SPC m s=, deadline with =SPC m d=.
+5. Adjust state with =SPC m t=, schedule with =SPC m s=, deadline with =SPC m D=.
 
 * Working Loop
 

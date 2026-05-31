@@ -295,6 +295,10 @@ Otherwise preserve Evil's normal half-page scroll on `C-d'."
         (goto-char (max (point-min) (1- (window-end nil t))))
         (line-beginning-position))))
 
+(defun mod-evil--code-fold-overlay-p (overlay)
+  "Return non-nil when OVERLAY is an hideshow-style code fold."
+  (eq (overlay-get overlay 'invisible) 'hs))
+
 (defun mod-evil-next-line (count)
   "Move down COUNT lines, or one-line scroll at the bottom edge of the window.
 When COUNT is nil and point is already on the last visible line, scroll by a
@@ -325,7 +329,7 @@ Uses `overlays-in' over the whole current line rather than `overlays-at'
 at point, because when the cursor lands at the start of the fold header
 line the overlay begins later on that same line and `overlays-at' misses it."
   (when (evil-normal-state-p)
-    (when-let* ((ov (cl-find-if (lambda (o) (overlay-get o 'invisible))
+    (when-let* ((ov (cl-find-if #'mod-evil--code-fold-overlay-p
                                (overlays-in (line-beginning-position)
                                             (1+ (line-end-position))))))
       ;; overlay-end is often the \n of the last hidden line; jumping there
@@ -337,7 +341,7 @@ line the overlay begins later on that same line and `overlays-at' misses it."
 (defun mod-evil--skip-fold-backward (&rest _)
   "After `evil-previous-line', jump before any invisible fold overlay at point."
   (when (evil-normal-state-p)
-    (when-let* ((ov (cl-find-if (lambda (o) (overlay-get o 'invisible))
+    (when-let* ((ov (cl-find-if #'mod-evil--code-fold-overlay-p
                                (overlays-at (point)))))
       (goto-char (max (point-min) (1- (overlay-start ov)))))))
 

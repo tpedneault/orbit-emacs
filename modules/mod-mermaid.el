@@ -1,5 +1,52 @@
 ;;; mod-mermaid.el --- Mermaid diagram support -*- lexical-binding: t; -*-
 
+(require 'org)
+(require 'org-attach)
+
+(defun mod-mermaid--attachment-file (name)
+  "Return an attachment path for Mermaid output NAME."
+  (if (derived-mode-p 'org-mode)
+      (let ((directory (org-attach-dir t)))
+        (make-directory directory t)
+        (expand-file-name name directory))
+    name))
+
+(defun mod-mermaid--insert-block (kind body)
+  "Insert a Mermaid source block of KIND with BODY."
+  (let* ((default-name (format "%s.svg" kind))
+         (output-file (mod-mermaid--attachment-file default-name)))
+    (insert (format "#+begin_src mermaid :file %s\n%s\n#+end_src\n"
+                    output-file
+                    body))))
+
+(defun mod-mermaid-insert-flowchart ()
+  "Insert a Mermaid flowchart block."
+  (interactive)
+  (mod-mermaid--insert-block
+   "flowchart"
+   "flowchart TD\n    A[Start] --> B[Process]\n    B --> C[Result]"))
+
+(defun mod-mermaid-insert-sequence ()
+  "Insert a Mermaid sequence diagram block."
+  (interactive)
+  (mod-mermaid--insert-block
+   "sequence"
+   "sequenceDiagram\n    participant A as Component A\n    participant B as Component B\n    A->>B: Request\n    B-->>A: Response"))
+
+(defun mod-mermaid-insert-state ()
+  "Insert a Mermaid state diagram block."
+  (interactive)
+  (mod-mermaid--insert-block
+   "state"
+   "stateDiagram-v2\n    [*] --> Idle\n    Idle --> Active\n    Active --> Idle"))
+
+(defun mod-mermaid-insert-timeline ()
+  "Insert a Mermaid timeline block."
+  (interactive)
+  (mod-mermaid--insert-block
+   "timeline"
+   "timeline\n    title Timeline\n    Phase 1 : Event\n    Phase 2 : Result"))
+
 ;; ---------------------------------------------------------------------------
 ;; Part 1: ob-mermaid — org-babel backend for #+begin_src mermaid blocks
 ;; ---------------------------------------------------------------------------
