@@ -170,6 +170,7 @@
              (:label "Whitespace" :command mod-ui-toggle-whitespace :key "C-; t s")
              (:label "Wrap" :command mod-ui-toggle-wrap :key "C-; t w")
              (:label "Modeline" :command mod-ui-toggle-modeline :key "C-; t m")
+             (:label "Choose Font" :command mod-theme-select-font :key "C-; t F")
              (:label "Choose Theme" :command mod-theme-select :key "C-; t T")))
     (:name "Help"
      :items ((:label "Orbit Home" :command mod-home-open :key "C-; h h")
@@ -194,10 +195,17 @@
   (and (fboundp 'mod-core-orbit-menu-enabled-p)
        (mod-core-orbit-menu-enabled-p)))
 
+(defun mod-menu--eligible-frame-p (&optional frame)
+  "Return non-nil when FRAME should show the Orbit menu strip."
+  (let ((frame (or frame (selected-frame))))
+    (and (not (frame-parameter frame 'parent-frame))
+         (not (frame-parameter frame 'mod-menu-dropdown-frame))
+         (not (frame-parameter frame 'tooltip)))))
+
 (defun mod-menu--bar-visible-p ()
   "Return non-nil when the current frame should show the menu strip."
   (and (mod-menu--enabled-p)
-       (not (frame-parameter nil 'mod-menu-dropdown-frame))
+       (mod-menu--eligible-frame-p)
        (not (minibufferp (window-buffer (selected-window))))))
 
 (defun mod-menu--open-from-tab-bar (name)
@@ -240,13 +248,15 @@
 (defun mod-menu--ensure-frame (&optional frame)
   "Ensure FRAME is showing the Orbit menu tab bar when appropriate."
   (when (and mod-menu-mode
-             (mod-menu--enabled-p)
-             (not (frame-parameter frame 'mod-menu-dropdown-frame)))
+             (mod-menu--enabled-p))
     (with-selected-frame (or frame (selected-frame))
-      (setq tab-bar-format '(mod-menu-bar-format))
-      (set-frame-parameter nil 'tab-bar-lines 1)
-      (unless (bound-and-true-p tab-bar-mode)
-        (tab-bar-mode 1))
+      (if (mod-menu--eligible-frame-p)
+          (progn
+            (setq tab-bar-format '(mod-menu-bar-format))
+            (set-frame-parameter nil 'tab-bar-lines 1)
+            (unless (bound-and-true-p tab-bar-mode)
+              (tab-bar-mode 1)))
+        (set-frame-parameter nil 'tab-bar-lines 0))
       (force-mode-line-update t))))
 
 (defun mod-menu--command-available-p (command)

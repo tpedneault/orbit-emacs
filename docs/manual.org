@@ -129,6 +129,10 @@ Settings available by section:
 - =orbit-user-font-family= — monospace font (default and fixed-pitch faces)
 - =orbit-user-font-height= — height in 1/10 pt units (140 = 14 pt)
 - =orbit-user-font-weight= — weight symbol: =light=, =regular=, =medium=, =semibold=, =bold=
+- =orbit-user-font-preset= — initial named font preset, or nil to use the direct font settings
+- =orbit-user-font-presets= — named font setup list for =SPC t F= / =C-; t F=
+- =orbit-user-font-resize-keys= — enable =C--= and =C-+= / =C-== font resizing
+- =orbit-user-font-resize-step= — height step for runtime font resizing
 - =orbit-user-variable-pitch-font= — proportional font for org prose (leave nil to stay monospace)
 - =orbit-user-variable-pitch-height= — height for variable-pitch; float (=1.0=) or absolute integer
 - =orbit-user-variable-pitch-weight= — weight for variable-pitch face
@@ -137,6 +141,16 @@ Settings available by section:
   =orbit-retro-temple=, =orbit-retro-paper=, or =orbit-retro-sky=
 
 When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically kept in sync, so org tables and code blocks stay aligned even when =mixed-pitch-mode= is active.
+
+Font presets use plist entries:
+
+#+begin_src emacs-lisp
+(setq orbit-user-font-preset 'maple)
+(setq orbit-user-font-presets
+      '((maple :family "Maple Mono NF" :height 140 :weight medium)
+        (jetbrains :family "JetBrains Mono" :height 135 :weight regular)
+        (presentation :family "Maple Mono NF" :height 180 :weight semibold)))
+#+end_src
 
 *Editor defaults*
 - =orbit-keybinding-profile= — =vim= for Evil/SPC, or =standard= for Emacs editing with =C-;=

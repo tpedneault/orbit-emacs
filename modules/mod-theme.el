@@ -10,6 +10,8 @@
 
 ;;; Code:
 
+(require 'seq)
+
 ;; ─── Face declarations ────────────────────────────────────────────────────────
 ;; Every orbit-* face is declared with `defface' before the deftheme blocks.
 ;; This guarantees that the face symbols are valid (facep returns t) regardless
@@ -842,18 +844,62 @@
   (when (display-graphic-p)
     (seq-find (lambda (f) (find-font (font-spec :family f))) candidates)))
 
+(defvar mod-theme--current-font-preset nil
+  "The currently active Orbit font preset name, or nil for direct settings.")
+
+(defvar mod-theme--font-height-override nil
+  "Runtime font height override set by Orbit font resize commands.")
+
+(defun mod-theme--font-preset-name (preset)
+  "Return the display name for font PRESET."
+  (format "%s" (car preset)))
+
+(defun mod-theme--font-preset (name)
+  "Return the font preset named NAME."
+  (alist-get name orbit-user-font-presets nil nil #'equal))
+
+(defun mod-theme--font-settings ()
+  "Return the active font settings plist."
+  (or (and orbit-user-font-preset
+           (mod-theme--font-preset orbit-user-font-preset))
+      (list :family orbit-user-font-family
+            :height orbit-user-font-height
+            :weight orbit-user-font-weight
+            :variable-family orbit-user-variable-pitch-font
+            :variable-height orbit-user-variable-pitch-height
+            :variable-weight orbit-user-variable-pitch-weight)))
+
+(defun mod-theme--effective-font-settings ()
+  "Return font settings including runtime overrides."
+  (let ((settings (copy-sequence (mod-theme--font-settings))))
+    (if mod-theme--font-height-override
+        (plist-put settings :height mod-theme--font-height-override)
+      settings)))
+
+(defun mod-theme--current-font-height (&optional frame)
+  "Return the current default face height for FRAME."
+  (or mod-theme--font-height-override
+      (plist-get (mod-theme--font-settings) :height)
+      orbit-user-font-height
+      (let ((height (face-attribute 'default :height (or frame (selected-frame)) 'default)))
+        (when (and (integerp height)
+                   (> height 20))
+          height))
+      140))
+
 (defun mod-theme-apply-font-stack (&optional frame)
   "Apply the Orbit font stack to FRAME, respecting orbit-user-* overrides.
 Falls back through `mod-theme-mono-font-candidates' when no override is set."
   (with-selected-frame (or frame (selected-frame))
     (when (display-graphic-p)
-      (let* ((mono-family (or orbit-user-font-family
+      (let* ((settings (mod-theme--effective-font-settings))
+             (mono-family (or (plist-get settings :family)
                               (mod-theme--first-available-font
                                mod-theme-mono-font-candidates)
                               "monospace"))
-             (mono-height (or orbit-user-font-height 'unspecified))
-             (mono-weight orbit-user-font-weight)
-             (vp-family   (or orbit-user-variable-pitch-font
+             (mono-height (or (plist-get settings :height) 'unspecified))
+             (mono-weight (plist-get settings :weight))
+             (vp-family   (or (plist-get settings :variable-family)
                               (mod-theme--first-available-font
                                mod-theme-variable-font-candidates)))
              (default-attrs `(:family ,mono-family
@@ -867,9 +913,44 @@ Falls back through `mod-theme-mono-font-candidates' when no override is set."
         (when vp-family
           (apply #'set-face-attribute 'variable-pitch frame
                  `(:family ,vp-family
-                   :height ,(or orbit-user-variable-pitch-height 1.0)
-                   ,@(when orbit-user-variable-pitch-weight
-                       `(:weight ,orbit-user-variable-pitch-weight)))))))))
+                   :height ,(or (plist-get settings :variable-height) 1.0)
+                   ,@(when (plist-get settings :variable-weight)
+                       `(:weight ,(plist-get settings :variable-weight))))))))))
+
+(defun mod-theme-select-font ()
+  "Select an Orbit font preset with completion and apply it immediately."
+  (interactive)
+  (unless orbit-user-font-presets
+    (user-error "No font presets configured in orbit-user-font-presets"))
+  (let* ((preset-names (mapcar #'mod-theme--font-preset-name orbit-user-font-presets))
+         (default (and orbit-user-font-preset (format "%s" orbit-user-font-preset)))
+         (choice (completing-read "Orbit font: " preset-names nil t nil nil default)))
+    (setq orbit-user-font-preset (car (assoc-string choice orbit-user-font-presets))
+          mod-theme--font-height-override nil
+          mod-theme--current-font-preset orbit-user-font-preset)
+    (mod-theme-apply-font-stack)
+    (force-mode-line-update t)
+    (message "Font: %s" choice)))
+
+(defun mod-theme-adjust-font-height (delta)
+  "Adjust the current Orbit font height by DELTA."
+  (interactive "nFont height delta: ")
+  (let* ((current (mod-theme--current-font-height))
+         (next (max 60 (+ current delta))))
+    (setq mod-theme--font-height-override next)
+    (mod-theme-apply-font-stack)
+    (force-mode-line-update t)
+    (message "Font height: %s" next)))
+
+(defun mod-theme-increase-font-height ()
+  "Increase the current Orbit font height."
+  (interactive)
+  (mod-theme-adjust-font-height (or orbit-user-font-resize-step 10)))
+
+(defun mod-theme-decrease-font-height ()
+  "Decrease the current Orbit font height."
+  (interactive)
+  (mod-theme-adjust-font-height (- (or orbit-user-font-resize-step 10))))
 
 ;; ─── Theme management ────────────────────────────────────────────────────────
 

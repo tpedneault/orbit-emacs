@@ -33,6 +33,8 @@ press =RET= to run a command, and close it with =q= or =ESC=.
 
 | Key       | Action                     | Notes                  |
 |-----------+----------------------------+------------------------|
+| =C--=     | =mod-theme-decrease-font-height= | decrease font size |
+| =C-+= / =C-== | =mod-theme-increase-font-height= | increase font size |
 | =SPC SPC= | =consult-buffer=           | fast buffer switch     |
 | =SPC .=   | =mod-keys-find-project-file= | find file in current project |
 | =SPC /=   | =mod-search-project=       | ripgrep in project     |
@@ -212,6 +214,8 @@ press =RET= to run a command, and close it with =q= or =ESC=.
 |-----------+-----------------------+--------------------------|
 | =SPC t c= | =mod-ui-toggle-fill-column-indicator= | toggle fill-column indicator |
 | =SPC t w= | =mod-ui-toggle-wrap=  | toggle wrap / truncation |
+| =SPC t F= | =mod-theme-select-font= | choose font preset |
+| =SPC t T= | =mod-theme-select= | choose theme |
 
 * Editing
 

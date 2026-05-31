@@ -98,6 +98,9 @@
 (declare-function markdown-insert-link "markdown-mode")
 (declare-function mod-home-open "mod-home")
 (declare-function mod-theme-select "mod-theme")
+(declare-function mod-theme-select-font "mod-theme")
+(declare-function mod-theme-decrease-font-height "mod-theme")
+(declare-function mod-theme-increase-font-height "mod-theme")
 (declare-function mod-shell-open "mod-shell")
 (declare-function mod-shell-new "mod-shell")
 (declare-function mod-project-add "mod-project")
@@ -426,6 +429,7 @@
     "t s" '(mod-ui-toggle-whitespace :which-key "whitespace")
     "t m" '(mod-ui-toggle-modeline :which-key "modeline")
     "t w" '(mod-ui-toggle-wrap :which-key "wrap")
+    "t F" '(mod-theme-select-font :which-key "choose font")
     "t T" '(mod-theme-select :which-key "choose theme")
     "q" '(:ignore t :which-key "quit")
     "q s" '(mod-session-save :which-key "save session")
@@ -661,6 +665,7 @@
     ("Toggles"
      ["Fullscreen" mod-ui-toggle-fullscreen t]
      ["Big Font" mod-ui-toggle-big-font t]
+     ["Choose Font" mod-theme-select-font t]
      ["Line Numbers" mod-ui-toggle-line-numbers t]
      ["Wrap" mod-ui-toggle-wrap t]
      ["Choose Theme" mod-theme-select t])
@@ -675,6 +680,10 @@
 
 (global-set-key (kbd "M-j") #'mod-core-move-line-or-region-down)
 (global-set-key (kbd "M-k") #'mod-core-move-line-or-region-up)
+(when orbit-user-font-resize-keys
+  (global-set-key (kbd "C--") #'mod-theme-decrease-font-height)
+  (global-set-key (kbd "C-+") #'mod-theme-increase-font-height)
+  (global-set-key (kbd "C-=") #'mod-theme-increase-font-height))
 
 (with-eval-after-load 'evil
   (general-define-key

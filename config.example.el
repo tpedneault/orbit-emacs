@@ -32,6 +32,24 @@
 (setq orbit-user-font-height nil)
 (setq orbit-user-font-weight nil)
 
+;; Optional named font presets.  When `orbit-user-font-preset' names one of
+;; these entries, it takes precedence over the single font settings above.
+;; Pick a preset at runtime with SPC t F / C-; t F.
+(setq orbit-user-font-preset nil)
+(setq orbit-user-font-presets
+      nil)
+;; Example:
+;; (setq orbit-user-font-preset 'maple)
+;; (setq orbit-user-font-presets
+;;       '((maple :family "Maple Mono NF" :height 140 :weight medium)
+;;         (jetbrains :family "JetBrains Mono" :height 135 :weight regular)
+;;         (presentation :family "Maple Mono NF" :height 180 :weight semibold)))
+
+;; Runtime font resizing.
+;; When enabled, C-- decreases and C-+ / C-= increases the active font size.
+(setq orbit-user-font-resize-keys t)
+(setq orbit-user-font-resize-step 10)
+
 ;; Optional variable-pitch face settings for prose-oriented buffers.
 ;; Leave these nil to keep the current orbit-emacs defaults, or leave
 ;; `orbit-user-variable-pitch-font` nil to stay effectively monospace.
