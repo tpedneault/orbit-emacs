@@ -44,7 +44,7 @@ and =C-; m= instead of =SPC m=.  For example, =SPC .= becomes =C-; .= and
 
 - Modal: Evil-first editing is the default; a standard Emacs profile is available for teammates.
 - Context-based: work lives in named workspaces like =edit/<project>=, =git/<project>=, =notes=, and =agenda=.
-- Minimal UI: built-in theme, built-in modeline, a lightweight home dashboard, and an optional Treemacs project tree.
+- Minimal UI: built-in theme, built-in modeline, a lightweight home dashboard, optional Orbit menu strip, and an optional Treemacs project tree.
 - Keyboard-driven: small command language under =SPC= and =SPC m=, or =C-;= and =C-; m= in the standard profile.
 - Packages are managed by Elpaca under =var/elpaca/=, using Git-backed recipes and MELPA metadata.
 - GNU/NonGNU ELPA archives are intentionally not required for startup.
@@ -140,8 +140,11 @@ When =orbit-user-font-family= is set, the =fixed-pitch= face is automatically ke
 
 *Editor defaults*
 - =orbit-keybinding-profile= — =vim= for Evil/SPC, or =standard= for Emacs editing with =C-;=
-- =orbit-standard-menu-bar= — =auto= shows the Orbit menu bar for the standard profile, t always shows it, nil hides it
+- =orbit-standard-menu-bar= — native platform menu bar fallback; nil by default
 - =orbit-standard-cua-keys= — =auto= enables Windows-style copy/cut/paste for the standard profile
+- =orbit-menu-enabled= — =auto= shows the custom Orbit menu strip for the standard profile
+- =orbit-menu-dropdown-height= — maximum height for Orbit menu dropdown windows
+- =orbit-menu-show-key-hints= — show keybinding hints in Orbit menu dropdowns
 - =orbit-user-enable-fill-column-indicator= / =orbit-user-fill-column=
 - =orbit-user-enable-whitespace=
 - =orbit-user-enable-hl-line=

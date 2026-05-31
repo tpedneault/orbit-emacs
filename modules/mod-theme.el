@@ -94,6 +94,24 @@
 (defface orbit-header-clock
   '((t (:inherit header-line :slant italic))) "Clock segment in the orbit header line." :group 'orbit-faces)
 
+;; Menu strip / dropdowns
+(defface orbit-menu-strip
+  '((t (:inherit header-line))) "Background face for the Orbit menu strip." :group 'orbit-faces)
+(defface orbit-menu-label
+  '((t (:inherit header-line))) "Top-level Orbit menu label." :group 'orbit-faces)
+(defface orbit-menu-label-active
+  '((t (:inherit header-line :weight bold))) "Active or hovered Orbit menu label." :group 'orbit-faces)
+(defface orbit-menu-dropdown
+  '((t (:inherit default))) "Background face for Orbit menu dropdowns." :group 'orbit-faces)
+(defface orbit-menu-dropdown-title
+  '((t (:inherit font-lock-keyword-face :weight bold))) "Title face for Orbit menu dropdowns." :group 'orbit-faces)
+(defface orbit-menu-dropdown-heading
+  '((t (:inherit font-lock-comment-face :weight bold))) "Section heading face for Orbit menu dropdowns." :group 'orbit-faces)
+(defface orbit-menu-dropdown-command
+  '((t (:inherit default))) "Command row face for Orbit menu dropdowns." :group 'orbit-faces)
+(defface orbit-menu-dropdown-disabled
+  '((t (:inherit shadow))) "Disabled command row face for Orbit menu dropdowns." :group 'orbit-faces)
+
 ;; Home / dashboard
 (defface orbit-home-logo
   '((t (:weight bold))) "ASCII logo in the orbit home buffer." :group 'orbit-faces)
@@ -256,6 +274,15 @@
    `(orbit-header-sep               ((t (:foreground ,fg-dim  :background ,bg-dark))))
    `(orbit-header-path              ((t (:foreground ,fg-dim  :background ,bg-dark))))
    `(orbit-header-clock             ((t (:foreground ,amber   :slant italic :background ,bg-dark))))
+   ;; ── Orbit menu faces ─────────────────────────────────────────────────────
+   `(orbit-menu-strip               ((t (:inherit default :background ,bg-dark :foreground ,fg-dim :box nil))))
+   `(orbit-menu-label               ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+   `(orbit-menu-label-active        ((t (:inherit default :background ,bg-hl   :foreground ,amber :weight bold))))
+   `(orbit-menu-dropdown            ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+   `(orbit-menu-dropdown-title      ((t (:inherit default :background ,bg-dark :foreground ,amber :weight bold))))
+   `(orbit-menu-dropdown-heading    ((t (:inherit default :background ,bg-dark :foreground ,blue :weight bold))))
+   `(orbit-menu-dropdown-command    ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+   `(orbit-menu-dropdown-disabled   ((t (:inherit default :background ,bg-dark :foreground ,fg-dim))))
    ;; ── Orbit home faces ──────────────────────────────────────────────────────
    `(orbit-home-logo                ((t (:foreground ,amber   :weight bold))))
    `(orbit-home-tagline             ((t (:foreground ,fg-dim  :slant italic))))
@@ -444,6 +471,15 @@
    `(orbit-header-sep               ((t (:foreground ,fg-dim  :background ,bg-dark))))
    `(orbit-header-path              ((t (:foreground ,fg-dim  :background ,bg-dark))))
    `(orbit-header-clock             ((t (:foreground ,amber   :slant italic :background ,bg-dark))))
+   ;; ── Orbit menu faces ─────────────────────────────────────────────────────
+   `(orbit-menu-strip               ((t (:inherit default :background ,bg-dark :foreground ,fg-dim :box nil))))
+   `(orbit-menu-label               ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+   `(orbit-menu-label-active        ((t (:inherit default :background ,bg-hl   :foreground ,amber :weight bold))))
+   `(orbit-menu-dropdown            ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+   `(orbit-menu-dropdown-title      ((t (:inherit default :background ,bg-dark :foreground ,amber :weight bold))))
+   `(orbit-menu-dropdown-heading    ((t (:inherit default :background ,bg-dark :foreground ,blue :weight bold))))
+   `(orbit-menu-dropdown-command    ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+   `(orbit-menu-dropdown-disabled   ((t (:inherit default :background ,bg-dark :foreground ,fg-dim))))
    ;; ── Orbit home faces ──────────────────────────────────────────────────────
    `(orbit-home-logo                ((t (:foreground ,amber   :weight bold))))
    `(orbit-home-tagline             ((t (:foreground ,fg-dim  :slant italic))))
@@ -635,6 +671,14 @@
      `(orbit-header-sep               ((t (:foreground ,fg-dim  :background ,bg-dark))))
      `(orbit-header-path              ((t (:foreground ,fg-dim  :background ,bg-dark))))
      `(orbit-header-clock             ((t (:foreground ,amber   :slant italic :background ,bg-dark))))
+     `(orbit-menu-strip               ((t (:inherit default :background ,bg-dark :foreground ,fg-dim :box nil))))
+     `(orbit-menu-label               ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+     `(orbit-menu-label-active        ((t (:inherit default :background ,bg-hl   :foreground ,amber :weight bold))))
+     `(orbit-menu-dropdown            ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+     `(orbit-menu-dropdown-title      ((t (:inherit default :background ,bg-dark :foreground ,amber :weight bold))))
+     `(orbit-menu-dropdown-heading    ((t (:inherit default :background ,bg-dark :foreground ,blue :weight bold))))
+     `(orbit-menu-dropdown-command    ((t (:inherit default :background ,bg-dark :foreground ,fg-main))))
+     `(orbit-menu-dropdown-disabled   ((t (:inherit default :background ,bg-dark :foreground ,fg-dim))))
      `(orbit-home-logo                ((t (:foreground ,amber   :weight bold))))
      `(orbit-home-tagline             ((t (:foreground ,fg-dim  :slant italic))))
      `(orbit-home-clock               ((t (:foreground ,amber))))

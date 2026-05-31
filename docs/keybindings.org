@@ -24,6 +24,11 @@ When =orbit-standard-cua-keys= is =auto= or t, the standard profile also enables
 Windows-style copy/cut/paste with =C-c=, =C-x=, and =C-v= in ordinary editing
 situations.
 
+When =orbit-menu-enabled= is =auto= or t, Orbit also shows a themed menu strip in
+the standard profile.  Click a top-level label such as =File=, =Project=, or
+=Git= to open a dropdown; move inside the dropdown with =j= / =k= or arrow keys,
+press =RET= to run a command, and close it with =q= or =ESC=.
+
 * Global Shortcuts
 
 | Key       | Action                     | Notes                  |

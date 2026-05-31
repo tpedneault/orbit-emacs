@@ -30,6 +30,7 @@
 (require 'mod-tcl-docs)
 (require 'orbit-context)
 (require 'mod-session)
+(require 'mod-menu)
 (when (fboundp 'orbit-startup--finish)
   (orbit-startup--finish))
 

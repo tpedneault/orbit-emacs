@@ -98,8 +98,9 @@ between same-named files in different directories.")
 Use \\='vim for Evil modal editing and the SPC leader.
 Use \\='standard for conventional Emacs editing with the C-; Orbit prefix.")
 
-(defvar orbit-standard-menu-bar 'auto
+(defvar orbit-standard-menu-bar nil
   "Whether the Orbit menu bar is shown.
+This controls the native platform menu bar, not the custom Orbit menu strip.
 Use \\='auto to show it for `orbit-keybinding-profile' \\='standard only.
 Use t to always show it, or nil to always hide it.")
 
@@ -107,6 +108,17 @@ Use t to always show it, or nil to always hide it.")
   "Whether Windows-style CUA copy/cut/paste keys are enabled.
 Use \\='auto to enable them for `orbit-keybinding-profile' \\='standard only.
 Use t to always enable them, or nil to always keep them disabled.")
+
+(defvar orbit-menu-enabled 'auto
+  "Whether the custom Orbit menu strip is enabled.
+Use \\='auto to enable it for `orbit-keybinding-profile' \\='standard only.
+Use t to always enable it, or nil to always keep it disabled.")
+
+(defvar orbit-menu-dropdown-height 14
+  "Maximum height, in lines, for Orbit menu dropdown windows.")
+
+(defvar orbit-menu-show-key-hints t
+  "When non-nil, show shortcut hints beside Orbit menu commands.")
 
 (defun mod-core-vim-profile-p ()
   "Return non-nil when Orbit should use the Vim/Evil profile."
@@ -126,6 +138,12 @@ Use t to always enable them, or nil to always keep them disabled.")
   "Return non-nil when Windows-style CUA keys should be enabled."
   (or (eq orbit-standard-cua-keys t)
       (and (eq orbit-standard-cua-keys 'auto)
+           (mod-core-standard-profile-p))))
+
+(defun mod-core-orbit-menu-enabled-p ()
+  "Return non-nil when the custom Orbit menu strip should be visible."
+  (or (eq orbit-menu-enabled t)
+      (and (eq orbit-menu-enabled 'auto)
            (mod-core-standard-profile-p))))
 
 (defvar orbit-user-roam-directory nil

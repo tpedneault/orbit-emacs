@@ -46,11 +46,12 @@
 ;; - 'standard disables Evil modal editing and uses C-; / C-; m instead.
 (setq orbit-keybinding-profile 'vim)
 
-;; Menu bar visibility.
-;; - 'auto shows the Orbit menu bar only for the 'standard profile.
+;; Native platform menu bar visibility.
+;; The custom Orbit menu strip is controlled by `orbit-menu-enabled' below.
+;; - 'auto shows the native menu bar only for the 'standard profile.
 ;; - t always shows it.
 ;; - nil always hides it.
-(setq orbit-standard-menu-bar 'auto)
+(setq orbit-standard-menu-bar nil)
 
 ;; Windows-style copy/cut/paste keys for the standard profile.
 ;; - 'auto enables CUA keys only for the 'standard profile.
@@ -61,6 +62,18 @@
 ;; situations while Emacs mode-specific C-c bindings remain available when no
 ;; region is active.
 (setq orbit-standard-cua-keys 'auto)
+
+;; Custom Orbit menu strip.
+;; - 'auto shows it only for the 'standard profile.
+;; - t always shows it.
+;; - nil always hides it.
+(setq orbit-menu-enabled 'auto)
+
+;; Maximum height, in lines, for Orbit menu dropdown windows.
+(setq orbit-menu-dropdown-height 14)
+
+;; Show keybinding hints beside dropdown commands when non-nil.
+(setq orbit-menu-show-key-hints t)
 
 ;; Global whitespace / current-line / fill-column indicator defaults.
 ;; These apply broadly unless a mode-specific override says otherwise.
