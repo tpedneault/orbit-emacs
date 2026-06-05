@@ -1,0 +1,33 @@
+services:
+  orbit-emacs:
+    build:
+      context: .
+      dockerfile: docker/orbit-emacs/Dockerfile
+      args:
+        EMACS_VERSION: ${EMACS_VERSION:-30.2}
+        TCLINT_VERSION: ${TCLINT_VERSION:-0.8.0}
+    image: orbit-emacs-vnc:${EMACS_VERSION:-30.2}
+    container_name: orbit-emacs
+    init: true
+    ports:
+      - "127.0.0.1:${ORBIT_VNC_PORT:-5901}:5901"
+    environment:
+      ORBIT_UID: ${ORBIT_UID:-1000}
+      ORBIT_GID: ${ORBIT_GID:-1000}
+      ORBIT_WORKSPACE: /workspace
+      VNC_GEOMETRY: ${VNC_GEOMETRY:-1920x1080}
+      VNC_PASSWORD: ${VNC_PASSWORD:-}
+    volumes:
+      - type: bind
+        source: ${ORBIT_WORKSPACE:-.}
+        target: /workspace
+      - orbit-emacs-var:/home/orbit/.config/emacs/var
+      - orbit-emacs-user:/home/orbit/.orbit-emacs.d
+      # Uncomment on machines where Git over SSH is needed from inside Emacs.
+      # - ${HOME}/.ssh:/home/orbit/.ssh:ro
+      # - ${HOME}/.gitconfig:/home/orbit/.gitconfig:ro
+    shm_size: "1gb"
+
+volumes:
+  orbit-emacs-var:
+  orbit-emacs-user:

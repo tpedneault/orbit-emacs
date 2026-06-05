@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export HOME="${HOME:-/home/orbit}"
+export DISPLAY="${DISPLAY:-:1}"
+export SHELL="${SHELL:-/bin/bash}"
+cd "${ORBIT_WORKSPACE:-/workspace}"
+
+for _ in {1..100}; do
+  if [[ -S /tmp/.X11-unix/X1 ]]; then
+    break
+  fi
+  sleep 0.1
+done
+
+exec emacs --chdir "${ORBIT_WORKSPACE:-/workspace}"
