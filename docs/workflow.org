@@ -99,6 +99,16 @@
 4. Use =SPC m r r= for proc-local variable rename when you want a conservative Tcl refactor.
 5. Lint with =SPC m l= and format with =SPC m f=.
 
+* SCOS-2000 MIB Loop
+
+1. Configure =orbit-user-mib-roots= in the user-local config with one entry per MIB directory.
+2. Open any configured =.dat= table; it enters =mod-mib-mode= and keeps the file as raw TSV.
+3. Use =SPC m r= for the column ruler and =SPC m c= to jump by ICD column name.
+4. Use =SPC m ]= / =SPC m [= for fields and =SPC m n= / =SPC m p= for rows while preserving the column.
+5. Edit the current field with =SPC m e= when you want a minibuffer-sized target.
+6. Switch among configured MIB directories with =SPC m m= and open tables with =SPC m t=.
+7. To compare the same table from two MIB roots, open one table and press =SPC m C=.
+
 * Python Loop
 
 1. Open a Python project with =SPC x e= or =SPC p p=.

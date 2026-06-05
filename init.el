@@ -24,6 +24,7 @@
 (require 'mod-jira)
 (require 'mod-project)
 (require 'mod-search)
+(require 'mod-mib)
 (require 'mod-markdown)
 (require 'mod-python)
 (require 'mod-tcl)

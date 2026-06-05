@@ -143,6 +143,18 @@
 (declare-function mod-mermaid-insert-timeline "mod-mermaid")
 (declare-function mermaid-compile-buffer "mermaid-mode")
 (declare-function mermaid-open-browser "mermaid-mode")
+(declare-function mod-mib-compare-table "mod-mib")
+(declare-function mod-mib-edit-field "mod-mib")
+(declare-function mod-mib-jump-column "mod-mib")
+(declare-function mod-mib-next-field "mod-mib")
+(declare-function mod-mib-next-row "mod-mib")
+(declare-function mod-mib-open-table "mod-mib")
+(declare-function mod-mib-open-table-other-root "mod-mib")
+(declare-function mod-mib-previous-field "mod-mib")
+(declare-function mod-mib-previous-row "mod-mib")
+(declare-function mod-mib-realign "mod-mib")
+(declare-function mod-mib-switch-root "mod-mib")
+(declare-function mod-mib-toggle-ruler "mod-mib")
 (declare-function org-babel-execute-src-block "ob")
 (declare-function mod-org-backtab-dwim "mod-org")
 (declare-function mod-org-table-align "mod-org")
@@ -621,6 +633,22 @@
      "P" '(mod-mermaid-auto-preview-mode :which-key "auto preview")
      "e" '(mermaid-compile-buffer :which-key "compile")
      "o" '(mermaid-open-browser :which-key "open in browser")))
+
+  (with-eval-after-load 'mod-mib
+    (mod-keys--define-mode-local
+     'mod-mib-mode-map
+     "m" '(mod-mib-switch-root :which-key "switch root")
+     "t" '(mod-mib-open-table :which-key "open table")
+     "T" '(mod-mib-open-table-other-root :which-key "same table other root")
+     "c" '(mod-mib-jump-column :which-key "column")
+     "e" '(mod-mib-edit-field :which-key "edit field")
+     "r" '(mod-mib-toggle-ruler :which-key "ruler")
+     "a" '(mod-mib-realign :which-key "align")
+     "n" '(mod-mib-next-row :which-key "next row")
+     "p" '(mod-mib-previous-row :which-key "previous row")
+     "]" '(mod-mib-next-field :which-key "next field")
+     "[" '(mod-mib-previous-field :which-key "previous field")
+     "C" '(mod-mib-compare-table :which-key "compare table")))
 
   (with-eval-after-load 'markdown-mode
     (mod-keys--define-mode-local

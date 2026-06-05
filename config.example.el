@@ -166,6 +166,20 @@
 (setq orbit-user-doxygen-program nil)
 (setq orbit-user-doxygen-config-file nil)
 
+;; ─── SCOS-2000 MIB workflow ────────────────────────────────────────────────
+
+;; MIB roots containing SCOS-2000 ASCII .dat tables.  Entries may be plain
+;; directory strings or (LABEL . DIRECTORY) cons cells.
+(setq orbit-user-mib-roots nil)
+;; Example:
+;; (setq orbit-user-mib-roots
+;;       '(("OBS A" . "~/work/mission/mib/obs-a/")
+;;         ("OBS B" . "~/work/mission/mib/obs-b/")))
+
+;; SCOS-2000 Database Import ICD version used for column names.
+;; Only "7.2" is supported initially.
+(setq orbit-user-mib-icd-version "7.2")
+
 ;; ─── Git — forge and magit-delta ────────────────────────────────────────────
 
 ;; Hostname of the self-hosted GitLab instance for forge MR / issue browsing.
