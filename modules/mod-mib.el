@@ -27,6 +27,12 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
 (defvar orbit-user-mib-telecommand-argument-separator ", "
   "Separator used between generated telecommand arguments.")
 
+(defvar orbit-user-mib-custom-schemas nil
+  "Custom MIB table schemas.
+Each entry may be either (TABLE . COLUMNS) or
+(TABLE :columns COLUMNS :key KEY-COLUMNS). TABLE is matched case-insensitively
+against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
+
 (defconst mod-mib--schemas-7.2
   '(("caf" . ("CAF_NUMBR" "CAF_DESCR" "CAF_ENGFMT" "CAF_RAWFMT" "CAF_RADIX" "CAF_UNIT" "CAF_NCURVE" "CAF_INTER"))
     ("cap" . ("CAP_NUMBR" "CAP_XVALS" "CAP_YVALS"))
@@ -78,8 +84,7 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
 (defvar-local mod-mib--root-entry nil)
 (defvar-local mod-mib--column-widths nil)
 (defvar-local mod-mib--display-overlays nil)
-(defvar-local mod-mib--ruler-overlay nil)
-(defvar-local mod-mib--ruler-visible nil)
+(defvar-local mod-mib--header-visible t)
 (defvar-local mod-mib--scroll-peer-buffer nil)
 
 (defvar mod-mib--syncing-scroll nil)
@@ -159,13 +164,64 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
   (downcase
    (file-name-base (or file buffer-file-name (buffer-name)))))
 
-(defun mod-mib--schema (&optional table)
-  "Return schema for TABLE under the configured ICD version."
+(defun mod-mib--normalize-schema-entry (entry)
+  "Return normalized custom schema ENTRY, or nil when invalid."
+  (let* ((table (car-safe entry))
+         (body (cdr-safe entry))
+         (columns (cond
+                   ((and (listp body)
+                         (cl-every #'stringp body))
+                    body)
+                   ((listp body)
+                    (plist-get body :columns))
+                   (t nil)))
+         (key (and (listp body)
+                   (plist-get body :key))))
+    (when (and (stringp table)
+               (listp columns)
+               (cl-every #'stringp columns)
+               (or (null key)
+                   (and (listp key)
+                        (cl-every #'stringp key))))
+      (list :table (downcase table)
+            :columns columns
+            :key key
+            :custom t))))
+
+(defun mod-mib--custom-schema-entry (&optional table)
+  "Return the custom schema entry for TABLE, or nil."
+  (let ((table (downcase (or table (mod-mib--table-name)))))
+    (cl-find table
+             (delq nil
+                   (mapcar #'mod-mib--normalize-schema-entry
+                           orbit-user-mib-custom-schemas))
+             :key (lambda (entry) (plist-get entry :table))
+             :test #'string=)))
+
+(defun mod-mib--built-in-schema-entry (&optional table)
+  "Return the built-in schema entry for TABLE under the configured ICD."
   (unless (string= orbit-user-mib-icd-version "7.2")
     (user-error "Unsupported SCOS-2000 MIB ICD version: %s"
                 orbit-user-mib-icd-version))
-  (alist-get (or table (mod-mib--table-name))
-             mod-mib--schemas-7.2 nil nil #'string=))
+  (when-let* ((columns (alist-get (or table (mod-mib--table-name))
+                                  mod-mib--schemas-7.2 nil nil #'string=)))
+    (list :table (or table (mod-mib--table-name))
+          :columns columns
+          :key nil
+          :custom nil)))
+
+(defun mod-mib--schema-entry (&optional table)
+  "Return schema metadata for TABLE, preferring user custom schemas."
+  (or (mod-mib--custom-schema-entry table)
+      (mod-mib--built-in-schema-entry table)))
+
+(defun mod-mib--schema (&optional table)
+  "Return schema for TABLE under the configured ICD version."
+  (plist-get (mod-mib--schema-entry table) :columns))
+
+(defun mod-mib--schema-key (&optional table)
+  "Return configured key columns for TABLE, or nil."
+  (plist-get (mod-mib--schema-entry table) :key))
 
 (defun mod-mib--clean-value (value)
   "Return VALUE with presentation whitespace normalized."
@@ -277,18 +333,29 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
   (clrhash mod-mib--row-cache)
   (message "MIB lookup index refreshed"))
 
-(defun mod-mib--candidate (kind row title type stype description)
+(defun mod-mib--candidate (kind row title type stype description &optional fields)
   "Return completion candidate for KIND ROW and display fields."
   (let* ((source (mod-mib--row-source row))
          (root (plist-get source :root-label))
          (title (or title "<unnamed>"))
+         (field-text
+          (mapconcat
+           (lambda (field)
+             (format "%s=%s" (car field) (cdr field)))
+           (cl-remove-if
+            (lambda (field)
+              (string-empty-p (or (cdr field) "")))
+            fields)
+           " "))
          (display (string-join
                    (delq nil
                          (list title
                                (unless (string-empty-p (or type ""))
-                                 (format "type:%s" type))
+                                 (format "type=%s" type))
                                (unless (string-empty-p (or stype ""))
-                                 (format "stype:%s" stype))
+                                 (format "sub=%s" stype))
+                               (unless (string-empty-p field-text)
+                                 field-text)
                                (format "[%s]" root)
                                (unless (string-empty-p (or description ""))
                                  description)
@@ -390,6 +457,17 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
     (if (fboundp 'mod-utility--display-buffer)
         (mod-utility--display-buffer buffer)
       (pop-to-buffer buffer))))
+
+(defun mod-mib--insertion-preview-buffer-name (data)
+  "Return the insertion preview buffer name for telecommand DATA."
+  (format "*MIB Insert TC: %s*"
+          (mod-mib--row-value (plist-get data :ccf) "CCF_CNAME")))
+
+(defun mod-mib--close-insertion-preview (data)
+  "Close the insertion preview window for DATA without killing its buffer."
+  (when-let* ((buffer (get-buffer (mod-mib--insertion-preview-buffer-name data)))
+              (window (get-buffer-window buffer t)))
+    (delete-window window)))
 
 (defun mod-mib--replace-placeholders (template values)
   "Replace TEMPLATE placeholders using VALUES alist."
@@ -661,7 +739,7 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
          (source (mod-mib--row-source ccf))
          (name (mod-mib--row-value ccf "CCF_CNAME")))
     (mod-mib--display-detail
-     (format "*MIB Insert TC: %s*" name)
+     (mod-mib--insertion-preview-buffer-name data)
      (lambda ()
        (mod-mib--insert-line "* Insert Telecommand %s" name)
        (mod-mib--insert-line "\n* Source")
@@ -745,6 +823,7 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
       (with-current-buffer target-buffer
         (goto-char target-point)
         (insert (plist-get data :command)))
+      (mod-mib--close-insertion-preview data)
       (when (window-live-p target-window)
         (select-window target-window))
       (message "Inserted telecommand %s"
@@ -761,7 +840,10 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
        (mod-mib--row-value row "CCF_TYPE")
        (mod-mib--row-value row "CCF_STYPE")
        (or (mod-mib--row-value row "CCF_DESCR")
-           (mod-mib--row-value row "CCF_DESCR2"))))
+           (mod-mib--row-value row "CCF_DESCR2"))
+       `(("apid" . ,(mod-mib--row-value row "CCF_APID"))
+         ("subsys" . ,(mod-mib--row-value row "CCF_SUBSYS"))
+         ("ctype" . ,(mod-mib--row-value row "CCF_CTYPE")))))
     (mod-mib--rows "ccf"))))
 
 (defun mod-mib--tm-packet-candidates ()
@@ -774,7 +856,9 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
        (format "SPID:%s" (mod-mib--row-value row "PID_SPID"))
        (mod-mib--row-value row "PID_TYPE")
        (mod-mib--row-value row "PID_STYPE")
-       (mod-mib--row-value row "PID_DESCR")))
+       (mod-mib--row-value row "PID_DESCR")
+       `(("apid" . ,(mod-mib--row-value row "PID_APID"))
+         ("spid" . ,(mod-mib--row-value row "PID_SPID")))))
     (mod-mib--rows "pid"))))
 
 (defun mod-mib--tm-parameter-candidates ()
@@ -1056,12 +1140,6 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
   (mapc #'delete-overlay mod-mib--display-overlays)
   (setq mod-mib--display-overlays nil))
 
-(defun mod-mib--clear-ruler ()
-  "Remove the column ruler overlay."
-  (when (overlayp mod-mib--ruler-overlay)
-    (delete-overlay mod-mib--ruler-overlay))
-  (setq mod-mib--ruler-overlay nil))
-
 (defun mod-mib--install-display-overlays ()
   "Install display-only tab alignment overlays."
   (let ((stops (mod-mib--column-stops)))
@@ -1080,7 +1158,9 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
         (forward-line 1)))))
 
 (defun mod-mib--ruler-string ()
-  "Return the aligned column ruler text."
+  "Return the aligned sticky column header text."
+  (unless mod-mib--column-widths
+    (setq mod-mib--column-widths (mod-mib--compute-column-widths)))
   (let ((parts nil))
     (cl-loop for width in mod-mib--column-widths
              for i from 0
@@ -1092,14 +1172,8 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
                 'face 'font-lock-comment-face)))
 
 (defun mod-mib--install-ruler ()
-  "Install the display-only column ruler overlay."
-  (mod-mib--clear-ruler)
-  (when mod-mib--ruler-visible
-    (setq mod-mib--ruler-overlay (make-overlay (point-min) (point-min)
-                                               (current-buffer) nil t))
-    (overlay-put mod-mib--ruler-overlay
-                 'before-string
-                 (concat (mod-mib--ruler-string) "\n"))))
+  "Refresh the sticky schema header."
+  (force-mode-line-update))
 
 (defun mod-mib-realign ()
   "Realign display-only MIB TSV columns."
@@ -1112,14 +1186,14 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
   (message "MIB columns aligned"))
 
 (defun mod-mib-toggle-ruler ()
-  "Toggle the display-only MIB column ruler."
+  "Toggle the sticky MIB column header."
   (interactive)
-  (setq mod-mib--ruler-visible (not mod-mib--ruler-visible))
+  (setq mod-mib--header-visible (not mod-mib--header-visible))
   (unless mod-mib--column-widths
     (setq mod-mib--column-widths (mod-mib--compute-column-widths)))
   (mod-mib--install-ruler)
-  (message "MIB column ruler %s"
-           (if mod-mib--ruler-visible "shown" "hidden")))
+  (message "MIB column header %s"
+           (if mod-mib--header-visible "shown" "hidden")))
 
 (defun mod-mib-next-field ()
   "Move to the next TSV field."
@@ -1283,13 +1357,18 @@ Supported placeholders are {type}, {stype}, {apid}, {mnemo},
                         (mod-mib--root-for-file buffer-file-name))))
          (table (file-name-nondirectory (or buffer-file-name (buffer-name))))
          (column (mod-mib--current-column-index))
-         (name (mod-mib--column-name column)))
-    (format "  MIB %s  >  %s  >  row %d  col %d %s"
-            (if root (plist-get root :label) "<unconfigured>")
-            table
-            (line-number-at-pos)
-            (1+ column)
-            name)))
+         (name (mod-mib--column-name column))
+         (status (format "  MIB %s  >  %s  >  row %d  col %d %s"
+                         (if root (plist-get root :label) "<unconfigured>")
+                         table
+                         (line-number-at-pos)
+                         (1+ column)
+                         name)))
+    (if mod-mib--header-visible
+        (concat (propertize status 'face 'mode-line)
+                (propertize "  |  " 'face 'shadow)
+                (mod-mib--ruler-string))
+      (propertize status 'face 'mode-line))))
 
 (defun mod-mib--maybe-enable ()
   "Enable `mod-mib-mode' for configured SCOS-2000 MIB .dat files."

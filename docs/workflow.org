@@ -103,14 +103,15 @@
 
 1. Configure =orbit-user-mib-roots= in the user-local config with one entry per MIB directory.
 2. Use global =SPC M= commands from any buffer: =SPC M t= looks up telecommands and =SPC M i= builds a TC call from the MIB.
-3. For TC insertion, configure =orbit-user-mib-telecommand-template= and argument formatting in the user-local config.
-4. Fixed command parameters with =CDF_VALUE= are omitted from inserted arguments; variable parameters can be prompted as engineering values or skipped so your script can provide them programmatically.
-5. Open any configured =.dat= table; it enters =mod-mib-mode= and keeps the file as raw TSV.
-6. Use =SPC m r= for the column ruler and =SPC m c= to jump by ICD column name.
-7. Use =SPC m ]= / =SPC m [= for fields and =SPC m n= / =SPC m p= for rows while preserving the column.
-8. Edit the current field with =SPC m e= when you want a minibuffer-sized target.
-9. Switch among configured MIB directories with =SPC m m= and open tables with =SPC m t=.
-10. To compare the same table from two MIB roots, open one table and press =SPC m C=.
+3. In TC completion, use field tokens like ~type=8~, ~sub=1~, and ~apid=100~ so type and subtype numbers do not cross-match.
+4. For TC insertion, configure =orbit-user-mib-telecommand-template= and argument formatting in the user-local config.
+5. Fixed command parameters with =CDF_VALUE= are omitted from inserted arguments; variable parameters can be prompted as engineering values or skipped so your script can provide them programmatically.
+6. Open any configured =.dat= table; it enters =mod-mib-mode= and keeps the file as raw TSV.
+7. Use =SPC m r= for the sticky column header and =SPC m c= to jump by ICD column name.
+8. Use =SPC m ]= / =SPC m [= for fields and =SPC m n= / =SPC m p= for rows while preserving the column.
+9. Edit the current field with =SPC m e= when you want a minibuffer-sized target.
+10. Switch among configured MIB directories with =SPC m m= and open tables with =SPC m t=.
+11. To compare the same table from two MIB roots, open one table and press =SPC m C=.
 
 * Python Loop
 

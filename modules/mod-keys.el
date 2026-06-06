@@ -675,7 +675,7 @@
      "T" '(mod-mib-open-table-other-root :which-key "same table other root")
      "c" '(mod-mib-jump-column :which-key "column")
      "e" '(mod-mib-edit-field :which-key "edit field")
-     "r" '(mod-mib-toggle-ruler :which-key "ruler")
+     "r" '(mod-mib-toggle-ruler :which-key "column header")
      "a" '(mod-mib-realign :which-key "align")
      "n" '(mod-mib-next-row :which-key "next row")
      "p" '(mod-mib-previous-row :which-key "previous row")

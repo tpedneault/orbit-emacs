@@ -112,9 +112,22 @@ Example SCOS-2000 MIB setup:
       "telecommand_send PUS_T={type} PUS_ST={stype} APID={apid} MNEMO={mnemo} ARGUMENTS=[{arguments}]")
 (setq orbit-user-mib-telecommand-argument-template "{name}={value}")
 (setq orbit-user-mib-telecommand-argument-separator ", ")
+
+(setq orbit-user-mib-custom-schemas
+      '(("xcustom" . ("XC_ID" "XC_NAME" "XC_VALUE"))
+        ("mytab" :columns ("MY_ID" "MY_TYPE" "MY_DESC")
+                 :key ("MY_ID"))))
 ```
 
 Global MIB lookup and insertion lives under `SPC M`. `SPC M i` builds a telecommand from the selected MIB, lets you build or skip variable arguments, offers MIB-derived alias completion and range hints when building arguments, omits fixed `CDF_VALUE` parameters, previews validation warnings, then inserts the configured template at point.
+
+Telecommand completion includes field tokens for precise filtering. Use
+`type=129`, `sub=1`, `apid=100`, `subsys=AOCS`, or combinations such as
+`type=8 sub=1` when a bare number would be ambiguous.
+
+Configured custom schemas are merged ahead of the built-in SCOS-2000 7.2 ICD
+schemas, so project-specific `.dat` tables can use the same column navigation,
+sticky headers, alignment, and field editing commands.
 
 Tool overrides are optional when tools are on `PATH`, but can be pinned when needed:
 

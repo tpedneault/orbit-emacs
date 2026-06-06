@@ -179,6 +179,11 @@ Configure only the MIB roots you actually use in =~/.orbit-emacs.d/config.el=:
         ("MIB-D" . "~/Repos/my-project/data/mib-d/")))
 
 (setq orbit-user-mib-icd-version "7.2")
+
+(setq orbit-user-mib-custom-schemas
+      '(("xcustom" . ("XC_ID" "XC_NAME" "XC_VALUE"))
+        ("mytab" :columns ("MY_ID" "MY_TYPE" "MY_DESC")
+                 :key ("MY_ID"))))
 #+end_src
 
 For a sample local MIB root:
@@ -192,7 +197,7 @@ For a sample local MIB root:
 
 Open a configured =.dat= file and use:
 
-- =SPC m r=: toggle the column ruler
+- =SPC m r=: toggle the sticky column header
 - =SPC m c=: jump to an ICD column by name
 - =SPC m e=: edit the current field
 - =SPC m C=: compare the same table from another configured MIB root
