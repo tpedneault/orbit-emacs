@@ -1,0 +1,175 @@
+#+title: install
+
+* Install Orbit Emacs
+
+Orbit Emacs is intended to run as a native Emacs configuration.  On Windows,
+use Ubuntu on WSL2 with WSLg and run GUI Emacs from inside Ubuntu.
+
+Avoid storing active work repositories under =/mnt/c/...= when using WSL2.
+Keep them under the Linux filesystem, such as =~/Repos/=, so Git, ripgrep,
+ctags, Doxygen, and project scans stay responsive.
+
+* Windows: Ubuntu 24.04 On WSL2/WSLg
+
+These steps assume WSL2, WSLg, and Ubuntu 24.04 are already installed.
+
+1. Open the Ubuntu terminal.
+
+2. Update packages:
+
+#+begin_src shell
+sudo apt update
+sudo apt upgrade -y
+#+end_src
+
+3. Install Emacs and core tools:
+
+#+begin_src shell
+sudo apt install -y \
+  emacs-gtk git ripgrep universal-ctags doxygen graphviz \
+  tcl tcl-dev tk tk-dev python3 python3-venv python3-pip \
+  build-essential ca-certificates curl
+#+end_src
+
+4. Install Python-based Tcl tools:
+
+#+begin_src shell
+python3 -m venv ~/.local/share/orbit-tools
+~/.local/share/orbit-tools/bin/pip install --upgrade pip
+~/.local/share/orbit-tools/bin/pip install tclint==0.8.0
+#+end_src
+
+5. Expose =tclint= and =tclfmt= on your PATH:
+
+#+begin_src shell
+mkdir -p ~/.local/bin
+ln -sf ~/.local/share/orbit-tools/bin/tclint ~/.local/bin/tclint
+ln -sf ~/.local/share/orbit-tools/bin/tclfmt ~/.local/bin/tclfmt
+#+end_src
+
+6. Make sure =~/.local/bin= is on PATH.  Add this to =~/.profile= if needed:
+
+#+begin_src shell
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+#+end_src
+
+7. Clone Orbit Emacs:
+
+#+begin_src shell
+mkdir -p ~/.config
+git clone git@github.com:tpedneault/orbit-emacs.git ~/.config/emacs
+#+end_src
+
+If SSH is not set up yet, use HTTPS first:
+
+#+begin_src shell
+git clone https://github.com/tpedneault/orbit-emacs.git ~/.config/emacs
+#+end_src
+
+8. Create the machine-local config directory:
+
+#+begin_src shell
+mkdir -p ~/.orbit-emacs.d
+cp ~/.config/emacs/config.example.el ~/.orbit-emacs.d/config.el
+#+end_src
+
+9. Start GUI Emacs through WSLg:
+
+#+begin_src shell
+emacs &
+#+end_src
+
+The first launch bootstraps Elpaca packages under =~/.config/emacs/var/=.
+
+* Recommended Repository Layout On WSL2
+
+Keep work projects inside Ubuntu:
+
+#+begin_src shell
+mkdir -p ~/Repos
+cd ~/Repos
+git clone <your-project-url>
+#+end_src
+
+Avoid editing active projects through paths like =/mnt/c/Users/...=.  Those
+paths cross the Windows filesystem boundary and are much slower for Git status,
+file watching, search, tags, and project scans.
+
+* Tool Validation
+
+Inside Ubuntu, validate the external tools:
+
+#+begin_src shell
+emacs --version
+git --version
+rg --version
+ctags --version
+doxygen --version
+tclint --version
+tclfmt --version
+python3 --version
+#+end_src
+
+Inside a Tcl buffer, run:
+
+#+begin_example
+SPC m v
+#+end_example
+
+That command reports the Tcl workflow dependencies Orbit sees from Emacs.
+
+* MIB Configuration Example
+
+Configure only the MIB roots you actually use in =~/.orbit-emacs.d/config.el=:
+
+#+begin_src emacs-lisp
+(setq orbit-user-mib-roots
+      '(("MIB-A" . "~/Repos/my-project/data/mib-a/")
+        ("MIB-B" . "~/Repos/my-project/data/mib-b/")
+        ("MIB-C" . "~/Repos/my-project/data/mib-c/")
+        ("MIB-D" . "~/Repos/my-project/data/mib-d/")))
+
+(setq orbit-user-mib-icd-version "7.2")
+#+end_src
+
+For a sample local MIB root:
+
+#+begin_src emacs-lisp
+(setq orbit-user-mib-roots
+      '(("TEST" . "~/Repos/testtcl/data/mib_test/")))
+
+(setq orbit-user-mib-icd-version "7.2")
+#+end_src
+
+Open a configured =.dat= file and use:
+
+- =SPC m r=: toggle the column ruler
+- =SPC m c=: jump to an ICD column by name
+- =SPC m e=: edit the current field
+- =SPC m C=: compare the same table from another configured MIB root
+
+* Native Linux
+
+On native Ubuntu 24.04, use the same package and config steps as WSL2/WSLg.
+The only difference is that Emacs displays through the normal Linux desktop
+session rather than WSLg.
+
+* macOS
+
+On macOS, install Emacs and tools with Homebrew or your preferred package
+manager.  A typical setup is:
+
+#+begin_src shell
+brew install emacs ripgrep universal-ctags doxygen graphviz tcl-tk python
+python3 -m venv ~/.local/share/orbit-tools
+~/.local/share/orbit-tools/bin/pip install --upgrade pip
+~/.local/share/orbit-tools/bin/pip install tclint==0.8.0
+mkdir -p ~/.local/bin
+ln -sf ~/.local/share/orbit-tools/bin/tclint ~/.local/bin/tclint
+ln -sf ~/.local/share/orbit-tools/bin/tclfmt ~/.local/bin/tclfmt
+#+end_src
+
+Then clone the config to =~/.config/emacs= and launch Emacs normally.

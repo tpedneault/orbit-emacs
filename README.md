@@ -2,104 +2,69 @@
 
 `orbit-emacs` is a handcrafted Emacs workbench for modal, keyboard-first engineering work. It is built around Evil, project/context switching, a quiet text-first UI, and a small command language under `SPC`.
 
-The primary supported way to run it is the Docker VNC workbench. That gives you the same Linux Emacs, packages, fonts, and external tools on Windows workstations, Linux VMs, and other Docker-capable machines without hunting for a compatible local Emacs build or installing Tcl/Doxygen tooling by hand.
+The recommended setup is native GUI Emacs on Linux, macOS, or Ubuntu on WSL2 with WSLg. On Windows, WSL2/WSLg gives Orbit a Linux filesystem, Linux tooling, and a real GUI Emacs session.
 
 ## What You Get
-
-- Emacs 30.2 GUI in a Linux container, exposed through VNC on `localhost`.
-- Orbit Emacs config baked into the image and loaded from `/home/orbit/.config/emacs`.
-- Prewarmed Elpaca package state so first startup is not a fresh package bootstrap.
-- Common engineering tools: Git, ripgrep, Universal Ctags, Doxygen, Graphviz, Tcl/Tk, Python, `tclint`, and `tclfmt`.
-- Persistent user config and snippets in `/home/orbit/.orbit-emacs.d`.
-- Persistent Emacs runtime/package state in `/home/orbit/.config/emacs/var`.
-- Project files mounted at `/workspace`.
-
-Core editor features:
 
 - Evil-first modal editing.
 - Perspective-backed contexts/workspaces.
 - Minimal, text-first visual design.
 - Project, Git, Dired, Org, Python, Tcl, Mermaid, Jira, and SCOS-2000 MIB workflows.
 - `SPC` leader and `SPC m` mode-local command language.
+- Machine-local overrides in `~/.orbit-emacs.d/config.el`.
 
-## Quick Start: Docker Workbench
+## Install
 
-Prerequisites:
+For the full setup guide, see [docs/install.org](docs/install.org).
 
-- Docker with Compose support.
-- A VNC client.
-- This repository checked out locally.
+### Ubuntu 24.04 On WSL2/WSLg
 
-Build the image:
-
-```sh
-scripts/orbit-docker build
-```
-
-Start Orbit Emacs with a project mounted at `/workspace`:
+Install system packages inside Ubuntu:
 
 ```sh
-scripts/orbit-docker up /path/to/project
+sudo apt update
+sudo apt install -y \
+  emacs-gtk git ripgrep universal-ctags doxygen graphviz \
+  tcl tcl-dev tk tk-dev python3 python3-venv python3-pip
 ```
 
-Connect your VNC client to:
+Install Python-based Tcl tools:
+
+```sh
+python3 -m venv ~/.local/share/orbit-tools
+~/.local/share/orbit-tools/bin/pip install --upgrade pip
+~/.local/share/orbit-tools/bin/pip install tclint==0.8.0
+```
+
+Make the Tcl tools visible:
+
+```sh
+mkdir -p ~/.local/bin
+ln -sf ~/.local/share/orbit-tools/bin/tclint ~/.local/bin/tclint
+ln -sf ~/.local/share/orbit-tools/bin/tclfmt ~/.local/bin/tclfmt
+```
+
+Clone this config inside Ubuntu:
+
+```sh
+mkdir -p ~/.config
+git clone git@github.com:tpedneault/orbit-emacs.git ~/.config/emacs
+```
+
+Start GUI Emacs through WSLg:
+
+```sh
+emacs &
+```
+
+Keep work repositories inside the Ubuntu filesystem, for example under `~/Repos/`, not under `/mnt/c/...`. This matters for Git, ripgrep, project scans, and general editor responsiveness.
+
+### Machine-Local Configuration
+
+Put local settings in:
 
 ```text
-localhost:5901
-```
-
-Useful commands:
-
-```sh
-scripts/orbit-docker shell
-scripts/orbit-docker logs
-scripts/orbit-docker stop
-```
-
-Useful runtime overrides:
-
-```sh
-ORBIT_VNC_PORT=5902 scripts/orbit-docker up /path/to/project
-VNC_GEOMETRY=2560x1440 scripts/orbit-docker up /path/to/project
-VNC_PASSWORD='change-me' scripts/orbit-docker up /path/to/project
-```
-
-The VNC port is bound to host `127.0.0.1` by `docker-compose.yml`.
-
-## Docker Architecture
-
-The workbench image is defined in:
-
-- `docker/orbit-emacs/Dockerfile`
-- `docker/orbit-emacs/entrypoint.sh`
-- `docker/orbit-emacs/supervisord.conf`
-- `docker-compose.yml`
-- `scripts/orbit-docker`
-
-Inside the container:
-
-- `Xvfb` provides the virtual display.
-- `openbox` provides a lightweight window manager.
-- `x11vnc` exposes the display over VNC.
-- GUI Emacs starts in `/workspace`.
-
-Docker volumes:
-
-| Volume | Container Path | Purpose |
-| --- | --- | --- |
-| `orbit-emacs-var` | `/home/orbit/.config/emacs/var` | Elpaca packages and runtime state |
-| `orbit-emacs-user` | `/home/orbit/.orbit-emacs.d` | machine-local `config.el` and snippets |
-
-The image seeds `var/` during build. On first run, an empty `orbit-emacs-var` volume is populated from that seed.
-
-For the full container guide, see [docs/docker.org](docs/docker.org).
-
-## Machine-Local Configuration
-
-Do not edit machine-specific settings directly into the repo config. Use the mounted user-local layer:
-
-```text
-/home/orbit/.orbit-emacs.d/config.el
+~/.orbit-emacs.d/config.el
 ```
 
 Inside Emacs, open it with:
@@ -108,19 +73,19 @@ Inside Emacs, open it with:
 SPC f c u
 ```
 
-Example SCOS-2000 MIB setup inside the container:
+Example SCOS-2000 MIB setup:
 
 ```elisp
 (setq orbit-user-mib-roots
-      '(("MIB-A" . "/workspace/data/mib-a/")
-        ("MIB-B" . "/workspace/data/mib-b/")
-        ("MIB-C" . "/workspace/data/mib-c/")
-        ("MIB-D" . "/workspace/data/mib-d/")))
+      '(("MIB-A" . "~/Repos/my-project/data/mib-a/")
+        ("MIB-B" . "~/Repos/my-project/data/mib-b/")
+        ("MIB-C" . "~/Repos/my-project/data/mib-c/")
+        ("MIB-D" . "~/Repos/my-project/data/mib-d/")))
 
 (setq orbit-user-mib-icd-version "7.2")
 ```
 
-Tool overrides are usually unnecessary in the Docker image because the tools are on `PATH`, but you can pin explicit paths when needed:
+Tool overrides are optional when tools are on `PATH`, but can be pinned when needed:
 
 ```elisp
 (setq orbit-user-rg-program "rg")
@@ -156,22 +121,10 @@ Mode-local commands live under `SPC m`. For example:
 
 For the full keymap, see [docs/keybindings.org](docs/keybindings.org).
 
-## Local Native Install
-
-The Docker workbench is the recommended path. A local native install is still possible:
-
-1. Put this repository at `~/.config/emacs/`.
-2. Install a compatible Emacs locally.
-3. Launch Emacs normally.
-4. Let Elpaca bootstrap packages into `var/elpaca/`.
-5. Put machine-local overrides in `~/.orbit-emacs.d/config.el`.
-
-Native installs are useful on personal machines, but they are not the main deployment target because they require host-level Emacs and toolchain setup.
-
 ## Documentation
 
+- [docs/install.org](docs/install.org): native and WSL2/WSLg installation.
 - [docs/manual.org](docs/manual.org): in-Emacs documentation hub.
-- [docs/docker.org](docs/docker.org): Docker/VNC workbench.
 - [docs/workflow.org](docs/workflow.org): daily working loops.
 - [docs/keybindings.org](docs/keybindings.org): full leader and local-leader map.
 - [docs/contexts.org](docs/contexts.org): Perspective-backed context model.
@@ -191,20 +144,18 @@ modules/
 packages/
 snippets/
 docs/
-docker/
-scripts/
 config.example.el
 ```
 
 Important generated/runtime paths:
 
-- `var/`: local package/runtime state, intentionally not part of the image context.
-- `.orbit-emacs.d/`: user-local overrides and snippets, mounted as a Docker volume in the workbench.
+- `var/`: local package/runtime state.
+- `~/.orbit-emacs.d/`: user-local overrides and snippets.
 
 ## Notes For Work Machines
 
-- Use the Docker workbench when host Emacs/tool installation is painful or blocked.
-- Keep project files mounted under `/workspace`.
-- Keep private credentials out of the image.
-- If Git over SSH is needed inside the container, uncomment the read-only `.ssh` and `.gitconfig` mounts in `docker-compose.yml`.
-- If company-specific tools replace public `tclint` or `tclfmt`, add them in a derived image or mount them and set the corresponding `orbit-user-*` variables.
+- Prefer WSL2/WSLg on Windows when available.
+- Keep repositories inside the Linux filesystem on WSL2.
+- Keep private credentials out of the repo.
+- Put machine-specific paths and tool overrides in `~/.orbit-emacs.d/config.el`.
+- If company-specific tools replace public `tclint` or `tclfmt`, install them on the WSL/Linux side and set the corresponding `orbit-user-*` variables.
