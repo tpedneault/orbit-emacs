@@ -255,14 +255,29 @@
   "Return the active mode-local Orbit prefix."
   (if (mod-core-vim-profile-p) "SPC m" "C-; m"))
 
+(defun mod-keys--hook-for-keymap (keymap)
+  "Return the mode hook symbol that conventionally owns KEYMAP."
+  (let ((name (symbol-name keymap)))
+    (when (string-suffix-p "-map" name)
+      (intern (concat (substring name 0 (- (length name) 4)) "-hook")))))
+
+(defun mod-keys--mode-local-hooks (keymaps)
+  "Return mode hooks corresponding to KEYMAPS."
+  (delq nil
+        (mapcar #'mod-keys--hook-for-keymap
+                (if (listp keymaps) keymaps (list keymaps)))))
+
 (defun mod-keys--define-mode-local (keymaps &rest bindings)
   "Define Orbit mode-local BINDINGS in KEYMAPS for the active profile."
   (if (mod-core-vim-profile-p)
-      (apply #'general-define-key
-             :states '(normal visual motion emacs)
-             :keymaps keymaps
-             :prefix (mod-keys--mode-local-prefix)
-             bindings)
+      (dolist (hook (mod-keys--mode-local-hooks keymaps))
+        (add-hook hook
+                  (lambda ()
+                    (apply #'general-define-key
+                           :states '(normal visual motion)
+                           :keymaps 'local
+                           :prefix (mod-keys--mode-local-prefix)
+                           bindings))))
     (apply #'general-define-key
            :keymaps keymaps
            :prefix (mod-keys--mode-local-prefix)
@@ -271,11 +286,14 @@
 (defun mod-keys--define-motion-mode-local (keymaps &rest bindings)
   "Define Orbit mode-local motion BINDINGS in KEYMAPS for the active profile."
   (if (mod-core-vim-profile-p)
-      (apply #'general-define-key
-             :states '(normal motion emacs)
-             :keymaps keymaps
-             :prefix (mod-keys--mode-local-prefix)
-             bindings)
+      (dolist (hook (mod-keys--mode-local-hooks keymaps))
+        (add-hook hook
+                  (lambda ()
+                    (apply #'general-define-key
+                           :states '(normal motion)
+                           :keymaps 'local
+                           :prefix (mod-keys--mode-local-prefix)
+                           bindings))))
     (apply #'general-define-key
            :keymaps keymaps
            :prefix (mod-keys--mode-local-prefix)

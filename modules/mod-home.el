@@ -8,10 +8,10 @@
 
 (require 'cl-lib)
 
-(declare-function dashboard-open "dashboard")
-(declare-function dashboard-refresh-buffer "dashboard")
-(declare-function dashboard-setup-startup-hook "dashboard")
+(declare-function dashboard-insert-startupify-lists "dashboard")
 (declare-function orbit-context-open-project-editor "orbit-context")
+(defvar dashboard-buffer-name)
+(defvar elpaca-after-init-hook)
 
 (defconst mod-home-config-directory
   (file-name-directory
@@ -22,17 +22,52 @@
 (defconst mod-home-buffer-name "*dashboard*"
   "Buffer used as the orbit home surface.")
 
+(defvar mod-home--startup-dashboard-requested nil
+  "Non-nil when the current startup should settle on the dashboard.")
+
+(defvar mod-home-startup-items '((projects . 7)
+                                 (recents  . 5))
+  "Dashboard items rendered during initial startup.
+The full dashboard item list can include slower widgets such as agenda; startup
+keeps first paint focused on fast navigation targets.")
+
+(defvar-local mod-home--startup-lightweight nil
+  "Non-nil when the current dashboard buffer was rendered for startup.")
+
+(defun mod-home--empty-startup-p ()
+  "Return non-nil when Emacs was started without explicit file arguments."
+  (< (length command-line-args) 2))
+
+(defun mod-home--dashboard-buffer (&optional force-refresh startup-lightweight)
+  "Render and return the Orbit dashboard buffer.
+When FORCE-REFRESH is non-nil, rebuild the dashboard contents even if the
+buffer already uses `dashboard-mode'.  When STARTUP-LIGHTWEIGHT is non-nil,
+render only `mod-home-startup-items'."
+  (if (fboundp 'dashboard-insert-startupify-lists)
+      (progn
+        (let ((dashboard-items (if startup-lightweight
+                                   mod-home-startup-items
+                                 dashboard-items)))
+          (dashboard-insert-startupify-lists force-refresh))
+        (when-let* ((buffer (get-buffer mod-home-buffer-name)))
+          (with-current-buffer buffer
+            (setq mod-home--startup-lightweight startup-lightweight))
+          buffer))
+    (get-buffer-create mod-home-buffer-name)))
+
+(defun mod-home--startup-buffer ()
+  "Return the dashboard buffer for empty startup, or nil for normal fallback."
+  (when (mod-home--empty-startup-p)
+    (setq mod-home--startup-dashboard-requested t)
+    (mod-home--dashboard-buffer t t)))
+
 (defun mod-home-open ()
   "Open the Orbit home dashboard."
   (interactive)
-  (cond
-   ((get-buffer mod-home-buffer-name)
-    (switch-to-buffer mod-home-buffer-name)
-    (dashboard-refresh-buffer))
-   ((fboundp 'dashboard-open)
-    (dashboard-open))
-   (t
-    (message "orbit-home: dashboard package is not loaded"))))
+  (let ((buffer (mod-home--dashboard-buffer t)))
+    (if (buffer-live-p buffer)
+        (switch-to-buffer buffer)
+      (message "orbit-home: dashboard package is not loaded"))))
 
 (defun mod-home--open-project-in-context (root)
   "Open project ROOT in the orbit edit context rather than the default handler."
@@ -46,9 +81,24 @@
   (when-let* ((window (get-buffer-window mod-home-buffer-name frame)))
     (let ((selected-window (selected-window)))
       (with-selected-window window
-        (dashboard-refresh-buffer))
+        (mod-home--dashboard-buffer nil mod-home--startup-lightweight))
       (when (window-live-p selected-window)
         (select-window selected-window)))))
+
+(defun mod-home--startup-placeholder-buffer-p (buffer)
+  "Return non-nil when BUFFER is a startup placeholder we may replace."
+  (not (null
+        (member (buffer-name buffer)
+                (list "*elpaca-log*" "*scratch*" mod-home-buffer-name)))))
+
+(defun mod-home--refocus-after-elpaca ()
+  "Show the dashboard after Elpaca releases its temporary startup buffer."
+  (when (and mod-home--startup-dashboard-requested
+             (mod-home--empty-startup-p)
+             (not noninteractive)
+             (mod-home--startup-placeholder-buffer-p (window-buffer)))
+    (when-let* ((buffer (mod-home--dashboard-buffer t t)))
+      (switch-to-buffer buffer))))
 
 (use-package dashboard
   :ensure (:wait t)
@@ -59,6 +109,7 @@
           (if (file-exists-p file) file 'ascii))
         dashboard-banner-logo-title
         "orbit-emacs  ·  Modal, context-based Emacs for focused work."
+        dashboard-buffer-name mod-home-buffer-name
         dashboard-startupify-list
         '(dashboard-insert-banner
           dashboard-insert-newline
@@ -80,7 +131,6 @@
           ("Bookmarks:"        . "◈  Bookmarks"))
         dashboard-projects-backend 'project-el
         dashboard-items '((projects . 7)
-                          (agenda   . 5)
                           (recents  . 5))
         dashboard-path-style 'truncate-middle
         dashboard-path-max-length 58
@@ -97,8 +147,8 @@
         dashboard-set-init-info t
         dashboard-footer-messages
         (list (if (mod-core-vim-profile-p)
-                  "SPC h h  →  return here  ·  SPC t T  →  choose theme  ·  SPC x e  →  edit context"
-                "C-; h h  →  return here  ·  C-; t T  →  choose theme  ·  C-; x e  →  edit context")))
+                  "SPC h h  →  return here  ·  SPC n a  →  agenda  ·  SPC x e  →  edit context"
+                "C-; h h  →  return here  ·  C-; n a  →  agenda  ·  C-; x e  →  edit context")))
   :config
   (with-eval-after-load 'mod-theme
     (custom-set-faces
@@ -117,9 +167,10 @@
             (lambda ()
               (mod-home--refresh-visible-dashboard)))
   (add-hook 'window-size-change-functions #'mod-home--refresh-visible-dashboard)
-  (dashboard-setup-startup-hook))
+  (add-hook 'elpaca-after-init-hook #'mod-home--refocus-after-elpaca))
 
-(setq initial-buffer-choice #'mod-home-open)
+(setq mod-home--startup-dashboard-requested (mod-home--empty-startup-p)
+      initial-buffer-choice #'mod-home--startup-buffer)
 
 (provide 'mod-home)
 
