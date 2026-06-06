@@ -161,9 +161,11 @@
 (setq orbit-user-tcl-known-symbols-file nil)
 
 ;; Tcl docs / Doxygen integration.
+;; Tcl documentation requires Doxygen 1.8.17. Newer Doxygen releases dropped
+;; the Tcl support this workflow depends on.
 ;; Leave these nil to use project-local defaults when available.
 (setq orbit-user-tcl-doxygen-xml-directory nil)
-(setq orbit-user-doxygen-program nil)
+(setq orbit-user-doxygen-program nil) ; e.g. "doxygen-1.8.17"
 (setq orbit-user-doxygen-config-file nil)
 
 ;; ─── SCOS-2000 MIB workflow ────────────────────────────────────────────────

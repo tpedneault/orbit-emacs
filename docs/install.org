@@ -26,12 +26,33 @@ sudo apt upgrade -y
 
 #+begin_src shell
 sudo apt install -y \
-  emacs-gtk git ripgrep universal-ctags doxygen graphviz \
+  emacs-gtk git ripgrep universal-ctags graphviz \
   tcl tcl-dev tk tk-dev python3 python3-venv python3-pip \
   build-essential ca-certificates curl
 #+end_src
 
-4. Install Python-based Tcl tools:
+4. Install Doxygen 1.8.17.
+
+Do not install the Ubuntu =doxygen= package for Tcl documentation.  The package
+manager version is too new for this workflow; Doxygen's Tcl support is available
+in 1.8.17 and was removed from later releases.
+
+Install the upstream 1.8.17 Linux binary under =/opt= and expose it as
+=doxygen-1.8.17=:
+
+#+begin_src shell
+cd /tmp
+curl -L -o doxygen-1.8.17.linux.bin.tar.gz \
+  https://sourceforge.net/projects/doxygen/files/rel-1.8.17/doxygen-1.8.17.linux.bin.tar.gz/download
+tar -xzf doxygen-1.8.17.linux.bin.tar.gz
+sudo rm -rf /opt/doxygen-1.8.17
+sudo mkdir -p /opt
+sudo cp -a doxygen-1.8.17 /opt/doxygen-1.8.17
+sudo ln -sf /opt/doxygen-1.8.17/bin/doxygen /usr/local/bin/doxygen-1.8.17
+doxygen-1.8.17 --version
+#+end_src
+
+5. Install Python-based Tcl tools:
 
 #+begin_src shell
 python3 -m venv ~/.local/share/orbit-tools
@@ -39,7 +60,7 @@ python3 -m venv ~/.local/share/orbit-tools
 ~/.local/share/orbit-tools/bin/pip install tclint==0.8.0
 #+end_src
 
-5. Expose =tclint= and =tclfmt= on your PATH:
+6. Expose =tclint= and =tclfmt= on your PATH:
 
 #+begin_src shell
 mkdir -p ~/.local/bin
@@ -47,7 +68,7 @@ ln -sf ~/.local/share/orbit-tools/bin/tclint ~/.local/bin/tclint
 ln -sf ~/.local/share/orbit-tools/bin/tclfmt ~/.local/bin/tclfmt
 #+end_src
 
-6. Make sure =~/.local/bin= is on PATH.  Add this to =~/.profile= if needed:
+7. Make sure =~/.local/bin= is on PATH.  Add this to =~/.profile= if needed:
 
 #+begin_src shell
 case ":$PATH:" in
@@ -56,7 +77,7 @@ case ":$PATH:" in
 esac
 #+end_src
 
-7. Clone Orbit Emacs:
+8. Clone Orbit Emacs:
 
 #+begin_src shell
 mkdir -p ~/.config
@@ -69,14 +90,14 @@ If SSH is not set up yet, use HTTPS first:
 git clone https://github.com/tpedneault/orbit-emacs.git ~/.config/emacs
 #+end_src
 
-8. Create the machine-local config directory:
+9. Create the machine-local config directory:
 
 #+begin_src shell
 mkdir -p ~/.orbit-emacs.d
 cp ~/.config/emacs/config.example.el ~/.orbit-emacs.d/config.el
 #+end_src
 
-9. Start GUI Emacs through WSLg:
+10. Start GUI Emacs through WSLg:
 
 #+begin_src shell
 emacs &
@@ -107,7 +128,7 @@ emacs --version
 git --version
 rg --version
 ctags --version
-doxygen --version
+doxygen-1.8.17 --version
 tclint --version
 tclfmt --version
 python3 --version
@@ -126,6 +147,8 @@ That command reports the Tcl workflow dependencies Orbit sees from Emacs.
 Configure only the MIB roots you actually use in =~/.orbit-emacs.d/config.el=:
 
 #+begin_src emacs-lisp
+(setq orbit-user-doxygen-program "doxygen-1.8.17")
+
 (setq orbit-user-mib-roots
       '(("MIB-A" . "~/Repos/my-project/data/mib-a/")
         ("MIB-B" . "~/Repos/my-project/data/mib-b/")
@@ -160,16 +183,26 @@ session rather than WSLg.
 * macOS
 
 On macOS, install Emacs and tools with Homebrew or your preferred package
-manager.  A typical setup is:
+manager.  Do not use Homebrew's current =doxygen= for Tcl docs; install Doxygen
+1.8.17 separately and point =orbit-user-doxygen-program= at that binary.
+
+A typical setup for the non-Doxygen tools is:
 
 #+begin_src shell
-brew install emacs ripgrep universal-ctags doxygen graphviz tcl-tk python
+brew install emacs ripgrep universal-ctags graphviz tcl-tk python
 python3 -m venv ~/.local/share/orbit-tools
 ~/.local/share/orbit-tools/bin/pip install --upgrade pip
 ~/.local/share/orbit-tools/bin/pip install tclint==0.8.0
 mkdir -p ~/.local/bin
 ln -sf ~/.local/share/orbit-tools/bin/tclint ~/.local/bin/tclint
 ln -sf ~/.local/share/orbit-tools/bin/tclfmt ~/.local/bin/tclfmt
+#+end_src
+
+For Doxygen, use the upstream 1.8.17 macOS release or another pinned local
+install, then configure:
+
+#+begin_src emacs-lisp
+(setq orbit-user-doxygen-program "/path/to/doxygen-1.8.17")
 #+end_src
 
 Then clone the config to =~/.config/emacs= and launch Emacs normally.

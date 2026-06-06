@@ -10,6 +10,9 @@ Tools used:
 - Universal Ctags
 - Doxygen 1.8.17 for Tcl docs
 
+Do not use a newer package-manager Doxygen for Tcl documentation.  Tcl support
+is available in Doxygen 1.8.17 and was removed from later releases.
+
 There is no LSP layer here.
 
 Editing defaults:

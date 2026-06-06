@@ -24,8 +24,23 @@ Install system packages inside Ubuntu:
 ```sh
 sudo apt update
 sudo apt install -y \
-  emacs-gtk git ripgrep universal-ctags doxygen graphviz \
-  tcl tcl-dev tk tk-dev python3 python3-venv python3-pip
+  emacs-gtk git ripgrep universal-ctags graphviz \
+  tcl tcl-dev tk tk-dev python3 python3-venv python3-pip \
+  ca-certificates curl
+```
+
+Install Doxygen 1.8.17 explicitly. Do not use the Ubuntu `doxygen` package for Tcl docs; newer Doxygen releases dropped the Tcl support this workflow needs.
+
+```sh
+cd /tmp
+curl -L -o doxygen-1.8.17.linux.bin.tar.gz \
+  https://sourceforge.net/projects/doxygen/files/rel-1.8.17/doxygen-1.8.17.linux.bin.tar.gz/download
+tar -xzf doxygen-1.8.17.linux.bin.tar.gz
+sudo rm -rf /opt/doxygen-1.8.17
+sudo mkdir -p /opt
+sudo cp -a doxygen-1.8.17 /opt/doxygen-1.8.17
+sudo ln -sf /opt/doxygen-1.8.17/bin/doxygen /usr/local/bin/doxygen-1.8.17
+doxygen-1.8.17 --version
 ```
 
 Install Python-based Tcl tools:
@@ -90,7 +105,7 @@ Tool overrides are optional when tools are on `PATH`, but can be pinned when nee
 ```elisp
 (setq orbit-user-rg-program "rg")
 (setq orbit-user-ctags-program "ctags")
-(setq orbit-user-doxygen-program "doxygen")
+(setq orbit-user-doxygen-program "doxygen-1.8.17")
 (setq orbit-user-tclint-program "tclint")
 (setq orbit-user-tclfmt-program "tclfmt")
 ```
