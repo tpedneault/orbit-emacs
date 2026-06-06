@@ -513,7 +513,7 @@ aborting init."
 (elpaca (use-package :repo "https://github.com/jwiegley/use-package.git" :wait t))
 (elpaca (compat :repo "https://github.com/emacs-compat/compat.git" :wait t))
 (elpaca (dape :repo "https://github.com/svaante/dape.git" :wait t))
-(elpaca (eat :repo "https://codeberg.org/akib/emacs-eat.git" :wait t))
+(elpaca (vterm :repo "https://github.com/akermu/emacs-libvterm.git" :wait t))
 
 (require 'use-package)
 (setq use-package-always-ensure t)

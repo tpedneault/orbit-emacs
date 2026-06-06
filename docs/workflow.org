@@ -57,8 +57,8 @@
      - =v= opens in a vertical split
      - =s= opens in a horizontal split
      - =o= opens in the most recently used editing window
-   - =SPC o s= eat shell (opens or reuses the default shell)
-   - =SPC o S= new named eat shell
+   - =SPC o s= vterm shell (opens or reuses the default shell)
+   - =SPC o S= new named vterm shell
    - =SPC o m= messages
    - =SPC o c= compilation
 11. For small editing moves:
@@ -168,44 +168,44 @@ Exporting an Org file with mermaid src blocks to HTML automatically produces int
 
 * Shell Workflow
 
-Orbit Emacs uses =eat= (Emulate A Terminal) as the in-Emacs terminal.  It is
-pure Emacs Lisp — no native libraries required — and works on macOS, Linux,
-and Windows.
+Orbit Emacs uses =vterm= as the in-Emacs terminal.  This config now assumes a
+Linux environment and uses vterm for a more faithful terminal experience inside
+the utility bay.
 
 ** Basic use
 
-- =SPC o s= opens (or reuses) the default eat shell docked in the utility bay.
-- =SPC o S= opens a new named eat shell.  You are prompted for a name;
-  the buffer is called =*eat:NAME*=.
+- =SPC o s= opens (or reuses) the default vterm shell docked in the utility bay.
+- =SPC o S= opens a new named vterm shell.  You are prompted for a name;
+  the buffer is called =*vterm:NAME*=.
 
 ** Input modes
 
-Eat starts in Emacs mode (normal key behavior).  Two input modes are available:
+vterm starts in terminal input mode.  Use copy mode when you need normal Emacs
+or Evil navigation over terminal output.
 
 | Key         | Mode             | Effect                                      |
 |-------------+------------------+---------------------------------------------|
-| =C-c C-j=   | semi-char mode   | most keys go to the terminal                |
-| =C-c C-k=   | emacs mode       | back to normal Emacs / Evil key behavior    |
+| =C-c C-k=   | copy mode        | normal Emacs / Evil navigation              |
 
-In Evil normal state you can scroll the terminal output freely.
-Press =C-c C-j= when you need to type into the shell.
+Run =vterm-copy-mode= again to return to terminal input.
 
 ** Shell selection
 
 The shell is chosen from (first match wins):
 1. =orbit-user-shell= — set this in your user config
-2. On Windows: =pwsh= (PowerShell 7+) or =powershell= (5.1) on PATH
-3. On Unix/macOS: =$SHELL= environment variable
+2. =$SHELL= environment variable
+3. =/bin/bash=
+4. =/bin/sh=
 
-Set in user config for Windows:
+Set in user config when you want a specific shell:
 #+begin_src emacs-lisp
-(setq orbit-user-shell "pwsh")
+(setq orbit-user-shell "/bin/zsh")
 #+end_src
 
 ** Multiple shells
 
 Open additional shells with =SPC o S= and give each a distinct name.
-The default shell (=*eat*=) is always available via =SPC o s=.
+The default shell (=*vterm*=) is always available via =SPC o s=.
 
 * Suggested Context Pattern
 

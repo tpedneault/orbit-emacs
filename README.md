@@ -28,7 +28,7 @@ sudo apt update
 sudo apt install -y \
   git ripgrep universal-ctags graphviz \
   tcl tcl-dev tk tk-dev python3 python3-venv python3-pip \
-  ca-certificates curl snapd
+  build-essential cmake libvterm-dev ca-certificates curl snapd
 ```
 
 Install Emacs 30.2 or newer. The simplest WSL2/WSLg route is the classic Snap:
