@@ -28,6 +28,9 @@
 (defvar-local mod-ui--whitespace-visible nil
   "Buffer-local state used by `mod-ui-toggle-whitespace'.")
 
+(defvar mod-ui--wslg-frame-refresh-delay 0.05
+  "Seconds to wait before forcing a WSLg frame refresh.")
+
 ;;; ─── Header-line data helpers ────────────────────────────────────────────────
 
 (defun mod-ui-context-name ()
@@ -139,6 +142,52 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
     (if (integerp height)
         height
       (or orbit-user-font-height 140))))
+
+(defun mod-ui--wsl-session-p ()
+  "Return non-nil when Emacs appears to be running under WSL."
+  (or (getenv "WSL_DISTRO_NAME")
+      (getenv "WSL_INTEROP")
+      (and (file-readable-p "/proc/version")
+           (with-temp-buffer
+             (insert-file-contents "/proc/version")
+             (string-match-p "microsoft\\|wsl"
+                             (downcase (buffer-string)))))))
+
+(defun mod-ui--wslg-session-p ()
+  "Return non-nil when Emacs appears to be a graphical WSLg session."
+  (and orbit-user-wslg-frame-refresh
+       (display-graphic-p)
+       (mod-ui--wsl-session-p)
+       (or (getenv "WAYLAND_DISPLAY")
+           (getenv "DISPLAY"))))
+
+(defun mod-ui--force-frame-refresh (&optional frame)
+  "Force redisplay for FRAME after WSLg geometry updates."
+  (let ((frame (or frame (selected-frame))))
+    (when (frame-live-p frame)
+      (with-selected-frame frame
+        (force-mode-line-update t)
+        (redraw-frame frame)
+        (redisplay t)))))
+
+(defun mod-ui--schedule-wslg-frame-refresh (&optional frame)
+  "Debounce a WSLg redisplay refresh for FRAME."
+  (when (mod-ui--wslg-session-p)
+    (let* ((frame (or frame (selected-frame)))
+           (timer (frame-parameter frame 'mod-ui-wslg-refresh-timer)))
+      (when (timerp timer)
+        (cancel-timer timer))
+      (set-frame-parameter
+       frame
+       'mod-ui-wslg-refresh-timer
+       (run-at-time mod-ui--wslg-frame-refresh-delay
+                    nil
+                    (lambda (target-frame)
+                      (when (frame-live-p target-frame)
+                        (set-frame-parameter target-frame
+                                             'mod-ui-wslg-refresh-timer nil)
+                        (mod-ui--force-frame-refresh target-frame)))
+                    frame)))))
 
 ;;; ─── Interactive toggle commands ──────────────────────────────────────────────
 
@@ -290,7 +339,10 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
 (add-to-list 'default-frame-alist '(vertical-scroll-bars))
 
 (add-hook 'after-make-frame-functions #'mod-ui-apply-frame-defaults)
+(add-hook 'after-make-frame-functions #'mod-ui--schedule-wslg-frame-refresh)
+(add-hook 'window-size-change-functions #'mod-ui--schedule-wslg-frame-refresh)
 (mod-ui-apply-frame-defaults)
+(mod-ui--schedule-wslg-frame-refresh)
 
 ;; ── Orbit modeline ────────────────────────────────────────────────────────────
 (orbit-modeline-install)

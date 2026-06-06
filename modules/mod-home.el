@@ -11,7 +11,6 @@
 (declare-function dashboard-open "dashboard")
 (declare-function dashboard-refresh-buffer "dashboard")
 (declare-function dashboard-setup-startup-hook "dashboard")
-(declare-function dashboard--find-max-width "dashboard-widgets" (start end))
 (declare-function orbit-context-open-project-editor "orbit-context")
 
 (defconst mod-home-config-directory
@@ -22,26 +21,6 @@
 
 (defconst mod-home-buffer-name "*dashboard*"
   "Buffer used as the orbit home surface.")
-
-(defun mod-home--center-text (start end)
-  "Center text between START and END using literal spaces.
-Dashboard's default centering uses display properties with `align-to'.  That can
-render against stale frame geometry during first GUI display setup, especially
-under WSLg.  Literal padding is duller and more predictable."
-  (let* ((width (dashboard--find-max-width start end))
-         (window-width (max 1 (window-body-width)))
-         (padding (max 0 (/ (- window-width width) 2))))
-    (save-excursion
-      (goto-char start)
-      (while (< (point) end)
-        (let ((line-start (line-beginning-position)))
-          (unless (looking-at-p "[[:space:]]*$")
-            (remove-text-properties
-             line-start (line-end-position)
-             '(line-prefix nil indent-prefix nil))
-            (insert (make-string padding ?\s))
-            (setq end (+ end padding))))
-        (forward-line 1)))))
 
 (defun mod-home-open ()
   "Open the Orbit home dashboard."
@@ -61,6 +40,15 @@ under WSLg.  Literal padding is duller and more predictable."
   (orbit-context-open-project-editor
    (list :root root
          :name (file-name-nondirectory (directory-file-name root)))))
+
+(defun mod-home--refresh-visible-dashboard (&optional frame)
+  "Refresh the visible dashboard in FRAME after geometry changes."
+  (when-let* ((window (get-buffer-window mod-home-buffer-name frame)))
+    (let ((selected-window (selected-window)))
+      (with-selected-window window
+        (dashboard-refresh-buffer))
+      (when (window-live-p selected-window)
+        (select-window selected-window)))))
 
 (use-package dashboard
   :ensure (:wait t)
@@ -94,7 +82,10 @@ under WSLg.  Literal padding is duller and more predictable."
         dashboard-items '((projects . 7)
                           (agenda   . 5)
                           (recents  . 5))
-        dashboard-projects-show-base 'align
+        dashboard-path-style 'truncate-middle
+        dashboard-path-max-length 58
+        dashboard-shorten-by-window-width t
+        dashboard-projects-show-base t
         dashboard-projects-switch-function #'mod-home--open-project-in-context
         dashboard-week-agenda nil
         dashboard-agenda-time-string-format "%m/%d"
@@ -122,12 +113,10 @@ under WSLg.  Literal padding is duller and more predictable."
               (setq-local mode-line-format nil
                           header-line-format nil
                           cursor-type nil)))
-  (advice-add 'dashboard-center-text :override #'mod-home--center-text)
   (add-hook 'window-setup-hook
             (lambda ()
-              (when (get-buffer-window mod-home-buffer-name)
-                (with-selected-window (get-buffer-window mod-home-buffer-name)
-                  (dashboard-refresh-buffer)))))
+              (mod-home--refresh-visible-dashboard)))
+  (add-hook 'window-size-change-functions #'mod-home--refresh-visible-dashboard)
   (dashboard-setup-startup-hook))
 
 (setq initial-buffer-choice #'mod-home-open)

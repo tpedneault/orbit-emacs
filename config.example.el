@@ -113,6 +113,10 @@
 (setq orbit-user-enable-whitespace t)
 (setq orbit-user-enable-hl-line t)
 
+;; WSLg can occasionally leave GUI frames visually stale after resize/fullscreen
+;; updates. Keep this enabled under WSLg to force a small debounced redisplay.
+(setq orbit-user-wslg-frame-refresh t)
+
 ;; Evil yank/paste pulse feedback.
 ;; `orbit-user-evil-pulse-alphas` controls the fade shape: each number is a
 ;; blend strength from 0.0 to 1.0, where larger values are more opaque/brighter.

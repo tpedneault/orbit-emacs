@@ -189,4 +189,5 @@ Important generated/runtime paths:
 - Keep repositories inside the Linux filesystem on WSL2.
 - Keep private credentials out of the repo.
 - Put machine-specific paths and tool overrides in `~/.orbit-emacs.d/config.el`.
+- Orbit enables a small WSLg frame refresh workaround by default; set `orbit-user-wslg-frame-refresh` to `nil` if your Emacs/WSLg build no longer needs it.
 - If company-specific tools replace public `tclint` or `tclfmt`, install them on the WSL/Linux side and set the corresponding `orbit-user-*` variables.

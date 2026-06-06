@@ -121,6 +121,13 @@ emacs &
 
 The first launch bootstraps Elpaca packages under =~/.config/emacs/var/=.
 
+Orbit enables a small WSLg frame refresh workaround by default. If a future WSLg
+or Emacs build no longer needs it, set this in =~/.orbit-emacs.d/config.el=:
+
+#+begin_src emacs-lisp
+(setq orbit-user-wslg-frame-refresh nil)
+#+end_src
+
 * Recommended Repository Layout On WSL2
 
 Keep work projects inside Ubuntu:
