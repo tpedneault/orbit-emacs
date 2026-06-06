@@ -354,9 +354,11 @@ Agenda custom views:
 
 | Key       | Action                         | Notes                         |
 |-----------+--------------------------------+-------------------------------|
+| =SPC M f= | =mod-mib-open-or-create-table= | choose a MIB root and open/create a schema-known table |
 | =SPC M t= | =mod-mib-lookup-telecommand=   | lookup TC details; filter with ~type=8~, ~sub=1~, ~apid=100~ |
 | =SPC M i= | =mod-mib-insert-telecommand=   | build and insert TC call; supports the same TC filters |
 | =SPC M k= | =mod-mib-lookup-tm-packet=     | lookup TM packet details      |
+| =SPC M m= | =mod-mib-switch-root=          | select default MIB root       |
 | =SPC M p= | =mod-mib-lookup-tm-parameter=  | lookup TM parameter details   |
 | =SPC M r= | =mod-mib-refresh-index=        | refresh cached MIB rows       |
 | =SPC M s= | =mod-mib-index-status=         | show indexed roots and tables |
@@ -371,7 +373,7 @@ Agenda custom views:
 | =SPC m T= | =mod-mib-open-table-other-root= | open same table from another root |
 | =SPC m c= | =mod-mib-jump-column=          | jump to ICD column            |
 | =SPC m e= | =mod-mib-edit-field=           | edit current TSV field        |
-| =SPC m r= | =mod-mib-toggle-ruler=         | toggle sticky column header   |
+| =SPC m r= | =mod-mib-toggle-column-header= | toggle sticky column header   |
 | =SPC m a= | =mod-mib-realign=              | refresh display alignment     |
 | =SPC m n= | =mod-mib-next-row=             | next row, same column         |
 | =SPC m p= | =mod-mib-previous-row=         | previous row, same column     |

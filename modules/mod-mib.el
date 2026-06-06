@@ -4,6 +4,7 @@
 (require 'subr-x)
 
 (declare-function mod-utility--display-buffer "mod-utility")
+(defvar mod-ui-header-line-function)
 
 (defgroup mod-mib nil
   "SCOS-2000 MIB editing helpers."
@@ -222,6 +223,18 @@ against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
 (defun mod-mib--schema-key (&optional table)
   "Return configured key columns for TABLE, or nil."
   (plist-get (mod-mib--schema-entry table) :key))
+
+(defun mod-mib--schema-table-names ()
+  "Return known table names from custom and built-in schemas."
+  (delete-dups
+   (sort
+    (append
+     (delq nil
+           (mapcar (lambda (entry)
+                     (plist-get (mod-mib--normalize-schema-entry entry) :table))
+                   orbit-user-mib-custom-schemas))
+     (mapcar #'car mod-mib--schemas-7.2))
+    #'string-lessp)))
 
 (defun mod-mib--clean-value (value)
   "Return VALUE with presentation whitespace normalized."
@@ -1185,7 +1198,7 @@ against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
   (force-mode-line-update)
   (message "MIB columns aligned"))
 
-(defun mod-mib-toggle-ruler ()
+(defun mod-mib-toggle-column-header ()
   "Toggle the sticky MIB column header."
   (interactive)
   (setq mod-mib--header-visible (not mod-mib--header-visible))
@@ -1194,6 +1207,8 @@ against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
   (mod-mib--install-ruler)
   (message "MIB column header %s"
            (if mod-mib--header-visible "shown" "hidden")))
+
+(defalias 'mod-mib-toggle-ruler #'mod-mib-toggle-column-header)
 
 (defun mod-mib-next-field ()
   "Move to the next TSV field."
@@ -1266,6 +1281,13 @@ against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
       (user-error "No .dat tables found under %s" root))
     (completing-read (or prompt "MIB table: ") files nil t)))
 
+(defun mod-mib--read-table-name (&optional prompt)
+  "Read a MIB table base name using configured schemas."
+  (let ((choices (mapcar (lambda (table) (concat table ".dat"))
+                         (mod-mib--schema-table-names))))
+    (file-name-sans-extension
+     (completing-read (or prompt "MIB table: ") choices nil nil))))
+
 (defun mod-mib--current-or-selected-root ()
   "Return the current buffer root, selected root, or prompt for one."
   (or mod-mib--root-entry
@@ -1286,6 +1308,22 @@ against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
          (table (mod-mib--read-table root)))
     (setq mod-mib--selected-root entry)
     (find-file (expand-file-name table root))))
+
+(defun mod-mib-open-or-create-table ()
+  "Open a schema-known table from a configured MIB root, creating it if needed."
+  (interactive)
+  (mod-mib--ensure-roots)
+  (let* ((entry (mod-mib--read-root "MIB root: "))
+         (root (plist-get entry :path))
+         (table (mod-mib--read-table-name "MIB table: "))
+         (path (expand-file-name (concat table ".dat") root)))
+    (unless (mod-mib--schema table)
+      (user-error "No schema configured for %s.dat" table))
+    (setq mod-mib--selected-root entry)
+    (unless (file-exists-p path)
+      (with-temp-buffer
+        (write-region (point-min) (point-max) path nil 'silent)))
+    (find-file path)))
 
 (defun mod-mib-open-table-other-root ()
   "Open the current table name from another configured MIB root."
@@ -1365,9 +1403,9 @@ against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
                          (1+ column)
                          name)))
     (if mod-mib--header-visible
-        (concat (propertize status 'face 'mode-line)
+        (concat (mod-mib--ruler-string)
                 (propertize "  |  " 'face 'shadow)
-                (mod-mib--ruler-string))
+                (propertize status 'face 'mode-line))
       (propertize status 'face 'mode-line))))
 
 (defun mod-mib--maybe-enable ()
@@ -1390,7 +1428,7 @@ against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
               word-wrap nil
               tab-width 8
               indent-tabs-mode t
-              header-line-format '(:eval (mod-mib--header-line))
+              mod-ui-header-line-function #'mod-mib--header-line
               whitespace-style '(face tabs trailing))
   (when (fboundp 'whitespace-mode)
     (whitespace-mode 1))

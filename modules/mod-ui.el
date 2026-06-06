@@ -28,6 +28,9 @@
 (defvar-local mod-ui--whitespace-visible nil
   "Buffer-local state used by `mod-ui-toggle-whitespace'.")
 
+(defvar-local mod-ui-header-line-function nil
+  "Optional buffer-local function that returns custom Orbit header-line content.")
+
 (defvar mod-ui--wslg-frame-refresh-delay 0.05
   "Seconds to wait before forcing a WSLg frame refresh.")
 
@@ -97,22 +100,24 @@
 
 (defun mod-ui-header-line-format ()
   "Return the orbit header line format list for the current buffer."
-  (let* ((ctx-label (mod-ui-context-header-label))
-         (path      (mod-ui-header-path))
-         (clock-str (mod-ui-header-clock-string))
-         (lhs       (concat
-                     (propertize (concat "  ◉ " (or ctx-label "—"))
-                                 'face (mod-ui-context-header-face))
-                     (propertize "  ›  " 'face 'orbit-header-sep)
-                     (propertize path 'face 'orbit-header-path)))
-         (rhs       (when clock-str
-                      (propertize (concat "  " clock-str "  ")
-                                  'face 'orbit-header-clock)))
-         (rhs-width (if rhs (string-width rhs) 0))
-         (fill      (propertize " "
-                                'display `(space :align-to (- right ,rhs-width))
-                                'face 'orbit-header-path)))
-    (list lhs fill (or rhs ""))))
+  (if (functionp mod-ui-header-line-function)
+      (funcall mod-ui-header-line-function)
+    (let* ((ctx-label (mod-ui-context-header-label))
+           (path      (mod-ui-header-path))
+           (clock-str (mod-ui-header-clock-string))
+           (lhs       (concat
+                       (propertize (concat "  ◉ " (or ctx-label "—"))
+                                   'face (mod-ui-context-header-face))
+                       (propertize "  ›  " 'face 'orbit-header-sep)
+                       (propertize path 'face 'orbit-header-path)))
+           (rhs       (when clock-str
+                        (propertize (concat "  " clock-str "  ")
+                                    'face 'orbit-header-clock)))
+           (rhs-width (if rhs (string-width rhs) 0))
+           (fill      (propertize " "
+                                  'display `(space :align-to (- right ,rhs-width))
+                                  'face 'orbit-header-path)))
+      (list lhs fill (or rhs "")))))
 
 (defun mod-ui--enable-header-line ()
   "Enable the orbit global header line in the current buffer."
