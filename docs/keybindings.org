@@ -350,6 +350,18 @@ Agenda custom views:
 | =in= / =an= | Tcl namespace text objects | inner / around namespace |
 | =ic= / =ac= | Tcl command block text objects | inner / around brace-bodied command |
 
+** SCOS-2000 MIB Global
+
+| Key       | Action                         | Notes                         |
+|-----------+--------------------------------+-------------------------------|
+| =SPC M t= | =mod-mib-lookup-telecommand=   | lookup TC details             |
+| =SPC M i= | =mod-mib-insert-telecommand=   | build and insert TC call      |
+| =SPC M k= | =mod-mib-lookup-tm-packet=     | lookup TM packet details      |
+| =SPC M p= | =mod-mib-lookup-tm-parameter=  | lookup TM parameter details   |
+| =SPC M r= | =mod-mib-refresh-index=        | refresh cached MIB rows       |
+| =SPC M s= | =mod-mib-index-status=         | show indexed roots and tables |
+| =SPC M o= | =mod-mib-open-detail-source=   | open latest detail source row |
+
 ** SCOS-2000 MIB Buffer
 
 | Key       | Action                         | Notes                         |

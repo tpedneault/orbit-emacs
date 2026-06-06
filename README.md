@@ -107,7 +107,14 @@ Example SCOS-2000 MIB setup:
         ("MIB-D" . "~/Repos/my-project/data/mib-d/")))
 
 (setq orbit-user-mib-icd-version "7.2")
+
+(setq orbit-user-mib-telecommand-template
+      "telecommand_send PUS_T={type} PUS_ST={stype} APID={apid} MNEMO={mnemo} ARGUMENTS=[{arguments}]")
+(setq orbit-user-mib-telecommand-argument-template "{name}={value}")
+(setq orbit-user-mib-telecommand-argument-separator ", ")
 ```
+
+Global MIB lookup and insertion lives under `SPC M`. `SPC M i` builds a telecommand from the selected MIB, lets you build or skip variable arguments, offers MIB-derived alias completion and range hints when building arguments, omits fixed `CDF_VALUE` parameters, previews validation warnings, then inserts the configured template at point.
 
 Tool overrides are optional when tools are on `PATH`, but can be pinned when needed:
 
@@ -140,7 +147,7 @@ Mode-local commands live under `SPC m`. For example:
 
 - Tcl: `SPC m l` lint, `SPC m f` format, `SPC m v` validate tooling.
 - Python: `SPC m e s` start Eglot, `SPC m f b` format, `SPC m d d` debug.
-- MIB: `SPC m c` jump column, `SPC m C` compare same table across MIB roots.
+- MIB: `SPC M t` lookup TC, `SPC M i` insert TC, `SPC m c` jump column, `SPC m C` compare same table across MIB roots.
 - Org: `SPC m r` refile, `SPC m t` TODO state, `SPC m T a` align table.
 
 For the full keymap, see [docs/keybindings.org](docs/keybindings.org).

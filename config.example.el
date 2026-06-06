@@ -182,6 +182,19 @@
 ;; Only "7.2" is supported initially.
 (setq orbit-user-mib-icd-version "7.2")
 
+;; Telecommand insertion template used by SPC M i.
+;; Supported placeholders:
+;;   {type} {stype} {apid} {mnemo} {description} {mib} {arguments}
+(setq orbit-user-mib-telecommand-template
+      "telecommand_send PUS_T={type} PUS_ST={stype} APID={apid} MNEMO={mnemo} ARGUMENTS=[{arguments}]")
+
+;; Formatting for each variable TC argument and separator between arguments.
+;; Parameters with a fixed CDF_VALUE are omitted from {arguments}. SPC M i can
+;; either build variable arguments with MIB-derived engineering alias completion
+;; and range hints, or skip arguments so {arguments} is empty.
+(setq orbit-user-mib-telecommand-argument-template "{name}={value}")
+(setq orbit-user-mib-telecommand-argument-separator ", ")
+
 ;; ─── Git — forge and magit-delta ────────────────────────────────────────────
 
 ;; Hostname of the self-hosted GitLab instance for forge MR / issue browsing.
