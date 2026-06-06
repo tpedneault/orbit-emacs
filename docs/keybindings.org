@@ -60,7 +60,7 @@ press =RET= to run a command, and close it with =q= or =ESC=.
 | =SPC f c s e= | =yas-visit-snippet-file=  | edit snippet file |
 | =SPC f c s n= | =yas-new-snippet=         | new snippet       |
 | =SPC f c s r= | =yas-reload-all=          | reload snippets   |
-| =SPC f f=   | =orbit-context-open-path=   | open path in matching context |
+| =SPC f f=   | =orbit-context-open-path=   | open path in the active edit workflow |
 | =SPC f o=   | =mod-core-open-at-point=    | open URL or file path at point |
 | =SPC f r=   | =mod-core-recentf-open=     | recent files, current project first when available |
 | =SPC f s=   | =save-buffer=               | save current file |
@@ -189,9 +189,9 @@ Agenda custom views:
 | =SPC x ]= | =orbit-context-next=    | next context                           |
 | =SPC x e= | =orbit-context-editor=  | prompt project if needed; file picker for empty =edit= |
 | =SPC x g= | =orbit-context-git=     | prompt project if needed; init once, later switch only |
-| =SPC x f= | =orbit-context-files=   | Dired stays here, project files open in =edit/<project>=, loose files in =edit/loose= |
+| =SPC x f= | =orbit-context-files=   | Dired stays here; remembered project files open in their edit context |
 | =SPC x b= | =orbit-context-borrow-buffer= | borrow an existing buffer into the current context |
-| =SPC x B= | =orbit-context-borrow-file= | open a file side by side in the current context without rehoming it |
+| =SPC x B= | =orbit-context-borrow-file= | show a file side by side for comparison |
 | =SPC x u= | =orbit-context-unborrow-buffer= | forget the current borrowed buffer from this context |
 | =SPC x o= | =orbit-context-notes=   | =notes= context                        |
 | =SPC x a= | =orbit-context-agenda=  | =agenda= dashboard context             |

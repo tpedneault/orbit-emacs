@@ -449,6 +449,21 @@ Defaults to the current buffer and current active context."
   (let ((default-directory (file-name-directory file)))
     (orbit-context--project-root)))
 
+(defun orbit-context--known-project-root-for-file (file)
+  "Return the known project root containing FILE, or nil."
+  (let* ((truename (file-truename file))
+         (roots (project-known-project-roots))
+         (matches
+          (seq-filter
+           (lambda (root)
+             (string-prefix-p (file-truename (file-name-as-directory root))
+                              truename))
+           roots)))
+    (car (sort matches
+               (lambda (left right)
+                 (> (length (file-truename left))
+                    (length (file-truename right))))))))
+
 (defun orbit-context--roam-file-p (file)
   "Return non-nil when FILE lives under `mod-roam-directory'."
   (when file
@@ -554,6 +569,11 @@ Defaults to the current buffer and current active context."
        ((and (eq policy-kind :local)
              (equal (orbit-context--buffer-context-name buffer) name))
         (format "local policy %s attached to %s" policy-name name))
+       ((and (eq kind 'edit-project)
+             (eq (orbit-context--buffer-role buffer) 'edit)
+             (equal (orbit-context--buffer-context-name buffer) name)
+             (orbit-context--buffer-file buffer))
+        (format "explicit edit file attached to %s" name))
        ((and (eq kind 'edit-project)
              root
              (orbit-context--project-file-buffer-p buffer root))
@@ -768,8 +788,8 @@ When OPENER is non-nil, call it if NAME has no owned buffers yet."
  :utility
  (lambda (buffer)
    (with-current-buffer buffer
-     (or (derived-mode-p 'eat-mode 'shell-mode 'eshell-mode 'term-mode 'vterm-mode)
-         (string-match-p "\\`\\*eat" (buffer-name buffer))
+     (or (derived-mode-p 'shell-mode 'eshell-mode 'term-mode 'vterm-mode)
+         (string-match-p "\\`\\*vterm" (buffer-name buffer))
          (string-match-p "\\`\\*shell\\*" (buffer-name buffer)))))
  "Treat utility shell buffers as utility-space buffers.")
 

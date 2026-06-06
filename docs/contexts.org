@@ -23,7 +23,7 @@ Rules:
 | =SPC x p= | ensure the project context suite     |
 | =SPC x R= | jump to a related context            |
 | =SPC x b= | borrow an existing buffer into the current context |
-| =SPC x B= | borrow a file into the current context side by side |
+| =SPC x B= | show a file side by side for comparison |
 | =SPC x u= | unborrow the current borrowed buffer |
 
 The transient panel on =SPC x .= groups the same workflow under one compact
@@ -45,7 +45,9 @@ Key: =SPC x e=
 - Otherwise you are prompted for a known project.
 - Switches to or creates =edit/<project-name>=.
 - If the edit context is new or only has scratch-like buffers, it immediately prompts with =project-find-file=.
-- If the edit context already has project files open, it just switches there.
+- If the edit context already has owned files open, it just switches there.
+- Ordinary file opens from this context stay attached to this context, even when
+  the file lives outside the project root.
 - If you switch into an existing edit context from somewhere else, it prefers a
   buffer that already belongs to that edit context instead of dragging the
   current buffer along.
@@ -69,9 +71,10 @@ Key: =SPC x f=
 - Outside a project: =files/<directory-name>=
 - Opens built-in Dired at the relevant root.
 - Dired stays in the =files/...= context.
-- Opening a project file there hands the file off to =edit/<project>=.
-- Opening an Org-roam file there hands the file off to =edit/org-roam=.
-- Opening a loose file there hands the file off to =edit/loose=.
+- Opening a file from a remembered project hands the file off to that project's
+  =edit/<project>= context.
+- Opening a file that is not inside a remembered project hands the file off to
+  the related =edit/<project-or-dir>= context.
 - Opening a directory stays inside =files/...=.
 - Loose directory file contexts now track ownership too, so cleanup and context
   switching behave the same way outside projects as they do inside them.
@@ -80,19 +83,24 @@ Example:
 1. =SPC x f=
 2. move to a file in Dired
 3. open it with =l= or =RET=
-4. the file opens in =edit/<project>=, =edit/org-roam=, or =edit/loose= while Dired remains in =files/<project-or-dir>=
+4. remembered project files open in their own =edit/<project>= context; loose
+   files open in the related edit context while Dired remains in =files/...=
 
 ** =edit/loose=
 
-- Non-project files open here instead of polluting =main=.
-- Existing project file behavior stays unchanged and still uses =edit/<project>=.
+- This remains a fallback context for loose files opened when no project edit
+  context is active.
+- From an active project edit context, loose files are attached to that current
+  context instead.
 - Loose directories still belong in =files/<directory>= rather than =edit/loose=.
 
 ** =edit/org-roam=
 
-- Org-roam files open here instead of borrowing whatever project they happen to live under.
-- This keeps knowledge-base editing separate from normal project editing.
-- Common Org-roam entry points like node find, capture, and dailies also route here.
+- Notes-specific Org-roam commands route here.
+- Ordinary file opens from a project edit context stay in that project context,
+  even when the file is under the Org-roam directory.
+- This keeps the notes workflow available without forcing every note file visit
+  out of the current task.
 
 ** =notes=
 
@@ -146,8 +154,8 @@ Useful commands:
 - =orbit-context-move-buffer=: move the current buffer to another context
 - =orbit-context-borrow-buffer=: show an already-open buffer inside the current
   context without changing which context owns it
-- =orbit-context-borrow-file=: open a file side by side in the current context
-  for comparison without changing its natural context routing
+- =orbit-context-borrow-file=: open a file side by side for comparison without
+  changing which context owns it
 - =orbit-context-unborrow-buffer=: remove the current borrowed buffer from the
   active context without killing it
 - =orbit-context-forget-buffer=: remove the current buffer from the current

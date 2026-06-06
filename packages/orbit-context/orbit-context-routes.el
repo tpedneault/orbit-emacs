@@ -78,6 +78,54 @@
   (let ((default-directory root))
     (call-interactively #'project-find-file)))
 
+(defun orbit-context--edit-context-target-for-file (file)
+  "Return the edit context target for opening FILE from the active context.
+The result is a plist with `:name' and `:root'."
+  (let* ((current-name (orbit-context-current-name))
+         (current-kind (orbit-context-current-kind current-name))
+         (current-root (orbit-context-current-root current-name))
+         (known-root (orbit-context--known-project-root-for-file file)))
+    (cond
+     ((eq current-kind 'edit-project)
+      (list :name current-name :root current-root))
+     ((eq current-kind 'files-root)
+      (if known-root
+          (list :name (orbit-context--edit-context-name known-root)
+                :root known-root)
+        (list :name (and current-root
+                         (orbit-context--edit-context-name current-root))
+              :root current-root)))
+     ((orbit-context--roam-file-p file)
+      (list :name orbit-context-roam-edit-context-name :root nil))
+     ((orbit-context--project-root-for-file file)
+      (let ((root (orbit-context--project-root-for-file file)))
+        (list :name (orbit-context--edit-context-name root)
+              :root root)))
+     (t
+      (list :name orbit-context-loose-edit-context-name :root nil)))))
+
+(defun orbit-context--open-file-in-edit-context (file context-name root)
+  "Open FILE in CONTEXT-NAME and mark it as an explicit edit buffer.
+When ROOT is non-nil, ensure project metadata for the related context suite."
+  (when root
+    (orbit-context--ensure-project-context-metadata root))
+  (when context-name
+    (orbit-context--switch-owned context-name))
+  (find-file file)
+  (when context-name
+    (orbit-context--mark-buffer (current-buffer) 'edit root context-name)))
+
+(defun orbit-context--file-open-setup ()
+  "Attach ordinary file visits to the active edit context."
+  (when-let* ((name (orbit-context-current-name))
+              ((eq (orbit-context-current-kind name) 'edit-project))
+              ((buffer-file-name)))
+    (orbit-context--mark-buffer
+     (current-buffer)
+     'edit
+     (orbit-context-current-root name)
+     name)))
+
 (defun orbit-context--files-root-for-directory (dir)
   "Return the matching edit/files root for DIR."
   (let ((default-directory dir))
@@ -99,14 +147,11 @@
                (orbit-context--mark-buffer
                 (current-buffer) 'files
                 (orbit-context--files-root-for-directory expanded))))))
-      (let* ((root (orbit-context--project-root-for-file expanded))
-             (context-name (orbit-context--edit-context-name-for-file expanded))
+      (let* ((target (orbit-context--edit-context-target-for-file expanded))
+             (root (plist-get target :root))
+             (context-name (plist-get target :name))
              (default-directory (or root (file-name-directory expanded))))
-        (when root
-          (orbit-context--ensure-project-context-metadata root))
-        (when context-name
-          (orbit-context--switch-owned context-name))
-        (find-file expanded)))))
+        (orbit-context--open-file-in-edit-context expanded context-name root)))))
 
 (defun orbit-context--move-current-buffer-to-roam-context ()
   "Move the current Org-roam buffer into `edit/org-roam'."
@@ -117,6 +162,7 @@
           (window-start (window-start)))
       (orbit-context--switch-or-create orbit-context-roam-edit-context-name)
       (switch-to-buffer buffer)
+      (orbit-context--mark-buffer buffer 'edit nil orbit-context-roam-edit-context-name)
       (goto-char point)
       (set-window-start (selected-window) window-start))))
 
@@ -186,6 +232,7 @@
 
 (advice-add 'dired-find-file :around #'orbit-context-dired-find-file-advice)
 
+(add-hook 'find-file-hook #'orbit-context--file-open-setup)
 (add-hook 'compilation-mode-hook #'orbit-context--compilation-buffer-setup)
 (add-hook 'occur-hook #'orbit-context--occur-buffer-setup)
 (add-hook 'help-mode-hook #'orbit-context--help-buffer-setup)
@@ -198,8 +245,8 @@
 (with-eval-after-load 'apropos
   (add-hook 'apropos-mode-hook #'orbit-context--help-buffer-setup))
 
-(with-eval-after-load 'eat
-  (add-hook 'eat-mode-hook #'orbit-context--help-buffer-setup))
+(with-eval-after-load 'vterm
+  (add-hook 'vterm-mode-hook #'orbit-context--help-buffer-setup))
 
 (with-eval-after-load 'magit
   (add-hook 'magit-mode-hook #'orbit-context--magit-buffer-setup)
