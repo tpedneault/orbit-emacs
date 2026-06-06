@@ -14,12 +14,18 @@
 
 (defvar consult-ripgrep-args mod-search-consult-ripgrep-default-args)
 
-(defconst mod-search-rg-program "rg"
-  "Preferred ripgrep executable for search and replace helpers.")
+(defconst mod-search-rg-fallback-program "rg"
+  "Fallback ripgrep executable for search and replace helpers.")
+
+(defun mod-search-rg-program ()
+  "Return the configured ripgrep executable."
+  (or (when orbit-user-rg-program
+        (expand-file-name orbit-user-rg-program))
+      mod-search-rg-fallback-program))
 
 (defun mod-search--rg-installed-p ()
   "Return non-nil when ripgrep is available."
-  (executable-find mod-search-rg-program))
+  (executable-find (mod-search-rg-program)))
 
 (defun mod-search--require-rg ()
   "Signal a clear error when ripgrep is unavailable."
@@ -115,7 +121,7 @@
                         (unless (string-empty-p glob)
                           (list "--glob" glob))
                         (list "."))))
-      (pcase (apply #'process-file mod-search-rg-program nil t nil args)
+      (pcase (apply #'process-file (mod-search-rg-program) nil t nil args)
         (0 (split-string (buffer-string) "\0" t))
         (1 nil)
         (status

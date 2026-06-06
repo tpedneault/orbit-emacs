@@ -112,9 +112,9 @@
   (when orbit-user-rg-program
     (setq consult-ripgrep-args
           (concat
-           (shell-quote-argument orbit-user-rg-program)
+           (shell-quote-argument (expand-file-name orbit-user-rg-program))
            " --null --line-buffered --color=never --max-columns=1000"
-           " --path-separator / --smart-case --no-heading --line-number ."))))
+           " --path-separator / --smart-case --no-heading --line-number . -e ARG OPTS"))))
 
 (use-package corfu
   :ensure (:wait t)

@@ -1,0 +1,112 @@
+#+title: dockerized tooling
+
+* Native Emacs With Dockerized Tools
+
+This is the preferred work setup when native GUI Emacs is available but project
+tooling is painful to install on the host.
+
+Emacs runs normally on the host.  Commands such as =tclfmt=, =tclint=,
+=doxygen=, =ctags=, and =rg= are small wrapper scripts that run the real tool
+inside a Linux Docker image.
+
+This keeps keyboard repeat, clipboard, fonts, window management, and display
+resizing native while still hiding dependency setup inside Docker.
+
+* Build The Toolbox Image
+
+From the Orbit Emacs repo:
+
+#+begin_src shell
+scripts/orbit-tool build
+#+end_src
+
+The image is named =orbit-emacs-tools:latest= by default.
+
+* Install Host Wrappers
+
+Install wrappers into the user-local Orbit bin directory:
+
+#+begin_src shell
+scripts/orbit-tool install-wrappers
+#+end_src
+
+This creates:
+
+#+begin_example
+~/.orbit-emacs.d/bin/tclint
+~/.orbit-emacs.d/bin/tclfmt
+~/.orbit-emacs.d/bin/doxygen
+~/.orbit-emacs.d/bin/ctags
+~/.orbit-emacs.d/bin/rg
+~/.orbit-emacs.d/bin/uv
+~/.orbit-emacs.d/bin/python3
+~/.orbit-emacs.d/bin/basedpyright-langserver
+~/.orbit-emacs.d/bin/ruff
+~/.orbit-emacs.d/bin/debugpy
+#+end_example
+
+Add that directory to your shell =PATH=, or point Orbit at the wrappers
+explicitly in =~/.orbit-emacs.d/config.el=:
+
+#+begin_src emacs-lisp
+(let ((orbit-tool-bin (expand-file-name "~/.orbit-emacs.d/bin/")))
+  (add-to-list 'exec-path orbit-tool-bin)
+  (setenv "PATH" (concat orbit-tool-bin path-separator (or (getenv "PATH") "")))
+
+  (setq orbit-user-tclint-program (expand-file-name "tclint" orbit-tool-bin))
+  (setq orbit-user-tclfmt-program (expand-file-name "tclfmt" orbit-tool-bin))
+  (setq orbit-user-doxygen-program (expand-file-name "doxygen" orbit-tool-bin))
+  (setq orbit-user-ctags-program (expand-file-name "ctags" orbit-tool-bin))
+  (setq orbit-user-rg-program (expand-file-name "rg" orbit-tool-bin)))
+#+end_src
+
+* How Path Mapping Works
+
+The wrapper mounts the current Git project root at =/workspace= inside the
+container.  Host absolute paths under that root are translated to matching
+container paths before the tool runs.
+
+If a project is not in Git, the current directory is mounted instead.
+
+You can force the mount root:
+
+#+begin_src shell
+ORBIT_TOOL_ROOT=/path/to/project scripts/orbit-tool tclfmt path/to/file.tcl
+#+end_src
+
+* Direct Use
+
+You can call tools directly through the wrapper:
+
+#+begin_src shell
+scripts/orbit-tool tclfmt src/example.tcl
+scripts/orbit-tool tclint src/example.tcl
+scripts/orbit-tool doxygen Doxyfile
+scripts/orbit-tool ctags -e -R .
+scripts/orbit-tool rg "pattern" .
+#+end_src
+
+* Python Tools
+
+The toolbox includes =uv= plus common Python dev tools installed with =uv tool=:
+
+- =basedpyright=
+- =basedpyright-langserver=
+- =ruff=
+- =debugpy=
+
+For Python projects, prefer project-local environments when possible.  The
+toolbox is most useful for bootstrap and consistency, while Orbit's Python
+module still works best when the current project has its own =.venv/=.
+
+When the wrapper directory is present in Emacs' =exec-path=, Orbit can discover
+=basedpyright-langserver= for Eglot and =ruff= for formatting.
+
+* Notes
+
+- The Docker image does not include Emacs.
+- Native Emacs stays responsible for all GUI behavior.
+- The toolbox wrapper uses the host UID/GID on Unix so generated files are not
+  root-owned.
+- On Windows native Emacs, use this through a Unix-like shell such as Git Bash
+  or WSL until dedicated PowerShell wrappers are added.

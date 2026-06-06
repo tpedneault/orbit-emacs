@@ -3,8 +3,6 @@ set -euo pipefail
 
 export HOME="${ORBIT_HOME:-/home/orbit}"
 export DISPLAY="${DISPLAY:-:1}"
-export SHELL="${SHELL:-/bin/bash}"
-cd "${ORBIT_WORKSPACE:-/workspace}"
 
 for _ in {1..100}; do
   if xdpyinfo -display "${DISPLAY}" >/dev/null 2>&1; then
@@ -13,4 +11,7 @@ for _ in {1..100}; do
   sleep 0.1
 done
 
-exec emacs --chdir "${ORBIT_WORKSPACE:-/workspace}"
+xset r on || true
+xset r rate "${KEY_REPEAT_DELAY:-250}" "${KEY_REPEAT_RATE:-45}" || true
+
+exec openbox

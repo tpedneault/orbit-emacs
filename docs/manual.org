@@ -35,6 +35,7 @@ and =C-; m= instead of =SPC m=.  For example, =SPC .= becomes =C-; .= and
 - [[file:roam.org][org-roam knowledge base]]
 - [[file:jira.org][jira sync]]
 - [[file:python.org][python workflow]]
+- [[file:toolbox.org][dockerized tooling]]
 - [[file:docker.org][docker workbench]]
 - [[file:vim.org][vim quick reference]]
 - [[file:vim-training.org][vim training]]

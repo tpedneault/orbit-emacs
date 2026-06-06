@@ -17,6 +17,8 @@ services:
       ORBIT_WORKSPACE: /workspace
       VNC_GEOMETRY: ${VNC_GEOMETRY:-1920x1080}
       VNC_PASSWORD: ${VNC_PASSWORD:-}
+      KEY_REPEAT_DELAY: ${KEY_REPEAT_DELAY:-250}
+      KEY_REPEAT_RATE: ${KEY_REPEAT_RATE:-45}
     volumes:
       - type: bind
         source: ${ORBIT_WORKSPACE:-.}

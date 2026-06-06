@@ -1,33 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export HOME="${HOME:-/home/orbit}"
+export HOME="${ORBIT_HOME:-/home/orbit}"
 export DISPLAY="${DISPLAY:-:1}"
 
 mkdir -p "${HOME}/.vnc"
 
-for _ in {1..100}; do
-  if [[ -S /tmp/.X11-unix/X1 ]]; then
-    break
-  fi
-  sleep 0.1
-done
-
-if [[ -n "${VNC_PASSWORD:-}" ]]; then
-  x11vnc -storepasswd "${VNC_PASSWORD}" "${HOME}/.vnc/passwd" >/dev/null
-  exec x11vnc \
-    -display "${DISPLAY}" \
-    -forever \
-    -shared \
-    -rfbport 5901 \
-    -rfbauth "${HOME}/.vnc/passwd" \
-    -xkb
+vnc_server="$(command -v Xtigervnc || command -v Xvnc || true)"
+if [[ -z "${vnc_server}" ]]; then
+  echo "TigerVNC X server not found; expected Xtigervnc or Xvnc" >&2
+  exit 1
 fi
 
-exec x11vnc \
-  -display "${DISPLAY}" \
-  -forever \
-  -shared \
+security_args=(-SecurityTypes None)
+if [[ -n "${VNC_PASSWORD:-}" ]]; then
+  printf '%s\n' "${VNC_PASSWORD}" | vncpasswd -f >"${HOME}/.vnc/passwd"
+  chmod 0600 "${HOME}/.vnc/passwd"
+  security_args=(-SecurityTypes VncAuth -PasswordFile "${HOME}/.vnc/passwd")
+fi
+
+exec "${vnc_server}" "${DISPLAY}" \
+  -geometry "${VNC_GEOMETRY:-1920x1080}" \
+  -depth "${VNC_DEPTH:-24}" \
   -rfbport 5901 \
-  -nopw \
-  -xkb
+  -localhost no \
+  -AlwaysShared=1 \
+  -AcceptSetDesktopSize=1 \
+  -SendCutText=1 \
+  -AcceptCutText=1 \
+  "${security_args[@]}"

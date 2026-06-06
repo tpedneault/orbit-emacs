@@ -129,6 +129,20 @@
 (setq orbit-user-rg-program nil)
 (setq orbit-user-ctags-program nil)
 
+;; Optional Docker toolbox wrappers.
+;; Run `scripts/orbit-tool build` and `scripts/orbit-tool install-wrappers`,
+;; then enable this block in your machine-local config.
+;;
+;; (let ((orbit-tool-bin (expand-file-name "~/.orbit-emacs.d/bin/")))
+;;   (add-to-list 'exec-path orbit-tool-bin)
+;;   (setenv "PATH" (concat orbit-tool-bin path-separator (or (getenv "PATH") "")))
+;;
+;;   (setq orbit-user-tclint-program (expand-file-name "tclint" orbit-tool-bin))
+;;   (setq orbit-user-tclfmt-program (expand-file-name "tclfmt" orbit-tool-bin))
+;;   (setq orbit-user-doxygen-program (expand-file-name "doxygen" orbit-tool-bin))
+;;   (setq orbit-user-ctags-program (expand-file-name "ctags" orbit-tool-bin))
+;;   (setq orbit-user-rg-program (expand-file-name "rg" orbit-tool-bin)))
+
 ;; Treemacs function/tag expansion guards.
 ;; These keep accidental expansion of very large or noisy files from blocking Emacs.
 ;; Set either value to nil to disable that guard.

@@ -72,15 +72,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     tcl \
     tcl-dev \
+    tigervnc-standalone-server \
     tk \
     tk-dev \
     universal-ctags \
     wget \
-    x11vnc \
     xauth \
     xclip \
+    x11-xserver-utils \
     xterm \
-    xvfb \
     xz-utils \
     zlib1g-dev \
   && rm -rf /var/lib/apt/lists/*
@@ -119,7 +119,7 @@ COPY docker/orbit-emacs/entrypoint.sh /usr/local/bin/orbit-entrypoint
 COPY docker/orbit-emacs/bin/ /usr/local/bin/
 COPY docker/orbit-emacs/supervisord.conf /etc/supervisor/conf.d/orbit-emacs.conf
 
-RUN chmod 0755 /usr/local/bin/orbit-entrypoint /usr/local/bin/orbit-start-emacs /usr/local/bin/orbit-start-vnc \
+RUN chmod 0755 /usr/local/bin/orbit-entrypoint /usr/local/bin/orbit-start-emacs /usr/local/bin/orbit-start-vnc /usr/local/bin/orbit-start-window-manager \
   && mkdir -p /home/orbit/.config \
   && rsync -a --delete --exclude var/ /opt/orbit-emacs/ /home/orbit/.config/emacs/ \
   && chown -R orbit:orbit /home/orbit/.config \

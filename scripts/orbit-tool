@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+IMAGE="${ORBIT_TOOL_IMAGE:-orbit-emacs-tools:latest}"
+DOCKERFILE="${REPO_ROOT}/docker/orbit-tools/Dockerfile"
+CONTAINER_ROOT="${ORBIT_TOOL_CONTAINER_ROOT:-/workspace}"
+
+abs_path() {
+  local path="$1"
+  if command -v realpath >/dev/null 2>&1; then
+    realpath "${path}"
+  else
+    (cd "${path}" && pwd -P)
+  fi
+}
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/orbit-tool build
+  scripts/orbit-tool install-wrappers [DEST_DIR]
+  scripts/orbit-tool COMMAND [ARGS...]
+
+Examples:
+  scripts/orbit-tool build
+  scripts/orbit-tool tclfmt src/file.tcl
+  scripts/orbit-tool doxygen Doxyfile
+  scripts/orbit-tool ctags -e -R .
+
+Environment:
+  ORBIT_TOOL_IMAGE  Docker image name, default orbit-emacs-tools:latest
+  ORBIT_TOOL_ROOT   Host project root to mount, default git root or cwd
+EOF
+}
+
+host_root() {
+  if [[ -n "${ORBIT_TOOL_ROOT:-}" ]]; then
+    abs_path "${ORBIT_TOOL_ROOT}"
+  elif git -C "${PWD}" rev-parse --show-toplevel >/dev/null 2>&1; then
+    git -C "${PWD}" rev-parse --show-toplevel
+  else
+    pwd
+  fi
+}
+
+relative_to_root() {
+  local path="$1"
+  local root="$2"
+  local root_slash="${root%/}/"
+
+  if [[ "${path}" == "${root}" ]]; then
+    printf '.\n'
+  elif [[ "${path}" == "${root_slash}"* ]]; then
+    printf '%s\n' "${path#"${root_slash}"}"
+  else
+    printf '%s\n' "${path}"
+  fi
+}
+
+translate_arg() {
+  local arg="$1"
+  local root="$2"
+  local root_slash="${root%/}/"
+
+  if [[ "${arg}" == "${root}" ]]; then
+    printf '%s\n' "${CONTAINER_ROOT}"
+  elif [[ "${arg}" == "${root_slash}"* ]]; then
+    printf '%s/%s\n' "${CONTAINER_ROOT}" "${arg#"${root_slash}"}"
+  else
+    printf '%s\n' "${arg}"
+  fi
+}
+
+run_tool() {
+  local command="$1"
+  shift
+
+  local root
+  root="$(host_root)"
+
+  local cwd_rel
+  cwd_rel="$(relative_to_root "${PWD}" "${root}")"
+  if [[ "${cwd_rel}" == "." ]]; then
+    cwd_rel=""
+  fi
+
+  local workdir="${CONTAINER_ROOT}"
+  if [[ -n "${cwd_rel}" && "${cwd_rel}" != /* && "${cwd_rel}" != ..* ]]; then
+    workdir="${CONTAINER_ROOT}/${cwd_rel}"
+  fi
+
+  local translated=()
+  local arg
+  for arg in "$@"; do
+    translated+=("$(translate_arg "${arg}" "${root}")")
+  done
+
+  local user_args=()
+  if command -v id >/dev/null 2>&1; then
+    user_args=(--user "$(id -u):$(id -g)")
+  fi
+
+  exec docker run --rm -i \
+    "${user_args[@]}" \
+    -v "${root}:${CONTAINER_ROOT}" \
+    -w "${workdir}" \
+    "${IMAGE}" \
+    "${command}" "${translated[@]}"
+}
+
+install_wrappers() {
+  local dest="${1:-${HOME}/.orbit-emacs.d/bin}"
+  mkdir -p "${dest}"
+
+  local tool
+  for tool in tclint tclfmt doxygen ctags rg uv python python3 basedpyright-langserver ruff debugpy; do
+    cat >"${dest}/${tool}" <<EOF
+#!/usr/bin/env bash
+exec "${REPO_ROOT}/scripts/orbit-tool" "${tool}" "\$@"
+EOF
+    chmod 0755 "${dest}/${tool}"
+  done
+
+  printf 'Installed Orbit Docker tool wrappers in %s\n' "${dest}"
+}
+
+case "${1:-}" in
+  build)
+    docker build \
+      -f "${DOCKERFILE}" \
+      -t "${IMAGE}" \
+      --build-arg "TCLINT_VERSION=${TCLINT_VERSION:-0.8.0}" \
+      "${REPO_ROOT}"
+    ;;
+  install-wrappers)
+    shift
+    install_wrappers "$@"
+    ;;
+  ""|-h|--help|help)
+    usage
+    ;;
+  *)
+    command="$1"
+    shift
+    run_tool "${command}" "$@"
+    ;;
+esac

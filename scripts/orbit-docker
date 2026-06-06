@@ -71,7 +71,7 @@ case "${command}" in
     export ORBIT_WORKSPACE="$(abs_path "${project}")"
     export ORBIT_UID="${ORBIT_UID:-$(host_uid)}"
     export ORBIT_GID="${ORBIT_GID:-$(host_gid)}"
-    compose up -d "${SERVICE}"
+    compose up -d --force-recreate "${SERVICE}"
     echo "Orbit Emacs VNC is available at localhost:${ORBIT_VNC_PORT:-5901}"
     echo "Workspace mounted at /workspace from ${ORBIT_WORKSPACE}"
     ;;

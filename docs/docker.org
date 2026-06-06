@@ -3,13 +3,16 @@
 * Orbit Emacs VNC Workbench
 
 The Docker workbench runs Orbit Emacs inside a Linux container and exposes the
-GUI through VNC on localhost.  This is intended for work machines where native
-Emacs and external tooling are difficult to install, or where Windows GUI
-performance is poor.
+GUI through VNC on localhost.
+
+This path is experimental.  The preferred work setup is native GUI Emacs with
+Dockerized tooling wrappers; see [[file:toolbox.org][dockerized tooling]].  Use this VNC workbench only
+when native Emacs is not available or when a fully containerized GUI is worth
+the extra display-server complexity.
 
 The container includes:
 - Emacs 30.2 by default
-- Xvfb, Openbox, and x11vnc
+- TigerVNC Xvnc, Openbox, and VNC access on localhost
 - Git, ripgrep, Universal Ctags, Doxygen, Graphviz, Tcl/Tk, Python, pipx, =tclint=, =tclfmt=, and common build tools
 - this Orbit Emacs config with Elpaca packages prewarmed during image build
 
@@ -43,6 +46,9 @@ Mount a project into =/workspace=:
 scripts/orbit-docker up /path/to/project
 #+end_src
 
+The launcher recreates the container when needed while preserving the named
+Docker volumes for packages and user-local configuration.
+
 Then connect with a VNC client:
 
 #+begin_example
@@ -55,6 +61,31 @@ Useful environment overrides:
 ORBIT_VNC_PORT=5902 scripts/orbit-docker up /path/to/project
 VNC_GEOMETRY=2560x1440 scripts/orbit-docker up /path/to/project
 VNC_PASSWORD='change-me' scripts/orbit-docker up /path/to/project
+#+end_src
+
+* Keyboard Repeat And Resolution
+
+The container uses TigerVNC's virtual X server instead of mirroring a fixed
+Xvfb display.  This matters for two Vim-heavy behaviors:
+
+- held keys such as =j= and =k= repeat normally
+- compatible VNC viewers can request real desktop-size changes instead of
+  stretching a fixed framebuffer
+
+In RealVNC Viewer, use the toolbar's =1:1= / dynamic-resolution behavior rather
+than a scaled view.  When the viewer asks for a new desktop size, TigerVNC
+resizes the container display and Emacs gets a real resolution change.
+
+The initial size still comes from =VNC_GEOMETRY=:
+
+#+begin_src shell
+VNC_GEOMETRY=2560x1440 scripts/orbit-docker up /path/to/project
+#+end_src
+
+Keyboard repeat defaults are tuned for Vim-style movement:
+
+#+begin_src shell
+KEY_REPEAT_DELAY=220 KEY_REPEAT_RATE=55 scripts/orbit-docker up /path/to/project
 #+end_src
 
 * Runtime State
@@ -127,8 +158,8 @@ scripts/orbit-docker stop
 Inside the container, process logs are written under =/tmp=:
 - =/tmp/emacs.log=
 - =/tmp/emacs.err=
-- =/tmp/x11vnc.log=
-- =/tmp/x11vnc.err=
+- =/tmp/vnc.log=
+- =/tmp/vnc.err=
 - =/tmp/supervisord.log=
 
 * Git Credentials

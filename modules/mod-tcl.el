@@ -823,7 +823,8 @@ Returns the preview buffer."
 
 (defun mod-tcl--program-path (override fallback-name)
   "Return OVERRIDE or a resolved FALLBACK-NAME path, or nil."
-  (or override
+  (or (when override
+        (expand-file-name override))
       (executable-find fallback-name)))
 
 (defun mod-tcl--program-version-output (program)
