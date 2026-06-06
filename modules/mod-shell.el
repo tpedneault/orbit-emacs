@@ -17,12 +17,25 @@
   (or orbit-user-shell
       (or (getenv "SHELL") "/bin/bash" "/bin/sh")))
 
+(defun mod-shell--setup-vterm-buffer ()
+  "Apply Orbit-local UI defaults for vterm buffers."
+  (setq-local display-line-numbers nil
+              display-line-numbers-width 0)
+  (when (bound-and-true-p display-line-numbers-mode)
+    (display-line-numbers-mode -1)))
+
 (use-package vterm
   :ensure nil
   :defer t
   :init
   (setq vterm-always-compile-module t)
   :config
+  (add-hook 'vterm-mode-hook #'mod-shell--setup-vterm-buffer)
+  (add-hook 'after-change-major-mode-hook
+            (lambda ()
+              (when (derived-mode-p 'vterm-mode)
+                (mod-shell--setup-vterm-buffer)))
+            100)
   (define-key vterm-mode-map (kbd "C-c C-k") #'vterm-copy-mode)
   (with-eval-after-load 'evil
     (evil-define-key '(normal insert) vterm-mode-map
