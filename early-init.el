@@ -89,6 +89,12 @@
  (orbit-startup--elapsed-seconds)
  emacs-version
  system-type)
+
+(unless (version<= "30.2" emacs-version)
+  (error
+   "orbit-emacs requires GNU Emacs 30.2 or newer; found %s. On Ubuntu 24.04/WSL, do not use the apt emacs package because it is Emacs 29.x."
+   emacs-version))
+
 (advice-add 'require :around #'orbit-startup--trace-require)
 (advice-add 'load :around #'orbit-startup--trace-load)
 

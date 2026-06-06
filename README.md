@@ -19,14 +19,23 @@ For the full setup guide, see [docs/install.org](docs/install.org).
 
 ### Ubuntu 24.04 On WSL2/WSLg
 
-Install system packages inside Ubuntu:
+Install system packages inside Ubuntu. Do not install `emacs` or `emacs-gtk`
+from Ubuntu apt on 24.04; those packages are Emacs 29.x and Orbit requires
+Emacs 30.2 or newer.
 
 ```sh
 sudo apt update
 sudo apt install -y \
-  emacs-gtk git ripgrep universal-ctags graphviz \
+  git ripgrep universal-ctags graphviz \
   tcl tcl-dev tk tk-dev python3 python3-venv python3-pip \
-  ca-certificates curl
+  ca-certificates curl snapd
+```
+
+Install Emacs 30.2 or newer. The simplest WSL2/WSLg route is the classic Snap:
+
+```sh
+sudo snap install emacs --classic
+emacs --version
 ```
 
 Install Doxygen 1.8.17 explicitly. Do not use the Ubuntu `doxygen` package for Tcl docs; newer Doxygen releases dropped the Tcl support this workflow needs.

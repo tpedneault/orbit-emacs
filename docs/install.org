@@ -22,16 +22,32 @@ sudo apt update
 sudo apt upgrade -y
 #+end_src
 
-3. Install Emacs and core tools:
+3. Install core tools.
+
+Do not install =emacs= or =emacs-gtk= from Ubuntu apt on 24.04.  Those packages
+are Emacs 29.x, while Orbit requires GNU Emacs 30.2 or newer.
 
 #+begin_src shell
 sudo apt install -y \
-  emacs-gtk git ripgrep universal-ctags graphviz \
+  git ripgrep universal-ctags graphviz \
   tcl tcl-dev tk tk-dev python3 python3-venv python3-pip \
-  build-essential ca-certificates curl
+  build-essential ca-certificates curl snapd
 #+end_src
 
-4. Install Doxygen 1.8.17.
+4. Install Emacs 30.2 or newer.
+
+The simplest WSL2/WSLg route is the classic Snap package:
+
+#+begin_src shell
+sudo snap install emacs --classic
+emacs --version
+#+end_src
+
+If snap is not available on your work machine, install or build a native Linux
+Emacs 30.2+ by another route, then make sure =emacs --version= reports 30.2 or
+newer before starting Orbit.
+
+5. Install Doxygen 1.8.17.
 
 Do not install the Ubuntu =doxygen= package for Tcl documentation.  The package
 manager version is too new for this workflow; Doxygen's Tcl support is available
@@ -52,7 +68,7 @@ sudo ln -sf /opt/doxygen-1.8.17/bin/doxygen /usr/local/bin/doxygen-1.8.17
 doxygen-1.8.17 --version
 #+end_src
 
-5. Install Python-based Tcl tools:
+6. Install Python-based Tcl tools:
 
 #+begin_src shell
 python3 -m venv ~/.local/share/orbit-tools
@@ -60,7 +76,7 @@ python3 -m venv ~/.local/share/orbit-tools
 ~/.local/share/orbit-tools/bin/pip install tclint==0.8.0
 #+end_src
 
-6. Expose =tclint= and =tclfmt= on your PATH:
+7. Expose =tclint= and =tclfmt= on your PATH:
 
 #+begin_src shell
 mkdir -p ~/.local/bin
@@ -68,7 +84,7 @@ ln -sf ~/.local/share/orbit-tools/bin/tclint ~/.local/bin/tclint
 ln -sf ~/.local/share/orbit-tools/bin/tclfmt ~/.local/bin/tclfmt
 #+end_src
 
-7. Make sure =~/.local/bin= is on PATH.  Add this to =~/.profile= if needed:
+8. Make sure =~/.local/bin= is on PATH.  Add this to =~/.profile= if needed:
 
 #+begin_src shell
 case ":$PATH:" in
@@ -77,7 +93,7 @@ case ":$PATH:" in
 esac
 #+end_src
 
-8. Clone Orbit Emacs:
+9. Clone Orbit Emacs:
 
 #+begin_src shell
 mkdir -p ~/.config
@@ -90,14 +106,14 @@ If SSH is not set up yet, use HTTPS first:
 git clone https://github.com/tpedneault/orbit-emacs.git ~/.config/emacs
 #+end_src
 
-9. Create the machine-local config directory:
+10. Create the machine-local config directory:
 
 #+begin_src shell
 mkdir -p ~/.orbit-emacs.d
 cp ~/.config/emacs/config.example.el ~/.orbit-emacs.d/config.el
 #+end_src
 
-10. Start GUI Emacs through WSLg:
+11. Start GUI Emacs through WSLg:
 
 #+begin_src shell
 emacs &
