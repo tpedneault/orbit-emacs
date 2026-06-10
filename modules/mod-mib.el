@@ -477,10 +477,11 @@ against the .dat file base name. COLUMNS and KEY-COLUMNS are lists of strings.")
           (mod-mib--row-value (plist-get data :ccf) "CCF_CNAME")))
 
 (defun mod-mib--close-insertion-preview (data)
-  "Close the insertion preview window for DATA without killing its buffer."
-  (when-let* ((buffer (get-buffer (mod-mib--insertion-preview-buffer-name data)))
-              (window (get-buffer-window buffer t)))
-    (delete-window window)))
+  "Close and kill the insertion preview buffer for DATA."
+  (when-let* ((buffer (get-buffer (mod-mib--insertion-preview-buffer-name data))))
+    (when-let* ((window (get-buffer-window buffer t)))
+      (delete-window window))
+    (kill-buffer buffer)))
 
 (defun mod-mib--replace-placeholders (template values)
   "Replace TEMPLATE placeholders using VALUES alist."

@@ -106,6 +106,11 @@
 ;; Show keybinding hints beside dropdown commands when non-nil.
 (setq orbit-menu-show-key-hints t)
 
+;; Project/file sidebar backend used by SPC o p.
+;; - 'dirvish uses a Doom-like Dired + Dirvish + Nerd Icons sidebar.
+;; - 'treemacs keeps the older Treemacs sidebar.
+(setq orbit-user-sidebar-backend 'dirvish)
+
 ;; Global whitespace / current-line / fill-column indicator defaults.
 ;; These apply broadly unless a mode-specific override says otherwise.
 (setq orbit-user-enable-fill-column-indicator t)
@@ -116,6 +121,12 @@
 ;; WSLg can occasionally leave GUI frames visually stale after resize/fullscreen
 ;; updates. Keep this enabled under WSLg to force a small debounced redisplay.
 (setq orbit-user-wslg-frame-refresh t)
+
+;; Editing files under /mnt/c, /mnt/d, etc. from WSL is supported, but those
+;; paths cross the Windows/Linux filesystem bridge.  Keep this enabled to avoid
+;; expensive automatic project, VC, and file-watch probes on Windows-mounted
+;; paths.  Manual file editing and explicit commands still work.
+(setq orbit-user-wsl-windows-path-safe-mode t)
 
 ;; Evil yank/paste pulse feedback.
 ;; `orbit-user-evil-pulse-alphas` controls the fade shape: each number is a

@@ -4,6 +4,7 @@
 (declare-function mod-git-status "mod-git")
 (declare-function mod-org-open-agenda "mod-org")
 (declare-function mod-org-open-notes "mod-org")
+(declare-function mod-core-wsl-windows-path-p "mod-core" (&optional path))
 
 (defun orbit-context--mark-buffer-for-current-context (buffer role)
   "Attach BUFFER to the current context with ROLE."
@@ -83,18 +84,23 @@
 The result is a plist with `:name' and `:root'."
   (let* ((current-name (orbit-context-current-name))
          (current-kind (orbit-context-current-kind current-name))
-         (current-root (orbit-context-current-root current-name))
-         (known-root (orbit-context--known-project-root-for-file file)))
+         (current-root (orbit-context-current-root current-name)))
     (cond
      ((eq current-kind 'edit-project)
       (list :name current-name :root current-root))
      ((eq current-kind 'files-root)
-      (if known-root
+      (if-let* ((known-root
+                 (unless (and (fboundp 'mod-core-wsl-windows-path-p)
+                              (mod-core-wsl-windows-path-p file))
+                   (orbit-context--known-project-root-for-file file))))
           (list :name (orbit-context--edit-context-name known-root)
                 :root known-root)
         (list :name (and current-root
                          (orbit-context--edit-context-name current-root))
               :root current-root)))
+     ((and (fboundp 'mod-core-wsl-windows-path-p)
+           (mod-core-wsl-windows-path-p file))
+      (list :name orbit-context-loose-edit-context-name :root nil))
      ((orbit-context--roam-file-p file)
       (list :name orbit-context-roam-edit-context-name :root nil))
      ((orbit-context--project-root-for-file file)

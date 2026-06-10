@@ -11,6 +11,7 @@
 (declare-function orbit-context-header-label "orbit-context" (&optional name))
 (declare-function battery "battery")
 (declare-function mod-theme-apply-font-stack "mod-theme")
+(declare-function mod-core-wsl-windows-path-p "mod-core" (&optional path))
 
 (defconst mod-ui-recentf-save-file
   (expand-file-name "recentf" mod-core-var-directory)
@@ -78,11 +79,14 @@
         (format "project tree · %s" (abbreviate-file-name root))
       "project tree"))
    (buffer-file-name
-    (let* ((proj (and (fboundp 'project-current) (project-current)))
-           (root (and proj (fboundp 'project-root) (project-root proj))))
-      (if root
-          (file-relative-name buffer-file-name root)
-        (abbreviate-file-name buffer-file-name))))
+    (if (and (fboundp 'mod-core-wsl-windows-path-p)
+             (mod-core-wsl-windows-path-p buffer-file-name))
+        (abbreviate-file-name buffer-file-name)
+      (let* ((proj (and (fboundp 'project-current) (project-current)))
+             (root (and proj (fboundp 'project-root) (project-root proj))))
+        (if root
+            (file-relative-name buffer-file-name root)
+          (abbreviate-file-name buffer-file-name)))))
    ((derived-mode-p 'dired-mode)
     (abbreviate-file-name default-directory))
    (t (buffer-name))))
@@ -122,6 +126,22 @@
 (defun mod-ui--enable-header-line ()
   "Enable the orbit global header line in the current buffer."
   (setq-local header-line-format '(:eval (mod-ui-header-line-format))))
+
+(defun mod-ui--windows-mounted-buffer-p ()
+  "Return non-nil when the current buffer is backed by a WSL Windows path."
+  (and (fboundp 'mod-core-wsl-windows-path-p)
+       (mod-core-wsl-windows-path-p
+        (or buffer-file-name default-directory))))
+
+(defun mod-ui--protect-wsl-windows-buffer ()
+  "Disable expensive automatic file watching for WSL Windows-mounted buffers."
+  (when (mod-ui--windows-mounted-buffer-p)
+    (setq-local auto-revert-use-notify nil)
+    (when (bound-and-true-p auto-revert-mode)
+      (auto-revert-mode -1))
+    (when (and (boundp 'diff-hl-mode)
+               (bound-and-true-p diff-hl-mode))
+      (diff-hl-mode -1))))
 
 ;;; ─── Frame defaults ───────────────────────────────────────────────────────────
 
@@ -354,7 +374,9 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
 
 ;; ── Global header line ────────────────────────────────────────────────────────
 (add-hook 'find-file-hook  #'mod-ui--enable-header-line)
+(add-hook 'find-file-hook  #'mod-ui--protect-wsl-windows-buffer)
 (add-hook 'dired-mode-hook #'mod-ui--enable-header-line)
+(add-hook 'dired-mode-hook #'mod-ui--protect-wsl-windows-buffer)
 (with-eval-after-load 'magit
   (add-hook 'magit-mode-hook #'mod-ui--enable-header-line))
 (with-eval-after-load 'org-agenda
@@ -397,11 +419,17 @@ handled by `mod-theme-apply-font-stack' in mod-theme.el."
 (save-place-mode 1)
 (recentf-mode 1)
 (global-auto-revert-mode 1)
+(when (and (fboundp 'mod-core-wsl-windows-path-p)
+           orbit-user-wsl-windows-path-safe-mode)
+  (with-eval-after-load 'vc-hooks
+    (setq vc-ignore-dir-regexp
+          (concat vc-ignore-dir-regexp "\\|\\`/mnt/[[:alpha:]]/"))))
 (when (and (boundp 'battery-status-function) battery-status-function)
   (display-battery-mode 1))
 
 ;; Skip line numbers where they add noise rather than navigation value.
 (dolist (hook '(minibuffer-setup-hook
+                dired-mode-hook
                 term-mode-hook
                 shell-mode-hook
                 eshell-mode-hook))

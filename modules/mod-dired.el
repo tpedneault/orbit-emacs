@@ -21,11 +21,24 @@
 (declare-function treemacs-visit-node-horizontal-split "treemacs")
 (declare-function treemacs-visit-node-in-most-recently-used-window "treemacs")
 (declare-function treemacs-visit-node-vertical-split "treemacs")
+(declare-function treemacs-add-project-to-workspace "treemacs-interface" (path &optional name))
+(declare-function dirvish-side "dirvish-side" (&optional path))
+(declare-function dirvish-side-follow-mode "dirvish-side" (&optional arg))
+(declare-function dirvish-side--session-visible-p "dirvish-side")
+(declare-function dirvish-curr "dirvish")
+(declare-function dv-type "dirvish")
+(declare-function dirvish-dispatch "dirvish-extras")
+(declare-function dirvish-mark-menu "dirvish-extras")
+(declare-function dirvish-quicksort "dirvish-extras")
+(declare-function dirvish-yank-menu "dirvish-yank")
+(declare-function dirvish-subtree-toggle "dirvish-subtree")
+(declare-function mod-core-wsl-windows-path-p "mod-core" (&optional path))
 
 (setq delete-by-moving-to-trash t
       dired-dwim-target t
       dired-recursive-copies 'always
-      dired-recursive-deletes 'top)
+      dired-recursive-deletes 'top
+      dired-omit-files "\\`[.]\\{1,2\\}\\'")
 
 (defconst mod-dired--treemacs-tcl-proc-regexp
   "^[[:blank:]]*proc[[:blank:]]+\\(\\(?:::\\)?[[:alnum:]_:]+\\)[[:blank:]]+"
@@ -40,8 +53,8 @@
   (setq insert-directory-program (or gls ls))
   (setq dired-use-ls-dired (and gls t))
   (setq dired-listing-switches
-        (if gls
-            "-alh --group-directories-first"
+        (if (or gls (eq system-type 'gnu/linux))
+            "--all --long --human-readable --group-directories-first"
           "-alh")))
 
 (put 'dired-find-alternate-file 'disabled nil)
@@ -61,8 +74,158 @@
   (when-let* ((project (project-current nil)))
     (project-root project)))
 
+(defun mod-dired--wsl-windows-path-p (&optional path)
+  "Return non-nil when PATH should use conservative WSL Windows handling."
+  (and (fboundp 'mod-core-wsl-windows-path-p)
+       (mod-core-wsl-windows-path-p path)))
+
+(defun mod-dired--current-root-for-tree ()
+  "Return the best root for file-tree display without expensive probing."
+  (file-name-as-directory
+   (expand-file-name
+    (or (and buffer-file-name (file-name-directory buffer-file-name))
+        default-directory))))
+
+(defun mod-dired--sidebar-root ()
+  "Return the root directory to use for the configured project sidebar."
+  (file-name-as-directory
+   (expand-file-name
+    (or (unless (mod-dired--wsl-windows-path-p
+                 (or buffer-file-name default-directory))
+          (mod-dired--project-root))
+        (mod-dired--current-root-for-tree)))))
+
+(defun mod-dired--dirvish-attributes-for-path (&optional path side)
+  "Return Dirvish attributes suitable for PATH.
+When SIDE is non-nil, return attributes for the project sidebar."
+  (cond
+   ((mod-dired--wsl-windows-path-p path)
+    (if side
+        '(subtree-state nerd-icons)
+      '(subtree-state nerd-icons collapse file-time file-size)))
+   (side
+    '(subtree-state nerd-icons))
+   (t
+    '(vc-state subtree-state nerd-icons collapse file-time file-size))))
+
+(defun mod-dired--configure-dirvish-for-path (&optional path)
+  "Apply Dirvish display settings suitable for PATH."
+  (setq dirvish-attributes
+        (mod-dired--dirvish-attributes-for-path path nil)
+        dirvish-side-attributes
+        (mod-dired--dirvish-attributes-for-path path t))
+  (when (fboundp 'dirvish-side-follow-mode)
+    (dirvish-side-follow-mode
+     (if (mod-dired--wsl-windows-path-p path) -1 1))))
+
+(defun mod-dired--configure-dirvish-for-current-buffer ()
+  "Apply path-sensitive Dirvish settings for the current Dired buffer."
+  (when (featurep 'dirvish)
+    (mod-dired--configure-dirvish-for-path default-directory)))
+
+(defun mod-dired--dirvish-side-buffer-p ()
+  "Return non-nil when the current buffer belongs to a Dirvish side session."
+  (and (fboundp 'dirvish-curr)
+       (fboundp 'dv-type)
+       (when-let* ((dv (dirvish-curr)))
+         (eq (dv-type dv) 'side))))
+
+(defun mod-dired--setup-dirvish-side-buffer ()
+  "Make Dirvish side buffers look like quiet project trees."
+  (when (mod-dired--dirvish-side-buffer-p)
+    (when (bound-and-true-p diredfl-mode)
+      (diredfl-mode -1))
+    (setq-local hl-line-face 'hl-line)
+    (setq-local face-remapping-alist
+                (append '((dirvish-hl-line hl-line)
+                          (dirvish-hl-line-inactive hl-line)
+                          (dired-directory default))
+                        face-remapping-alist))))
+
+(defun mod-dired--dot-directory-listing-line-p (line)
+  "Return non-nil when LINE is an ls entry for . or ..."
+  (string-match-p "[[:space:]]\\.\\.?[[:space:]]*\\'" line))
+
+(defun mod-dired--strip-dot-directory-listing-lines (listing)
+  "Remove . and .. entries from a Dirvish subtree LISTING."
+  (mapconcat #'identity
+             (cl-remove-if #'mod-dired--dot-directory-listing-line-p
+                           (split-string listing "\n"))
+             "\n"))
+
+(defun mod-dired--dirvish-subtree-readin-without-dot-dirs (orig dir)
+  "Call ORIG for DIR, then remove . and .. entries from the listing."
+  (mod-dired--strip-dot-directory-listing-lines
+   (funcall orig dir)))
+
+(defun mod-dired-toggle-subtree ()
+  "Toggle a Dirvish subtree only when point is on a directory."
+  (interactive)
+  (let ((file (dired-get-filename nil t)))
+    (cond
+     ((not file)
+      (message "No file at point"))
+     ((file-directory-p file)
+      (dirvish-subtree-toggle))
+     (t
+      (message "TAB expands directories; use RET to open files")))))
+
+(defun mod-dired--setup-dired-buffer ()
+  "Apply Orbit's quiet Dired presentation defaults."
+  (hl-line-mode 1)
+  (auto-revert-mode 1)
+  (setq-local display-line-numbers nil)
+  (when (fboundp 'display-line-numbers-mode)
+    (display-line-numbers-mode -1))
+  (when (fboundp 'dired-omit-mode)
+    (dired-omit-mode 1))
+  (mod-dired--configure-dirvish-for-current-buffer))
+
+(defun mod-dired--dirvish-sidebar-toggle ()
+  "Toggle the Dirvish sidebar at the current project or directory root."
+  (require 'dirvish)
+  (require 'dirvish-side)
+  (let ((root (mod-dired--sidebar-root)))
+    (mod-dired--configure-dirvish-for-path root)
+    (if (and (fboundp 'dirvish-side--session-visible-p)
+             (dirvish-side--session-visible-p))
+        (dirvish-side)
+      (dirvish-side root))))
+
+(defun mod-dired--treemacs-disable-rich-modes ()
+  "Disable Treemacs features that are risky across the WSL Windows bridge."
+  (setq treemacs-follow-after-init nil
+        treemacs-collapse-dirs 0)
+  (when (bound-and-true-p treemacs-follow-mode)
+    (treemacs-follow-mode -1))
+  (when (bound-and-true-p treemacs-filewatch-mode)
+    (treemacs-filewatch-mode -1))
+  (when (bound-and-true-p treemacs-git-mode)
+    (treemacs-git-mode -1))
+  (when (bound-and-true-p treemacs-hide-gitignored-files-mode)
+    (treemacs-hide-gitignored-files-mode -1)))
+
+(defun mod-dired--treemacs-enable-rich-modes ()
+  "Enable the normal Treemacs feature set for native Linux paths."
+  (setq treemacs-follow-after-init t
+        treemacs-collapse-dirs 3)
+  (treemacs-follow-mode 1)
+  (treemacs-filewatch-mode 1)
+  (treemacs-git-mode 'deferred)
+  (when (fboundp 'treemacs-hide-gitignored-files-mode)
+    (treemacs-hide-gitignored-files-mode 1)))
+
+(defun mod-dired--configure-treemacs-for-path (&optional path)
+  "Apply a Treemacs feature profile suitable for PATH."
+  (require 'treemacs)
+  (if (mod-dired--wsl-windows-path-p path)
+      (mod-dired--treemacs-disable-rich-modes)
+    (mod-dired--treemacs-enable-rich-modes)))
+
 (defun mod-dired--treemacs-focus-project ()
   "Focus Treemacs on the current project when possible."
+  (mod-dired--configure-treemacs-for-path
+   (or buffer-file-name default-directory))
   (when-let* ((root (mod-dired--project-root)))
     (let ((default-directory root))
       (cond
@@ -76,18 +239,45 @@
       (ignore-errors
         (treemacs-find-file)))))
 
-(defun mod-dired-project-sidebar-toggle ()
+(defun mod-dired--treemacs-open-plain-root (root)
+  "Open Treemacs at ROOT without project, Git, follow, or filewatch probing."
+  (mod-dired--configure-treemacs-for-path root)
+  (let ((default-directory root))
+    (treemacs)
+    (when (fboundp 'treemacs-add-project-to-workspace)
+      (ignore-errors
+        (treemacs-add-project-to-workspace
+         root
+         (file-name-nondirectory (directory-file-name root)))))))
+
+(defun mod-dired--treemacs-sidebar-toggle ()
   "Toggle the Treemacs project sidebar."
   (interactive)
   (require 'treemacs)
   (if (eq (treemacs-current-visibility) 'visible)
       (treemacs)
-    (if (mod-dired--project-root)
-        (mod-dired--treemacs-focus-project)
-      (treemacs))))
+    (if (mod-dired--wsl-windows-path-p (or buffer-file-name default-directory))
+        (mod-dired--treemacs-open-plain-root (mod-dired--current-root-for-tree))
+      (mod-dired--configure-treemacs-for-path (or buffer-file-name default-directory))
+      (if (mod-dired--project-root)
+          (mod-dired--treemacs-focus-project)
+        (treemacs)))))
 
-(add-hook 'dired-mode-hook #'hl-line-mode)
-(add-hook 'dired-mode-hook #'auto-revert-mode)
+(defun mod-dired-project-sidebar-toggle ()
+  "Toggle the configured project file sidebar."
+  (interactive)
+  (pcase orbit-user-sidebar-backend
+    ('dirvish
+     (mod-dired--dirvish-sidebar-toggle))
+    ('treemacs
+     (mod-dired--treemacs-sidebar-toggle))
+    (_
+     (user-error "Unknown orbit sidebar backend: %S" orbit-user-sidebar-backend))))
+
+(add-hook 'dired-mode-hook #'mod-dired--setup-dired-buffer)
+
+(define-key dired-mode-map (kbd "TAB") #'mod-dired-toggle-subtree)
+(define-key dired-mode-map (kbd "<tab>") #'mod-dired-toggle-subtree)
 
 (defun mod-dired-setup-treemacs-buffer ()
   "Make Treemacs denser and quieter than a normal editing buffer."
@@ -279,7 +469,8 @@ PATH is the category path inside the Treemacs tag index, such as
       "R" #'dired-do-rename
       "D" #'dired-do-delete
       "C" #'dired-do-copy
-      "+" #'dired-create-directory)))
+      "+" #'dired-create-directory
+      (kbd "TAB") #'mod-dired-toggle-subtree)))
 
 (defun mod-dired-setup-treemacs-evil ()
   "Install a few Orbit-friendly Treemacs window actions."
@@ -296,6 +487,67 @@ PATH is the category path inside the Treemacs tag index, such as
 (with-eval-after-load 'treemacs
   (mod-dired-setup-treemacs-evil))
 
+(use-package nerd-icons
+  :ensure (:wait t)
+  :demand t)
+
+(use-package diredfl
+  :ensure (:wait t)
+  :demand t
+  :hook ((dired-mode . diredfl-mode)
+         (dirvish-directory-view-mode . diredfl-mode)))
+
+(use-package dirvish
+  :ensure (:wait t)
+  :demand t
+  :init
+  (setq dirvish-cache-dir (expand-file-name "dirvish/" mod-core-var-directory)
+        dirvish-attributes '(nerd-icons collapse file-time file-size)
+        dirvish-hide-details t
+        dirvish-hide-cursor t
+        dirvish-use-header-line t
+        dirvish-use-mode-line t
+        dirvish-mode-line-format '(:left (sort omit symlink)
+                                   :right (index))
+        dirvish-header-line-format '(:left (path) :right ())
+        dirvish-side-width 34
+        dirvish-side-attributes '(subtree-state nerd-icons)
+        dirvish-side-display-alist '((side . left) (slot . -1))
+        dirvish-side-window-parameters '((no-delete-other-windows . t))
+        dirvish-side-header-line-format '(:left (project))
+        dirvish-side-mode-line-format nil
+        dirvish-side-auto-expand t
+        dirvish-large-directory-threshold 20000)
+  :config
+  (when-let* ((dirvish-file (locate-library "dirvish"))
+              (extension-dir (expand-file-name "extensions/"
+                                               (file-name-directory dirvish-file)))
+              ((file-directory-p extension-dir)))
+    (add-to-list 'load-path extension-dir))
+  (dirvish-override-dired-mode 1)
+  (add-hook 'dirvish-setup-hook #'mod-dired--setup-dirvish-side-buffer)
+  (add-hook 'dirvish-after-revert-hook #'mod-dired--setup-dirvish-side-buffer)
+  (define-key dirvish-mode-map (kbd "h") #'dired-up-directory)
+  (define-key dirvish-mode-map (kbd "l") #'dired-find-file)
+  (define-key dirvish-mode-map (kbd "RET") #'dired-find-file)
+  (define-key dirvish-mode-map (kbd "q") #'dirvish-quit)
+  (define-key dirvish-mode-map (kbd "m") #'dired-mark)
+  (define-key dirvish-mode-map (kbd "u") #'dired-unmark)
+  (define-key dirvish-mode-map (kbd "U") #'dired-unmark-all-marks)
+  (define-key dirvish-mode-map (kbd "R") #'dired-do-rename)
+  (define-key dirvish-mode-map (kbd "D") #'dired-do-delete)
+  (define-key dirvish-mode-map (kbd "C") #'dired-do-copy)
+  (define-key dirvish-mode-map (kbd "+") #'dired-create-directory)
+  (define-key dirvish-mode-map (kbd "TAB") #'mod-dired-toggle-subtree)
+  (define-key dirvish-mode-map (kbd "?") #'dirvish-dispatch)
+  (define-key dirvish-mode-map (kbd "s") #'dirvish-quicksort)
+  (define-key dirvish-mode-map (kbd "y") #'dirvish-yank-menu)
+  (define-key dirvish-mode-map (kbd "*") #'dirvish-mark-menu))
+
+(with-eval-after-load 'dirvish-subtree
+  (advice-add 'dirvish-subtree--readin
+              :around #'mod-dired--dirvish-subtree-readin-without-dot-dirs))
+
 (use-package treemacs
   :ensure t
   :defer t
@@ -304,25 +556,22 @@ PATH is the category path inside the Treemacs tag index, such as
         treemacs-position 'left
         treemacs-indentation 1
         treemacs-indentation-string " "
-        treemacs-follow-after-init t
+        treemacs-follow-after-init nil
         treemacs-show-hidden-files t
         treemacs-move-forward-on-expand t
         treemacs-silent-filewatch t
         treemacs-space-between-root-nodes nil
         treemacs-sorting 'alphabetic-case-insensitive-asc
         treemacs-user-mode-line-format nil
-        treemacs-collapse-dirs 3
-        treemacs-git-mode 'deferred)
+        treemacs-collapse-dirs 0
+        treemacs-git-mode nil)
   :config
-  (treemacs-follow-mode 1)
-  (treemacs-filewatch-mode 1)
   (treemacs-fringe-indicator-mode 'always)
   (add-to-list 'treemacs-ignored-file-predicates #'mod-dired--treemacs-noise-file-p)
   (add-hook 'treemacs-mode-hook #'mod-dired-setup-treemacs-buffer)
   (treemacs-load-theme "Default")
   (mod-dired-setup-treemacs-icons)
-  (when (fboundp 'treemacs-hide-gitignored-files-mode)
-    (treemacs-hide-gitignored-files-mode 1)))
+  (mod-dired--configure-treemacs-for-path (or buffer-file-name default-directory)))
 
 (with-eval-after-load 'treemacs-tags
   (advice-add 'treemacs--get-imenu-index :around #'mod-dired--treemacs-safe-imenu-index)

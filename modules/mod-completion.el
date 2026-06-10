@@ -1,6 +1,8 @@
 ;;; mod-completion.el --- Completion and navigation foundation -*- lexical-binding: t; -*-
 
 (require 'cl-lib)
+(require 'seq)
+(require 'subr-x)
 
 (declare-function mod-tcl-docs-completion-entry "mod-tcl-docs" (symbol))
 
@@ -81,6 +83,88 @@
                     " Dir"
                   " File")))))))
 
+(defun mod-completion--capf-label (capf)
+  "Return a readable label for CAPF."
+  (cond
+   ((symbolp capf) (symbol-name capf))
+   ((byte-code-function-p capf) "#<byte-code capf>")
+   ((functionp capf) "#<function capf>")
+   (t (format "%S" capf))))
+
+(defun mod-completion--sample-candidates (prefix table)
+  "Return a short diagnostic sample for PREFIX in completion TABLE."
+  (condition-case err
+      (let* ((candidates (all-completions prefix table))
+             (sample (seq-take candidates 10)))
+        (format "%d candidate%s%s"
+                (length candidates)
+                (if (= (length candidates) 1) "" "s")
+                (if sample
+                    (format ": %s" (string-join sample ", "))
+                  "")))
+    (error
+     (format "candidate lookup failed: %s" (error-message-string err)))))
+
+(defun mod-completion-diagnose-at-point ()
+  "Display CAPF and Corfu diagnostics for the current buffer."
+  (interactive)
+  (let* ((source-buffer (current-buffer))
+         (source-point (point))
+         (capfs completion-at-point-functions)
+         (report (get-buffer-create "*Orbit Completion Diagnostics*")))
+    (with-current-buffer report
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (format "Buffer: %s\n" (buffer-name source-buffer)))
+        (insert (format "Mode: %s\n" (buffer-local-value 'major-mode source-buffer)))
+        (insert (format "Point: %d\n\n" source-point))
+        (insert (format "global-corfu-mode: %S\n" (bound-and-true-p global-corfu-mode)))
+        (insert (format "corfu-mode: %S\n" (buffer-local-value 'corfu-mode source-buffer)))
+        (insert (format "corfu-auto: %S\n" (and (boundp 'corfu-auto) corfu-auto)))
+        (insert (format "corfu-auto-delay: %S\n" (and (boundp 'corfu-auto-delay) corfu-auto-delay)))
+        (insert (format "corfu-auto-prefix: %S\n" (and (boundp 'corfu-auto-prefix) corfu-auto-prefix)))
+        (insert (format "corfu-quit-at-boundary: %S\n" (and (boundp 'corfu-quit-at-boundary) corfu-quit-at-boundary)))
+        (insert (format "corfu-quit-no-match: %S\n\n" (and (boundp 'corfu-quit-no-match) corfu-quit-no-match)))
+        (insert (format "completion-at-point-functions: %d\n\n" (length capfs)))
+        (cl-loop for capf in capfs
+                 for index from 1
+                 do
+                 (insert (format "%d. %s\n" index (mod-completion--capf-label capf)))
+                 (insert
+                  (with-current-buffer source-buffer
+                    (save-excursion
+                      (goto-char source-point)
+                      (condition-case err
+                          (let ((result (funcall capf)))
+                            (cond
+                             ((not result)
+                              "   result: nil\n\n")
+                             ((and (listp result)
+                                   (integer-or-marker-p (nth 0 result))
+                                   (integer-or-marker-p (nth 1 result)))
+                              (let* ((beg (nth 0 result))
+                                     (end (nth 1 result))
+                                     (table (nth 2 result))
+                                     (props (nthcdr 3 result))
+                                     (prefix (buffer-substring-no-properties beg end))
+                                     (metadata (completion-metadata prefix table nil)))
+                                (concat
+                                 (format "   bounds: %d..%d\n" beg end)
+                                 (format "   prefix: %S\n" prefix)
+                                 (format "   category: %S\n"
+                                         (completion-metadata-get metadata 'category))
+                                 (format "   props: %S\n" props)
+                                 (format "   sample: %s\n\n"
+                                         (mod-completion--sample-candidates prefix table)))))
+                             (t
+                              (format "   result: %S\n\n" result))))
+                        (error
+                         (format "   error: %s\n\n"
+                                 (error-message-string err))))))))
+        (goto-char (point-min))
+        (special-mode)))
+    (display-buffer report)))
+
 (use-package vertico
   :ensure (:wait t)
   :demand t
@@ -123,6 +207,8 @@
   (setq corfu-auto t
         corfu-auto-delay 0.15
         corfu-auto-prefix 2
+        corfu-quit-at-boundary 'separator
+        corfu-quit-no-match 'separator
         corfu-cycle t
         corfu-preselect 'prompt)
   (add-hook 'corfu-margin-formatters #'mod-completion-corfu-kind-margin)

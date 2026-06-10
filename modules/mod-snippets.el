@@ -26,6 +26,12 @@
 (defvar mod-snippets--evil-insert-backtab-fallback nil
   "Fallback command for `<backtab>' in Evil insert state.")
 
+(defvar-local mod-snippets--base-capfs nil
+  "Buffer-local CAPFs captured before snippet completion is combined.")
+
+(defvar-local mod-snippets--combined-capf nil
+  "Buffer-local combined CAPF installed by `mod-snippets-setup-completion'.")
+
 (defun mod-snippets--bounds ()
   "Return practical snippet completion bounds at point."
   (or (bounds-of-thing-at-point 'symbol)
@@ -66,21 +72,45 @@
       (t nil)))
    capfs))
 
+(defun mod-snippets--dedupe-capfs (capfs)
+  "Return CAPFS without duplicates, preserving the first occurrence."
+  (let (seen result)
+    (dolist (fn capfs (nreverse result))
+      (unless (memq fn seen)
+        (push fn seen)
+        (push fn result)))))
+
+(defun mod-snippets--snippet-capf-p (fn)
+  "Return non-nil when FN is managed by the snippet completion combiner."
+  (or (eq fn #'mod-snippets-completion-at-point)
+      (and mod-snippets--combined-capf
+           (eq fn mod-snippets--combined-capf))))
+
+(defun mod-snippets--current-base-capfs ()
+  "Return current CAPFs that should feed the snippet completion combiner."
+  (mod-snippets--dedupe-capfs
+   (cl-remove-if
+    #'mod-snippets--snippet-capf-p
+    (mod-snippets--expand-capfs completion-at-point-functions))))
+
 (defun mod-snippets-setup-completion ()
   "Integrate Yasnippet completion into the current buffer's CAPF flow."
   (when (bound-and-true-p yas-minor-mode)
     (let* ((base-capfs
-            (cl-remove-duplicates
-             (cl-remove-if
-              (lambda (fn)
-                (memq fn '(mod-snippets-completion-at-point mod-snippets--combined-capf)))
-              (mod-snippets--expand-capfs completion-at-point-functions))))
+            (mod-snippets--dedupe-capfs
+             (append (mod-snippets--current-base-capfs)
+                     mod-snippets--base-capfs)))
            (combined
-            (if (and (fboundp 'cape-capf-super) base-capfs)
-                (apply #'cape-capf-super
-                       (append base-capfs (list #'mod-snippets-completion-at-point)))
-              #'mod-snippets-completion-at-point)))
-      (setq-local completion-at-point-functions (list combined)))))
+            (if (and mod-snippets--combined-capf
+                     (equal base-capfs mod-snippets--base-capfs))
+                mod-snippets--combined-capf
+              (if (and (fboundp 'cape-capf-super) base-capfs)
+                  (apply #'cape-capf-super
+                         (append base-capfs (list #'mod-snippets-completion-at-point)))
+                #'mod-snippets-completion-at-point))))
+      (setq-local mod-snippets--base-capfs base-capfs
+                  mod-snippets--combined-capf combined
+                  completion-at-point-functions (list combined)))))
 
 (defun mod-snippets-expand-or-tab ()
   "Expand a snippet at point, or fall back to normal `TAB' behavior."

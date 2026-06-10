@@ -71,6 +71,8 @@ between same-named files in different directories.")
 (defvar orbit-user-enable-fill-column-indicator t)
 (defvar orbit-user-fill-column 120)
 (defvar orbit-user-wslg-frame-refresh t)
+(defvar orbit-user-wsl-windows-path-safe-mode t)
+(defvar orbit-user-sidebar-backend 'dirvish)
 (defvar orbit-user-tcl-indent-width 3)
 (defvar orbit-user-tcl-fill-column 120)
 (defvar orbit-user-tcl-use-tabs nil)
@@ -142,6 +144,13 @@ Use t to always enable it, or nil to always keep it disabled.")
 (defun mod-core-standard-profile-p ()
   "Return non-nil when Orbit should use the standard Emacs profile."
   (eq orbit-keybinding-profile 'standard))
+
+(defun mod-core-wsl-windows-path-p (&optional path)
+  "Return non-nil when PATH is a Windows drive path mounted through WSL."
+  (and orbit-user-wsl-windows-path-safe-mode
+       (eq system-type 'gnu/linux)
+       (let ((expanded (expand-file-name (or path default-directory))))
+         (string-match-p "\\`/mnt/[[:alpha:]]/" expanded))))
 
 (defun mod-core-menu-bar-enabled-p ()
   "Return non-nil when the menu bar should be visible."
